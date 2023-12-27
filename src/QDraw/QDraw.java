@@ -121,8 +121,82 @@ public final class QDraw {
 
     /////////////////////////////////////////////////////////////////
     // DRAW METHOD AND INTERNALS
+    private static float[] __ipv_vert4_1 = { 0.0f, 0.0f, 0.0f, 1.0f };
+    private static float[] __ipv_vert4_2 = { 0.0f, 0.0f, 0.0f, 1.0f };
+    private static float[] __ipv_vert4_3 = { 0.0f, 0.0f, 0.0f, 1.0f };
     private static void internalProcessVerticies(float[] triangle) {
         
+        __ipv_vert4_1[3] = 0.0f;
+        __ipv_vert4_2[3] = 0.0f;
+        __ipv_vert4_3[3] = 0.0f;
+
+        System.arraycopy(
+            triangle, 
+            (QMesh.COMPONENTS_PER_VERTEX + QMesh.COMPONENTS_PER_UV) * 0, 
+            __ipv_vert4_1, 
+            0,
+            3
+        );
+        System.arraycopy(
+            triangle, 
+            (QMesh.COMPONENTS_PER_VERTEX + QMesh.COMPONENTS_PER_UV) * 1, 
+            __ipv_vert4_2, 
+            0,
+            3
+        );
+        System.arraycopy(
+            triangle, 
+            (QMesh.COMPONENTS_PER_VERTEX + QMesh.COMPONENTS_PER_UV) * 2, 
+            __ipv_vert4_3, 
+            0,
+            3
+        );
+
+        QMatrix4x4 transformMatrix = matrixStack[matrixStackPointer];
+        QMatrix4x4.multiply4DestructiveNoAlloc(
+            transformMatrix,
+            __ipv_vert4_1
+        );
+        QMatrix4x4.multiply4DestructiveNoAlloc(
+            transformMatrix,
+            __ipv_vert4_2
+        );
+        QMatrix4x4.multiply4DestructiveNoAlloc(
+            transformMatrix,
+            __ipv_vert4_3
+        );
+
+        System.arraycopy(
+            __ipv_vert4_1, 
+            0, 
+            triangle, 
+            (QMesh.COMPONENTS_PER_VERTEX + QMesh.COMPONENTS_PER_UV) * 0,
+            3
+        );
+        System.arraycopy(
+            __ipv_vert4_2, 
+            0, 
+            triangle, 
+            (QMesh.COMPONENTS_PER_VERTEX + QMesh.COMPONENTS_PER_UV) * 1,
+            3
+        );
+        System.arraycopy(
+            __ipv_vert4_3, 
+            0, 
+            triangle, 
+            (QMesh.COMPONENTS_PER_VERTEX + QMesh.COMPONENTS_PER_UV) * 2,
+            3
+        );
+
+    }
+
+    private static int __ict_cliptriCount  = 0;
+    private static float[] __ict_cliptri_1 = new float[QMesh.COMPONENTS_PER_BAKED_DATA];
+    private static float[] __ict_cliptri_2 = new float[QMesh.COMPONENTS_PER_BAKED_DATA];
+    private static void internalClipTriangle(float[] triangle) {
+
+        
+
     }
 
     public static void draw(QMesh mesh) {

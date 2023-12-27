@@ -9,8 +9,8 @@ import QDraw.QException.PointOfError;
 public final class QMesh {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
-    private static final int COMPONENTS_PER_VERTEX     = 3;
-    private static final int COMPONENTS_PER_UV         = 2;
+    public  static final int COMPONENTS_PER_VERTEX     = 3;
+    public  static final int COMPONENTS_PER_UV         = 2;
     private static final int VERTICIES_PER_TRI         = 3;
     private static final int COMPONENTS_PER_ATTRIBUTE  = 2;
     private static final int COMPONENTS_PER_TRI_DATA   = 
