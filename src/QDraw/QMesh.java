@@ -207,22 +207,22 @@ public final class QMesh {
             bakedData[bakedDataOffset + 0] = vertexData[(vertIndex1 * COMPONENTS_PER_VERTEX) + 0];
             bakedData[bakedDataOffset + 1] = vertexData[(vertIndex1 * COMPONENTS_PER_VERTEX) + 1];
             bakedData[bakedDataOffset + 2] = vertexData[(vertIndex1 * COMPONENTS_PER_VERTEX) + 2];
-            bakedData[bakedDataOffset + 3] = vertexData[(uvIndex1 * COMPONENTS_PER_UV) + 0];
-            bakedData[bakedDataOffset + 4] = vertexData[(uvIndex1 * COMPONENTS_PER_UV) + 1];
+            bakedData[bakedDataOffset + 3] = uvData[(uvIndex1 * COMPONENTS_PER_UV) + 0];
+            bakedData[bakedDataOffset + 4] = uvData[(uvIndex1 * COMPONENTS_PER_UV) + 1];
 
             // xyzuv 2
             bakedData[bakedDataOffset + 5] = vertexData[(vertIndex2 * COMPONENTS_PER_VERTEX) + 0];
             bakedData[bakedDataOffset + 6] = vertexData[(vertIndex2 * COMPONENTS_PER_VERTEX) + 1];
             bakedData[bakedDataOffset + 7] = vertexData[(vertIndex2 * COMPONENTS_PER_VERTEX) + 2];
-            bakedData[bakedDataOffset + 8] = vertexData[(uvIndex2 * COMPONENTS_PER_UV) + 0];
-            bakedData[bakedDataOffset + 9] = vertexData[(uvIndex2 * COMPONENTS_PER_UV) + 1];
+            bakedData[bakedDataOffset + 8] = uvData[(uvIndex2 * COMPONENTS_PER_UV) + 0];
+            bakedData[bakedDataOffset + 9] = uvData[(uvIndex2 * COMPONENTS_PER_UV) + 1];
 
             // xyzuv 3
             bakedData[bakedDataOffset + 10] = vertexData[(vertIndex3 * COMPONENTS_PER_VERTEX) + 0];
             bakedData[bakedDataOffset + 11] = vertexData[(vertIndex3 * COMPONENTS_PER_VERTEX) + 1];
             bakedData[bakedDataOffset + 12] = vertexData[(vertIndex3 * COMPONENTS_PER_VERTEX) + 2];
-            bakedData[bakedDataOffset + 13] = vertexData[(uvIndex3 * COMPONENTS_PER_UV) + 0];
-            bakedData[bakedDataOffset + 14] = vertexData[(uvIndex3 * COMPONENTS_PER_UV) + 1];
+            bakedData[bakedDataOffset + 13] = uvData[(uvIndex3 * COMPONENTS_PER_UV) + 0];
+            bakedData[bakedDataOffset + 14] = uvData[(uvIndex3 * COMPONENTS_PER_UV) + 1];
             
             bakedDataOffset += COMPONENTS_PER_BAKED_DATA;
         }

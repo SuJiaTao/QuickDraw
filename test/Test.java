@@ -2,18 +2,55 @@
 // 2023
 // Test.java
 
+import java.util.Arrays;
+
 import QDraw.*;
 import QDraw.QException.PointOfError;
 import QDraw.QColor.Channel;
 
 public final class Test {
+
+    private static void AssertExpect(int[] val, int[] expected) {
+        if (!(Arrays.equals(val, expected))) {
+                throw new QException(
+                    PointOfError.BadState,
+                    String.format("value \n%s\n differs from expected \n%s",
+                    Arrays.toString(val),
+                    Arrays.toString(expected)
+                ));
+            }
+    }
+    
+    private static void AssertExpect(float[] val, float[] expected) {
+        if (!(Arrays.equals(val, expected))) {
+                throw new QException(
+                    PointOfError.BadState,
+                    String.format("value \n%s\n differs from expected \n%s",
+                    Arrays.toString(val),
+                    Arrays.toString(expected)
+                ));
+            }
+    }
+
+    private static void AssertExpect(Object[] val, Object[] expected) {
+        if (!(Arrays.equals(val, expected))) {
+                throw new QException(
+                    PointOfError.BadState,
+                    String.format("value \n%s\n differs from expected \n%s",
+                    Arrays.toString(val),
+                    Arrays.toString(expected)
+                ));
+            }
+    }
+
     private static void AssertExpect(Object val, Object expected) {
         if (!(expected.equals(val) && val.equals(expected))) {
             throw new QException(
                 PointOfError.BadState,
                 String.format("value \n%s\n differs from expected \n%s",
                 val.toString(),
-                expected.toString()));
+                expected.toString()
+            ));
         } 
     }
 
@@ -302,6 +339,48 @@ public final class Test {
         );
     }
 
+    public static void MeshTest( ) {
+        AssertExpect(
+            new float[] {1, 2, 3, 4},
+            new float[] {1, 2, 3, 4}
+        );
+
+        AssertExpect(
+            QMesh.unitPlane.getBakedData(),
+            new float[] {
+                -1.0f, -1.0f, 0.0f, 0.0f, 0.0f, // v0
+                -1.0f,  1.0f, 0.0f, 0.0f, 1.0f, // v1
+                1.0f,  -1.0f, 0.0f, 0.0f, 1.0f, // v3
+                -1.0f,  1.0f, 0.0f, 0.0f, 1.0f, // v1
+                1.0f,   1.0f, 0.0f, 1.0f, 1.0f, // v2
+                1.0f,  -1.0f, 0.0f, 0.0f, 1.0f  // v3
+            }
+        );
+
+        AssertExpect(
+            new QMesh(
+                new float[] {
+                    1.0f, 2.0f, 3.0f,
+                    4.0f, 5.0f, 6.0f, 
+                    8.0f, 9.0f, 10.0f
+                },
+                new float[] {
+                    1.1f, 1.2f,
+                    1.3f, 1.4f,
+                    1.5f, 1.6f
+                },
+                new int[][] {
+                    { 0, 2, 1, 1, 2, 0}
+                }
+            ).getBakedData(),
+            new float[] {
+                1.0f, 2.0f,  3.0f, 1.5f, 1.6f,
+                4.0f, 5.0f,  6.0f, 1.3f, 1.4f,
+                8.0f, 9.0f, 10.0f, 1.1f, 1.2f
+            }
+        );
+    }
+
     public static void DrawTest( ) {
         AssertExpect(
             QDraw.matrixPeek( ),
@@ -334,6 +413,7 @@ public final class Test {
         RenderBufferTest( );
         VectorTest( );
         MatrixTest( );
+        MeshTest( );
         DrawTest( );
 
         QRenderBuffer rb = new QRenderBuffer(50, 50);
