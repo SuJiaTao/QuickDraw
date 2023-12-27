@@ -37,6 +37,7 @@ public final class QDraw {
     }
 
     /////////////////////////////////////////////////////////////////
+    // PUBLIC METHODS
     public static void setClearColor(QColor color) {
         drawClearColor.set(color);
     }
@@ -93,7 +94,7 @@ public final class QDraw {
         matrixStack[matrixStackPointer].set(matrix);
     }
 
-    public static final QMatrix4x4 matrixPeek( ) {
+    public static QMatrix4x4 matrixPeek( ) {
         return matrixStack[matrixStackPointer];
     }
     
@@ -120,9 +121,16 @@ public final class QDraw {
 
     /////////////////////////////////////////////////////////////////
     // DRAW METHOD AND INTERNALS
+    private static void internalProcessVerticies(
+        int offset, 
+        float[] meshData) {
 
+    }
     public static void draw(QMesh mesh) {
+        if (drawTarget == null)
+            return;
+
         
     }
-    
+
 }

@@ -18,7 +18,7 @@ public final class QMesh {
     private static final int TRI_DATA_VERTEX_OFFSET    = 0;
     private static final int TRI_DATA_UV_OFFSET        = 1;
     private static final int FACE_DATA_MIN_ATTRIBUTES  = 3;
-    private static final int COMPONENTS_PER_BAKED_DATA =
+    public  static final int COMPONENTS_PER_BAKED_DATA =
         (COMPONENTS_PER_VERTEX + COMPONENTS_PER_UV) * VERTICIES_PER_TRI;
 
     private static final float[] UNIT_PLANE_VERTEX_DATA = {
@@ -231,19 +231,19 @@ public final class QMesh {
 
     /////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
-    public final float[] getVertexData( ) {
+    public float[] getVertexData( ) {
         return vertexData;
     }
     
-    public final float[] getUVData( ) {
+    public float[] getUVData( ) {
         return uvData;
     }
 
-    public final int[] getTriData( ) {
+    public int[] getTriData( ) {
         return triData;
     }
 
-    public final float[] getBakedData( ) {
+    public float[] getBakedData( ) {
         return bakedData;
     }
 
