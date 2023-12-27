@@ -81,20 +81,74 @@ public final class QMatrix4x4 {
         return components;
     }
 
-    public static QVector4 multiply4(QMatrix4x4 mat4x4, QVector4 vec) {
-        float[] returnComponents = new float[QVector4.COMPONENT_COUNT];
+    private static float[] __m4dna_tempComponents  = { 0.0f, 0.0f, 0.0f, 0.0f };
+    public static void multiply4DestructiveNoAlloc(
+        QMatrix4x4 mat4x4, 
+        float[] vec
+    ) {
+        __m4dna_tempComponents[0] = 0.0f;
+        __m4dna_tempComponents[1] = 0.0f;
+        __m4dna_tempComponents[2] = 0.0f;
+        __m4dna_tempComponents[3] = 0.0f;
+
         for (int vCompIndex = 0; vCompIndex < QVector4.COMPONENT_COUNT; vCompIndex++) {
             for (int columnIndex = 0; columnIndex < COLUMN_COUNT; columnIndex++) {
-                returnComponents[vCompIndex] +=
-                    vec.getComponents()[columnIndex] * 
+                __m4dna_tempComponents[vCompIndex] +=
+                    vec[columnIndex] * 
                     mat4x4.getValue(columnIndex, vCompIndex);
             }
         }
-        return new QVector4(returnComponents);
+
+        System.arraycopy(
+            __m4dna_tempComponents, 
+            0, 
+            vec, 
+            0, 
+            QVector4.COMPONENT_COUNT
+        );
+    }
+
+    public static float[] multiply4(QMatrix4x4 mat4x4, float[] vec) {
+        float[] returnComponents = new float[QVector4.COMPONENT_COUNT];
+        System.arraycopy(
+            vec, 
+            0, 
+            returnComponents, 
+            0,
+            QVector4.COMPONENT_COUNT
+        );
+        multiply4DestructiveNoAlloc(mat4x4, returnComponents);
+        return returnComponents;
+    }
+
+    public static QVector4 multiply4(QMatrix4x4 mat4x4, QVector4 vec) {
+        return new QVector4(multiply4(mat4x4, vec.getComponents()));
     }
 
     public QVector4 multiply4(QVector4 vec) {
         return multiply4(this, vec);
+    }
+
+    private static float[] __m3dna_tempComponents = { 0.0f, 0.0f, 0.0f, 1.0f };
+    public static void multiply3DestructiveNoAlloc(QMatrix4x4 mat4x4, float[] vec3) {
+        __m3dna_tempComponents[0] = vec3[0];
+        __m3dna_tempComponents[1] = vec3[1];
+        __m3dna_tempComponents[2] = vec3[2];
+        __m3dna_tempComponents[3] = 1.0f;
+        multiply4DestructiveNoAlloc(mat4x4, __m3dna_tempComponents);
+        System.arraycopy(
+            __m3dna_tempComponents, 
+            0, 
+            vec3, 
+            0,
+            3
+        );
+    }
+
+    public static float[] multiply3(QMatrix4x4 mat4x4, float[] vec3) {
+        float[] returnComponents = {vec3[0], vec3[1], vec3[2], 1.0f};
+        multiply3DestructiveNoAlloc(mat4x4, returnComponents);
+        return returnComponents;
     }
 
     public static QVector4 multiply3(QMatrix4x4 mat4x4, QVector4 vec3) {
@@ -105,18 +159,23 @@ public final class QMatrix4x4 {
         return multiply3(this, vec3);
     }
 
-    public static QMatrix4x4 multiply4x4(QMatrix4x4 m1, QMatrix4x4 m2) {
+    public static float[] multiply4x4(float[] m1, float[] m2) {
         // stolen from https://github.com/SuJiaTao/Caesium/blob/master/csm_matrix.c
         float[] returnComponents = new float[COMPONENT_COUNT];
         for (int i = 0; i < ROW_COUNT; i++) {
             for (int j = 0; j < COLUMN_COUNT; j++) {
                 for (int k = 0; k < ROW_COUNT; k++) {
                     returnComponents[getComponentIndex(i, j)] +=
-                        m1.getValue(i, k) * m2.getValue(k, j);
+                        m1[getComponentIndex(i, k)] * 
+                        m2[getComponentIndex(k, j)];
                 }
             }
         }
-        return new QMatrix4x4(returnComponents);
+        return returnComponents;
+    }
+
+    public static QMatrix4x4 multiply4x4(QMatrix4x4 m1, QMatrix4x4 m2) {
+        return new QMatrix4x4(multiply4x4(m1.getComponents(), m2.getComponents()));
     }
 
     public QMatrix4x4 multiply4x4(QMatrix4x4 m2) {

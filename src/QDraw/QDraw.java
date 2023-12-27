@@ -121,15 +121,32 @@ public final class QDraw {
 
     /////////////////////////////////////////////////////////////////
     // DRAW METHOD AND INTERNALS
-    private static void internalProcessVerticies(
-        int offset, 
-        float[] meshData) {
-
+    private static void internalProcessVerticies(float[] triangle) {
+        
     }
+
     public static void draw(QMesh mesh) {
         if (drawTarget == null)
             return;
 
+        float[] bakedData = mesh.getBakedData();
+        float[] triangle = new float[QMesh.COMPONENTS_PER_BAKED_DATA];
+        for (int bakedDataOffset = 0; 
+             bakedDataOffset > bakedData.length; 
+             bakedDataOffset += QMesh.COMPONENTS_PER_BAKED_DATA
+        ) {
+            
+            System.arraycopy(
+                bakedData, 
+                bakedDataOffset, 
+                triangle, 
+                0, 
+                QMesh.COMPONENTS_PER_BAKED_DATA
+            );
+
+            internalProcessVerticies(triangle);
+
+        }
         
     }
 
