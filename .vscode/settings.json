@@ -1,0 +1,24 @@
+{
+    "java.project.sourcePaths": [
+        "src",
+        "test"
+    ],
+    "java.project.outputPath": "bin",
+    "java.project.referencedLibraries": [
+        "lib/**/*.jar"
+    ],
+    "java.configuration.runtimes": [
+        {
+            "name": "JavaSE-21",
+            "path": "c:\\Bailey\\Programs\\GraalVM\\graalvm-jdk-21+35.1"
+        }
+    ],
+    "graalvm.installations": [
+        "c:\\Bailey\\Programs\\GraalVM\\graalvm-jdk-21+35.1"
+    ],
+    "graalvm.home": "c:\\Bailey\\Programs\\GraalVM\\graalvm-jdk-21+35.1",
+    "terminal.integrated.env.windows": {
+        "GRAALVM_HOME": "c:\\Bailey\\Programs\\GraalVM\\graalvm-jdk-21+35.1",
+        "PATH": "${env:PATH}"
+    }
+}
