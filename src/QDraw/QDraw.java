@@ -121,6 +121,20 @@ public final class QDraw {
 
     /////////////////////////////////////////////////////////////////
     // DRAW METHOD AND INTERNALS
+    private static final int OFFSET_X = 0;
+    private static final int OFFSET_Y = 1;
+    private static final int OFFSET_Z = 2;
+    private static final int CLIP_CASE_CULL = 0;
+    private static final int CLIP_CASE_1TRI = 1;
+    private static final int CLIP_CASE_2TRI = 2;
+    private static final int CLIP_CASE_NONE = 3;
+    private static final int VERTEX_0_OFFSET = 
+        (QMesh.COMPONENTS_PER_VERTEX + QMesh.COMPONENTS_PER_UV) * 0;
+    private static final int VERTEX_1_OFFSET = 
+        (QMesh.COMPONENTS_PER_VERTEX + QMesh.COMPONENTS_PER_UV) * 1;
+    private static final int VERTEX_2_OFFSET = 
+        (QMesh.COMPONENTS_PER_VERTEX + QMesh.COMPONENTS_PER_UV) * 2;
+
     private static float[] __ipv_vert4_1 = { 0.0f, 0.0f, 0.0f, 1.0f };
     private static float[] __ipv_vert4_2 = { 0.0f, 0.0f, 0.0f, 1.0f };
     private static float[] __ipv_vert4_3 = { 0.0f, 0.0f, 0.0f, 1.0f };
@@ -132,21 +146,21 @@ public final class QDraw {
 
         System.arraycopy(
             triangle, 
-            (QMesh.COMPONENTS_PER_VERTEX + QMesh.COMPONENTS_PER_UV) * 0, 
+            VERTEX_0_OFFSET, 
             __ipv_vert4_1, 
             0,
             3
         );
         System.arraycopy(
             triangle, 
-            (QMesh.COMPONENTS_PER_VERTEX + QMesh.COMPONENTS_PER_UV) * 1, 
+            VERTEX_1_OFFSET, 
             __ipv_vert4_2, 
             0,
             3
         );
         System.arraycopy(
             triangle, 
-            (QMesh.COMPONENTS_PER_VERTEX + QMesh.COMPONENTS_PER_UV) * 2, 
+            VERTEX_2_OFFSET, 
             __ipv_vert4_3, 
             0,
             3
@@ -170,30 +184,74 @@ public final class QDraw {
             __ipv_vert4_1, 
             0, 
             triangle, 
-            (QMesh.COMPONENTS_PER_VERTEX + QMesh.COMPONENTS_PER_UV) * 0,
+            VERTEX_0_OFFSET,
             3
         );
         System.arraycopy(
             __ipv_vert4_2, 
             0, 
             triangle, 
-            (QMesh.COMPONENTS_PER_VERTEX + QMesh.COMPONENTS_PER_UV) * 1,
+            VERTEX_1_OFFSET,
             3
         );
         System.arraycopy(
             __ipv_vert4_3, 
             0, 
             triangle, 
-            (QMesh.COMPONENTS_PER_VERTEX + QMesh.COMPONENTS_PER_UV) * 2,
+            VERTEX_2_OFFSET,
             3
         );
 
     }
 
-    private static int __ict_cliptriCount  = 0;
+    private static void findPlaneIntersectPointDestructiveNoAlloc(
+        float x1, float y1, float z1,
+        float x2, float y2, float z2,
+        float[] outBuff
+    ) {
+
+        float rcpDeltaZ = 1.0f / (z2 - z1);
+        float xzSlope = (x2 - x1) * rcpDeltaZ;
+        float yzSlope = (y2 - y1) * rcpDeltaZ;
+
+        outBuff[0] = x1 + xzSlope * (drawClipNear - z1);
+        outBuff[1] = y1 + yzSlope * (drawClipNear - z1);
+        outBuff[2] = drawClipNear;
+
+    }
+
+    private static int       __ict_clipCase       = CLIP_CASE_NONE;
+    private static boolean[] __ict_clipStates     = { false, false, false };
+    private static int[]     __ict_behindVertNums = { 0, 0, 0 };
     private static float[] __ict_cliptri_1 = new float[QMesh.COMPONENTS_PER_BAKED_DATA];
     private static float[] __ict_cliptri_2 = new float[QMesh.COMPONENTS_PER_BAKED_DATA];
     private static void internalClipTriangle(float[] triangle) {
+
+        // refer to:
+        // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_cliptri.c
+
+        int vertBehindCount = 0;
+        if (triangle[VERTEX_0_OFFSET + OFFSET_Z] < drawClipNear) {
+            __ict_behindVertNums[vertBehindCount] = 0;
+            vertBehindCount += 1;
+            __ict_clipStates[0] = true;
+        }
+        if (triangle[VERTEX_1_OFFSET + OFFSET_Z] < drawClipNear) {
+            __ict_behindVertNums[vertBehindCount] = 1;
+            vertBehindCount += 1;
+            __ict_clipStates[1] = true;
+        }
+        if (triangle[VERTEX_2_OFFSET + OFFSET_Z] < drawClipNear) {
+            __ict_behindVertNums[vertBehindCount] = 2;
+            vertBehindCount += 1;
+            __ict_clipStates[2] = true;
+        }
+
+        // triangle is behind, cull it!
+        if (vertBehindCount == 3) {
+            __ict_clipCase = CLIP_CASE_CULL;
+            return;
+        }
 
         
 
@@ -219,6 +277,27 @@ public final class QDraw {
             );
 
             internalProcessVerticies(triangle);
+            internalClipTriangle(triangle);
+
+            if (__ict_clipCase == CLIP_CASE_CULL)
+                continue;
+
+            switch (__ict_clipCase) {
+                case CLIP_CASE_NONE:
+                    
+                    break;
+
+                case CLIP_CASE_1TRI:
+
+                    break;
+
+                case CLIP_CASE_2TRI:
+
+                    break;
+            
+                default:
+                    break;
+            }
 
         }
         
