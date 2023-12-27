@@ -37,7 +37,6 @@ public final class QDraw {
     }
 
     /////////////////////////////////////////////////////////////////
-    // PUBLIC DRAW SETTING METHODS
     public static void setClearColor(QColor color) {
         drawClearColor.set(color);
     }
@@ -54,10 +53,6 @@ public final class QDraw {
         drawTarget = target;
     }
 
-
-
-    /////////////////////////////////////////////////////////////////
-    // PUBLIC MATRIX METHODS
     public static void matrixIdentity( ) {
         matrixStack[matrixStackPointer].set(QMatrix4x4.identity);
     }
@@ -122,4 +117,12 @@ public final class QDraw {
             );
         }
     }
+
+    /////////////////////////////////////////////////////////////////
+    // DRAW METHOD AND INTERNALS
+
+    public static void draw(QMesh mesh) {
+        
+    }
+    
 }
