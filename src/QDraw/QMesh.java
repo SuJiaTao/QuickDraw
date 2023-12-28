@@ -9,17 +9,22 @@ import QDraw.QException.PointOfError;
 public final class QMesh {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
-    public  static final int COMPONENTS_PER_VERTEX     = 3;
-    public  static final int COMPONENTS_PER_UV         = 2;
-    private static final int VERTICIES_PER_TRI         = 3;
-    private static final int COMPONENTS_PER_ATTRIBUTE  = 2;
-    private static final int COMPONENTS_PER_TRI_DATA   = 
-        VERTICIES_PER_TRI * COMPONENTS_PER_ATTRIBUTE;
-    private static final int TRI_DATA_VERTEX_OFFSET    = 0;
-    private static final int TRI_DATA_UV_OFFSET        = 1;
-    private static final int FACE_DATA_MIN_ATTRIBUTES  = 3;
-    public  static final int COMPONENTS_PER_BAKED_DATA =
-        (COMPONENTS_PER_VERTEX + COMPONENTS_PER_UV) * VERTICIES_PER_TRI;
+    public  static final int COMPONENTS_PER_VERTEX = 3;
+    public  static final int COMPONENTS_PER_UV     = 2;
+
+    private static final int COMPONENTS_PER_ATTRIBUTE     = 2;
+    private static final int MIN_ATTRIBUTES_PER_FACE_DATA = 3;
+    private static final int ATTRIBUTE_VERTEX_OFFSET      = 0;
+    private static final int ATTRIBUTE_UV_OFFSET          = 1;
+
+    private static final int VERTICIES_PER_TRI       = 3;    
+    private static final int COMPONENTS_PER_TRI_DATA = VERTICIES_PER_TRI * COMPONENTS_PER_ATTRIBUTE;
+    public static final int TRI_DATA_VERTEX_0_OFFSET = 0;
+    public static final int TRI_DATA_VERTEX_1_OFFSET = 2;
+    public static final int TRI_DATA_VERTEX_2_OFFSET = 4;
+    public static final int TRI_DATA_UV_0_OFFSET     = 1;
+    public static final int TRI_DATA_UV_1_OFFSET     = 3;
+    public static final int TRI_DATA_UV_2_OFFSET     = 5;
 
     private static final float[] UNIT_PLANE_VERTEX_DATA = {
         -1.0f, -1.0f, 0.0f,
@@ -68,11 +73,11 @@ public final class QMesh {
             }
 
             int attributeCount = faceDataLength / 2;
-            if (attributeCount < FACE_DATA_MIN_ATTRIBUTES) {
+            if (attributeCount < MIN_ATTRIBUTES_PER_FACE_DATA) {
                 throw new QException(
                     PointOfError.MalformedData,
                     "inFaceData elements must have at least " +
-                    FACE_DATA_MIN_ATTRIBUTES + " attributes per face. " +
+                    MIN_ATTRIBUTES_PER_FACE_DATA + " attributes per face. " +
                     "face index " + faceIndex + " had " + attributeCount
                 );
             }
@@ -84,60 +89,66 @@ public final class QMesh {
 
         int[] triData = new int[triCount * COMPONENTS_PER_TRI_DATA];
 
-        int triIndex = 0;
+        int triDataWriteOffset = 0;
         for (int faceIndex = 0; faceIndex < inFaceData.length; faceIndex++) {
             
-            int[] faceData          = inFaceData[faceIndex];
-            final int extraTriCount = Math.max(0, (faceData.length / 2) - 3);
+            int[] faceData     = inFaceData[faceIndex];
+            int extraVertCount = Math.max(0, (faceData.length / 2) - 3);
 
             // 1 element of triData can always be built from a face
             System.arraycopy(
                 faceData, 
                 0, 
                 triData, 
-                triIndex, 
+                triDataWriteOffset, 
                 COMPONENTS_PER_TRI_DATA
             );
             
-            triIndex += COMPONENTS_PER_TRI_DATA;
+            triDataWriteOffset += COMPONENTS_PER_TRI_DATA;
 
-            // the next elements are tesselated as a triangle fan
-            for (int extraTriIndex = 0; extraTriIndex < extraTriCount; extraTriIndex++) {
+            // build extra triangles, one for each extra vertex
+            // tesselation is in triangle fan configuration
+            for (int extraVert = 0; extraVert < extraVertCount; extraVert++) {
 
-                // vertex0 -> first vertex
-                triData[triIndex + 0] = 
-                    faceData[COMPONENTS_PER_TRI_DATA 
-                    + TRI_DATA_VERTEX_OFFSET];
-                triData[triIndex + 1] = 
-                    faceData[COMPONENTS_PER_TRI_DATA 
-                    + TRI_DATA_UV_OFFSET];
+                // VERTEX/UV 0
+                // same as first vertex in face
+                triData[
+                    triDataWriteOffset +
+                    TRI_DATA_VERTEX_0_OFFSET
+                ] =
+                faceData[
+                    COMPONENTS_PER_ATTRIBUTE * 0 +
+                    ATTRIBUTE_VERTEX_OFFSET
+                ];
+                triData[
+                    triDataWriteOffset +
+                    TRI_DATA_UV_0_OFFSET
+                ] =
+                faceData[
+                    COMPONENTS_PER_ATTRIBUTE * 0 +
+                    ATTRIBUTE_UV_OFFSET
+                ];
 
-                // vertex1 -> last vertex in original triangle
-                triData[triIndex + 2] = 
-                    faceData[COMPONENTS_PER_TRI_DATA 
-                    + COMPONENTS_PER_ATTRIBUTE * 1
-                    + extraTriIndex 
-                    + TRI_DATA_VERTEX_OFFSET];
-                triData[triIndex + 3] = 
-                    faceData[COMPONENTS_PER_TRI_DATA 
-                    + COMPONENTS_PER_ATTRIBUTE * 1
-                    + extraTriIndex 
-                    + TRI_DATA_UV_OFFSET];
-
-                // vertex2 -> 1 + last original vertex + current triangle offset
-                triData[triIndex + 4] = 
-                    faceData[COMPONENTS_PER_TRI_DATA 
-                    + COMPONENTS_PER_ATTRIBUTE * 2
-                    + extraTriIndex 
-                    + TRI_DATA_VERTEX_OFFSET];
-                triData[triIndex + 5] = 
-                    faceData[COMPONENTS_PER_TRI_DATA 
-                    + COMPONENTS_PER_ATTRIBUTE * 2
-                    + extraTriIndex 
-                    + TRI_DATA_UV_OFFSET];
-
-                triIndex += COMPONENTS_PER_TRI_DATA;
+                // VERTEX/UV 1
+                // 
+                triData[
+                    triDataWriteOffset +
+                    TRI_DATA_VERTEX_1_OFFSET
+                ] =
+                faceData[
+                    COMPONENTS_PER_ATTRIBUTE * 1 +
+                    ATTRIBUTE_VERTEX_OFFSET
+                ];
+                triData[
+                    triDataWriteOffset +
+                    TRI_DATA_UV_1_OFFSET
+                ] =
+                faceData[
+                    COMPONENTS_PER_ATTRIBUTE * 1 +
+                    ATTRIBUTE_UV_OFFSET
+                ];
             }
+
 
         }
 
