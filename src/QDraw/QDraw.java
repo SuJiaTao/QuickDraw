@@ -19,6 +19,10 @@ public final class QDraw {
     public static final int TEXTURE_SAMPLE_TYPE_REPEAT        = 2;
     public static final int DEFAULT_TEXTURE_SAMPLE_TYPE       = TEXTURE_SAMPLE_TYPE_REPEAT;
 
+    private static final int TRIDATA_COMPLETE_OFFSET_X = 0;
+    private static final int TRIDATA_COMPLETE_OFFSET_Y = 1;
+    private static final int TRIDATA_COMPLETE_OFFSET_Z = 2;
+
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
     private static QColor        drawClearColor  = new QColor();
@@ -87,6 +91,32 @@ public final class QDraw {
             inUVData[inTriData[triDataReadOffset + QMesh.TRI_DATA_UV_2_OFFSET]];
 
         return triDataComplete;
+
+    }
+
+    private static float[] internalFindClipPoint(
+        int vertexI,
+        int vertexF,
+        float[] inTriDataComplete
+    ) {
+
+        float xI = inTriDataComplete[QMesh.COMPONENTS_PER_ATTRIBUTE * vertexI + TRIDATA_COMPLETE_OFFSET_X];
+        float yI = inTriDataComplete[QMesh.COMPONENTS_PER_ATTRIBUTE * vertexI + TRIDATA_COMPLETE_OFFSET_Y];
+        float zI = inTriDataComplete[QMesh.COMPONENTS_PER_ATTRIBUTE * vertexI + TRIDATA_COMPLETE_OFFSET_Z];
+
+        float xF = inTriDataComplete[QMesh.COMPONENTS_PER_ATTRIBUTE * vertexF + TRIDATA_COMPLETE_OFFSET_X];
+        float yF = inTriDataComplete[QMesh.COMPONENTS_PER_ATTRIBUTE * vertexF + TRIDATA_COMPLETE_OFFSET_Y];
+        float zF = inTriDataComplete[QMesh.COMPONENTS_PER_ATTRIBUTE * vertexF + TRIDATA_COMPLETE_OFFSET_Z];
+
+        float deltaZ = zF - zI;
+        float slopeXZ = (xF - xI) / deltaZ;
+        float slopeYZ = (yF - yI) / deltaZ;
+
+        return new float[] {
+            xI + slopeXZ * (drawClipNear - zI),
+            yI + slopeYZ * (drawClipNear - zI),
+            drawClipNear
+        };
 
     }
 
