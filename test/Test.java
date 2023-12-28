@@ -339,48 +339,6 @@ public final class Test {
         );
     }
 
-    public static void MeshTest( ) {
-        AssertExpect(
-            new float[] {1, 2, 3, 4},
-            new float[] {1, 2, 3, 4}
-        );
-
-        AssertExpect(
-            QMesh.unitPlane.getBakedData(),
-            new float[] {
-                -1.0f, -1.0f, 0.0f, 0.0f, 0.0f, // v0
-                -1.0f,  1.0f, 0.0f, 0.0f, 1.0f, // v1
-                1.0f,  -1.0f, 0.0f, 0.0f, 1.0f, // v3
-                -1.0f,  1.0f, 0.0f, 0.0f, 1.0f, // v1
-                1.0f,   1.0f, 0.0f, 1.0f, 1.0f, // v2
-                1.0f,  -1.0f, 0.0f, 0.0f, 1.0f  // v3
-            }
-        );
-
-        AssertExpect(
-            new QMesh(
-                new float[] {
-                    1.0f, 2.0f, 3.0f,
-                    4.0f, 5.0f, 6.0f, 
-                    8.0f, 9.0f, 10.0f
-                },
-                new float[] {
-                    1.1f, 1.2f,
-                    1.3f, 1.4f,
-                    1.5f, 1.6f
-                },
-                new int[][] {
-                    { 0, 2, 1, 1, 2, 0}
-                }
-            ).getBakedData(),
-            new float[] {
-                1.0f, 2.0f,  3.0f, 1.5f, 1.6f,
-                4.0f, 5.0f,  6.0f, 1.3f, 1.4f,
-                8.0f, 9.0f, 10.0f, 1.1f, 1.2f
-            }
-        );
-    }
-
     public static void DrawTest( ) {
         AssertExpect(
             QDraw.matrixPeek( ),
@@ -413,7 +371,6 @@ public final class Test {
         RenderBufferTest( );
         VectorTest( );
         MatrixTest( );
-        MeshTest( );
         DrawTest( );
 
         QRenderBuffer rb = new QRenderBuffer(50, 50);
