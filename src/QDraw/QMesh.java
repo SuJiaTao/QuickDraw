@@ -82,6 +82,33 @@ public final class QMesh {
                 );
             }
 
+            // check for bad index value
+            for (int faceReadOffset = 0; faceReadOffset < faceDataLength; faceReadOffset += COMPONENTS_PER_ATTRIBUTE) {
+
+                int[] faceData = inFaceData[faceIndex];
+                int vertexIndex = faceData[faceReadOffset + ATTRIBUTE_VERTEX_OFFSET];
+                int uvIndex     = faceData[faceReadOffset + ATTRIBUTE_UV_OFFSET];
+
+                if (vertexIndex < 0 || vertexIndex > vertexData.length) {
+                    throw new QException(
+                        PointOfError.MalformedData,
+                        "faceData contained invalid vertex index. " +
+                        "valid index range is 0 to " + vertexData.length + "but found " +
+                        "index value of " + vertexIndex
+                    );
+                }
+
+                if (uvIndex < 0 || uvIndex > uvData.length) {
+                    throw new QException(
+                        PointOfError.MalformedData,
+                        "faceData contained invalid uv index. " +
+                        "valid index range is 0 to " + uvData.length + "but found " +
+                        "index value of " + uvIndex
+                    );
+                }
+
+            }
+
             // 1 triangle per face + 1 extra tri for each new vert over 3
             triCount += 1 + (attributeCount - VERTICIES_PER_TRI); 
 
@@ -100,10 +127,12 @@ public final class QMesh {
                 faceData[COMPONENTS_PER_ATTRIBUTE * 0 + ATTRIBUTE_VERTEX_OFFSET];
             triData[TRI_DATA_UV_0_OFFSET] =
                 faceData[COMPONENTS_PER_ATTRIBUTE * 0 + ATTRIBUTE_UV_OFFSET];
+                
             triData[TRI_DATA_VERTEX_1_OFFSET] =
                 faceData[COMPONENTS_PER_ATTRIBUTE * 1 + ATTRIBUTE_VERTEX_OFFSET];
             triData[TRI_DATA_UV_1_OFFSET] =
                 faceData[COMPONENTS_PER_ATTRIBUTE * 1 + ATTRIBUTE_UV_OFFSET];
+
             triData[TRI_DATA_VERTEX_2_OFFSET] =
                 faceData[COMPONENTS_PER_ATTRIBUTE * 2 + ATTRIBUTE_VERTEX_OFFSET];
             triData[TRI_DATA_UV_2_OFFSET] =

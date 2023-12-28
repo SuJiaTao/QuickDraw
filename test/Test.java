@@ -371,6 +371,39 @@ public final class Test {
             QMesh.unitPlane.getTriData( ),
             new int[] { 0, 0, 1, 1, 2, 2, 0, 0, 2, 2, 3, 3 } 
         );
+
+        AssertExpect(
+            new QMesh(
+                new float[] {
+                    1.0f, 2.0f, 3.0f,
+                    4.0f, 5.0f, 6.0f,
+                    7.0f, 8.0f, 9.0f,
+                    1.0f, 2.0f, 3.0f,
+                    4.0f, 5.0f, 6.0f,
+                    7.0f, 8.0f, 9.0f,
+                },
+                new float[] {
+                    1.0f, 2.0f,
+                    4.0f, 5.0f,
+                    7.0f, 8.0f,
+                    1.0f, 2.0f,
+                    4.0f, 5.0f,
+                    7.0f, 8.0f,
+                },
+                new int[][] {
+                    { 0, 0, 1, 1, 2, 2, 3, 3 },
+                    { 0, 1, 1, 0, 2, 3 },
+                    { 3, 3, 4, 4, 2, 2, 5, 5, 0, 0 }
+                }
+            ).getTriData(), 
+            new int[] {
+                0, 0, 1, 1, 2, 2,
+                0, 0, 2, 2, 3, 3,
+                0, 1, 1, 0, 2, 3,
+                3, 3, 4, 4, 2, 2,
+                3, 3, 2, 2, 5, 5,
+                3, 3, 5, 5, 0, 0
+            });
     }
 
     public static void main(String[] args) {
