@@ -123,19 +123,19 @@ public final class QMesh {
             int extraVertCount = Math.max(0, (faceData.length / 2) - 3);
 
             // 1 element of triData can always be built from a face
-            triData[TRI_DATA_VERTEX_0_OFFSET] =
+            triData[triDataWriteOffset + TRI_DATA_VERTEX_0_OFFSET] =
                 faceData[COMPONENTS_PER_ATTRIBUTE * 0 + ATTRIBUTE_VERTEX_OFFSET];
-            triData[TRI_DATA_UV_0_OFFSET] =
+            triData[triDataWriteOffset + TRI_DATA_UV_0_OFFSET] =
                 faceData[COMPONENTS_PER_ATTRIBUTE * 0 + ATTRIBUTE_UV_OFFSET];
-                
-            triData[TRI_DATA_VERTEX_1_OFFSET] =
+
+            triData[triDataWriteOffset + TRI_DATA_VERTEX_1_OFFSET] =
                 faceData[COMPONENTS_PER_ATTRIBUTE * 1 + ATTRIBUTE_VERTEX_OFFSET];
-            triData[TRI_DATA_UV_1_OFFSET] =
+            triData[triDataWriteOffset + TRI_DATA_UV_1_OFFSET] =
                 faceData[COMPONENTS_PER_ATTRIBUTE * 1 + ATTRIBUTE_UV_OFFSET];
 
-            triData[TRI_DATA_VERTEX_2_OFFSET] =
+            triData[triDataWriteOffset + TRI_DATA_VERTEX_2_OFFSET] =
                 faceData[COMPONENTS_PER_ATTRIBUTE * 2 + ATTRIBUTE_VERTEX_OFFSET];
-            triData[TRI_DATA_UV_2_OFFSET] =
+            triData[triDataWriteOffset + TRI_DATA_UV_2_OFFSET] =
                 faceData[COMPONENTS_PER_ATTRIBUTE * 2 + ATTRIBUTE_UV_OFFSET];
             
             triDataWriteOffset += COMPONENTS_PER_TRI_DATA;
