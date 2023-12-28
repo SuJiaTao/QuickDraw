@@ -37,6 +37,38 @@ public final class QDraw {
     }
 
     /////////////////////////////////////////////////////////////////
+    // PRIVATE METHODS
+    private static void internalProcessMeshVerts(float[] inOutVerts) {
+
+        for (int readOffset = 0; readOffset < inOutVerts.length; readOffset += QMesh.COMPONENTS_PER_VERTEX) {
+
+            // TODO: optimize to reduce allocations
+            QVector4 vert = new QVector4(
+                inOutVerts[readOffset + 0], 
+                inOutVerts[readOffset + 1], 
+                inOutVerts[readOffset + 2]
+            );
+
+            vert = QMatrix4x4.multiply4(matrixPeek( ), vert);
+
+            inOutVerts[readOffset + 0] = vert.getX();
+            inOutVerts[readOffset + 1] = vert.getY();
+            inOutVerts[readOffset + 2] = vert.getZ();
+
+        }
+
+    }
+
+    private static float[][] internalClipVerts(float[] inVerts) {
+        // TODO: complete function
+
+        
+
+        return null;
+
+    }
+
+    /////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
     public static void setClearColor(QColor color) {
         drawClearColor.set(color);
@@ -117,6 +149,11 @@ public final class QDraw {
                 "matrix stack underflow"
             );
         }
+    }
+
+    // TODO: complete
+    public static void draw(QMesh mesh) {
+
     }
 
 }
