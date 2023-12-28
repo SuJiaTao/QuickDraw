@@ -366,11 +366,19 @@ public final class Test {
         );
     }
 
+    public static void MeshTest( ) {
+        AssertExpect(
+            QMesh.unitPlane.getTriData( ),
+            new int[] { 0, 0, 1, 1, 2, 2, 0, 0, 2, 2, 3, 3 } 
+        );
+    }
+
     public static void main(String[] args) {
         ColorTest( );
         RenderBufferTest( );
         VectorTest( );
         MatrixTest( );
+        MeshTest( );
         DrawTest( );
 
         QRenderBuffer rb = new QRenderBuffer(50, 50);

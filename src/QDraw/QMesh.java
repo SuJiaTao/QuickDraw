@@ -39,8 +39,7 @@ public final class QMesh {
         0.0f, 1.0f
     };
     private static final int[][] UNIT_PLANE_FACE_DATA = {
-        { 0, 0, 1, 1, 3, 3},
-        { 1, 1, 2, 2, 3, 3}
+        { 0, 0, 1, 1, 2, 2, 3, 3 }
     };
 
     public static final QMesh unitPlane = new QMesh(
@@ -63,6 +62,7 @@ public final class QMesh {
         for (int faceIndex = 0; faceIndex < inFaceData.length; faceIndex++) {
             
             int faceDataLength = inFaceData[faceIndex].length;
+
             if ((faceDataLength % COMPONENTS_PER_ATTRIBUTE) != 0) {
                 throw new QException(
                     PointOfError.MalformedData,
@@ -72,7 +72,7 @@ public final class QMesh {
                 );
             }
 
-            int attributeCount = faceDataLength / 2;
+            int attributeCount = faceDataLength / COMPONENTS_PER_ATTRIBUTE;
             if (attributeCount < MIN_ATTRIBUTES_PER_FACE_DATA) {
                 throw new QException(
                     PointOfError.MalformedData,
@@ -82,8 +82,8 @@ public final class QMesh {
                 );
             }
 
-            // 1 triangle per face + extra for each new vert
-            triCount += 1 + (3 - attributeCount); 
+            // 1 triangle per face + 1 extra tri for each new vert over 3
+            triCount += 1 + (attributeCount - VERTICIES_PER_TRI); 
 
         }
 
@@ -96,19 +96,24 @@ public final class QMesh {
             int extraVertCount = Math.max(0, (faceData.length / 2) - 3);
 
             // 1 element of triData can always be built from a face
-            System.arraycopy(
-                faceData, 
-                0, 
-                triData, 
-                triDataWriteOffset, 
-                COMPONENTS_PER_TRI_DATA
-            );
+            triData[TRI_DATA_VERTEX_0_OFFSET] =
+                faceData[COMPONENTS_PER_ATTRIBUTE * 0 + ATTRIBUTE_VERTEX_OFFSET];
+            triData[TRI_DATA_UV_0_OFFSET] =
+                faceData[COMPONENTS_PER_ATTRIBUTE * 0 + ATTRIBUTE_UV_OFFSET];
+            triData[TRI_DATA_VERTEX_1_OFFSET] =
+                faceData[COMPONENTS_PER_ATTRIBUTE * 1 + ATTRIBUTE_VERTEX_OFFSET];
+            triData[TRI_DATA_UV_1_OFFSET] =
+                faceData[COMPONENTS_PER_ATTRIBUTE * 1 + ATTRIBUTE_UV_OFFSET];
+            triData[TRI_DATA_VERTEX_2_OFFSET] =
+                faceData[COMPONENTS_PER_ATTRIBUTE * 2 + ATTRIBUTE_VERTEX_OFFSET];
+            triData[TRI_DATA_UV_2_OFFSET] =
+                faceData[COMPONENTS_PER_ATTRIBUTE * 2 + ATTRIBUTE_UV_OFFSET];
             
             triDataWriteOffset += COMPONENTS_PER_TRI_DATA;
 
             // build extra triangles, one for each extra vertex
             // tesselation is in triangle fan configuration
-            for (int extraVert = 0; extraVert < extraVertCount; extraVert++) {
+            for (int nthExtra = 0; nthExtra < extraVertCount; nthExtra++) {
 
                 // VERTEX/UV 0
                 // same as first vertex in face
@@ -130,13 +135,15 @@ public final class QMesh {
                 ];
 
                 // VERTEX/UV 1
-                // 
+                // (2 + n)th vertex (zero indexed)
+                // where n is the current extra vertex index starting from 0
                 triData[
                     triDataWriteOffset +
                     TRI_DATA_VERTEX_1_OFFSET
                 ] =
                 faceData[
-                    COMPONENTS_PER_ATTRIBUTE * 1 +
+                    COMPONENTS_PER_ATTRIBUTE * 2 +
+                    COMPONENTS_PER_ATTRIBUTE * nthExtra +
                     ATTRIBUTE_VERTEX_OFFSET
                 ];
                 triData[
@@ -144,13 +151,38 @@ public final class QMesh {
                     TRI_DATA_UV_1_OFFSET
                 ] =
                 faceData[
-                    COMPONENTS_PER_ATTRIBUTE * 1 +
+                    COMPONENTS_PER_ATTRIBUTE * 2 +
+                    COMPONENTS_PER_ATTRIBUTE * nthExtra +
                     ATTRIBUTE_UV_OFFSET
                 ];
-            }
 
+                // VERTEX/UV 2
+                // (2 + n + 1)th vertex (zero indexed)
+                // where n is the current extra vertex index starting from 0
+                triData[
+                    triDataWriteOffset +
+                    TRI_DATA_VERTEX_2_OFFSET
+                ] =
+                faceData[
+                    COMPONENTS_PER_ATTRIBUTE * 3 +
+                    COMPONENTS_PER_ATTRIBUTE * nthExtra +
+                    ATTRIBUTE_VERTEX_OFFSET
+                ];
+                triData[
+                    triDataWriteOffset +
+                    TRI_DATA_UV_2_OFFSET
+                ] =
+                faceData[
+                    COMPONENTS_PER_ATTRIBUTE * 3 +
+                    COMPONENTS_PER_ATTRIBUTE * nthExtra +
+                    ATTRIBUTE_UV_OFFSET
+                ];
 
-        }
+                triDataWriteOffset += COMPONENTS_PER_TRI_DATA;
+
+            } // END BUILD EXTRA TRIANGLES
+
+        } // END LOOP FACES
 
         return triData;
     }
