@@ -9,16 +9,16 @@ import QDraw.QException.PointOfError;
 public final class QMesh {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
-    public  static final int COMPONENTS_PER_VERTEX = 3;
-    public  static final int COMPONENTS_PER_UV     = 2;
+    public static final int COMPONENTS_PER_VERTEX = 3;
+    public static final int COMPONENTS_PER_UV     = 2;
 
-    private static final int COMPONENTS_PER_ATTRIBUTE     = 2;
-    private static final int MIN_ATTRIBUTES_PER_FACE_DATA = 3;
-    private static final int ATTRIBUTE_VERTEX_OFFSET      = 0;
-    private static final int ATTRIBUTE_UV_OFFSET          = 1;
+    public static final int COMPONENTS_PER_ATTRIBUTE     = 2;
+    public static final int MIN_ATTRIBUTES_PER_FACE_DATA = 3;
+    public static final int ATTRIBUTE_VERTEX_OFFSET      = 0;
+    public static final int ATTRIBUTE_UV_OFFSET          = 1;
 
-    private static final int VERTICIES_PER_TRI       = 3;    
-    private static final int COMPONENTS_PER_TRI_DATA = VERTICIES_PER_TRI * COMPONENTS_PER_ATTRIBUTE;
+    public static final int VERTICIES_PER_TRI        = 3;    
+    public static final int COMPONENTS_PER_TRI_DATA  = VERTICIES_PER_TRI * COMPONENTS_PER_ATTRIBUTE;
     public static final int TRI_DATA_VERTEX_0_OFFSET = 0;
     public static final int TRI_DATA_VERTEX_1_OFFSET = 2;
     public static final int TRI_DATA_VERTEX_2_OFFSET = 4;
