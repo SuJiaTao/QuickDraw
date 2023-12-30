@@ -6,22 +6,14 @@ package QDraw;
 
 import QDraw.QException.PointOfError;
 
-public final class QColor {
+public final class QColor extends QEncoding {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
-    private static final int LEFTSHIFT_OFFSET_A = 24;
-    private static final int LEFTSHIFT_OFFSET_R = 16;
-    private static final int LEFTSHIFT_OFFSET_G = 8;
-    private static final int LEFTSHIFT_OFFSET_B = 0;
-    private static final int BITMASK_COLOR      = 0x000000FF;
-    private static final int BITMASK_A          = BITMASK_COLOR << LEFTSHIFT_OFFSET_A;
-    private static final int BITMASK_R          = BITMASK_COLOR << LEFTSHIFT_OFFSET_R;
-    private static final int BITMASK_G          = BITMASK_COLOR << LEFTSHIFT_OFFSET_G;
-    private static final int BITMASK_B          = BITMASK_COLOR << LEFTSHIFT_OFFSET_B;
-    
-    public static final QColor red   = new QColor(0xFF, 0x00, 0x00);
-    public static final QColor green = new QColor(0x00, 0xFF, 0x00);
-    public static final QColor blue  = new QColor(0x00, 0x00, 0xFF);
+    public static final QColor Black = new QColor(0x00, 0x00, 0x00);
+    public static final QColor White = new QColor(0xFF, 0xFF, 0xFF);
+    public static final QColor Red   = new QColor(0xFF, 0x00, 0x00);
+    public static final QColor Green = new QColor(0x00, 0xFF, 0x00);
+    public static final QColor Blue  = new QColor(0x00, 0x00, 0xFF);
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
@@ -44,20 +36,20 @@ public final class QColor {
         int channelMask;
         switch (c) {
             case A:
-                channelOffset = LEFTSHIFT_OFFSET_A;
-                channelMask   = BITMASK_A;
+                channelOffset = COL_LSHIFT_OFST_A;
+                channelMask   = COL_BMASK_A;
                 break;
             case R:
-                channelOffset = LEFTSHIFT_OFFSET_R;
-                channelMask   = BITMASK_R;
+                channelOffset = COL_LSHIFT_OFST_R;
+                channelMask   = COL_BMASK_R;
                 break;
             case G:
-                channelOffset = LEFTSHIFT_OFFSET_G;
-                channelMask   = BITMASK_G;
+                channelOffset = COL_LSHIFT_OFST_G;
+                channelMask   = COL_BMASK_G;
                 break;
             case B:
-                channelOffset = LEFTSHIFT_OFFSET_B;
-                channelMask   = BITMASK_B;
+                channelOffset = COL_LSHIFT_OFST_B;
+                channelMask   = COL_BMASK_B;
                 break;
             default:
                 throw new QException(PointOfError.BadState, "bad switch state");
@@ -71,26 +63,26 @@ public final class QColor {
         int channelMask;
         switch (c) {
             case A:
-                channelOffset = LEFTSHIFT_OFFSET_A;
-                channelMask   = BITMASK_A;
+                channelOffset = COL_LSHIFT_OFST_A;
+                channelMask   = COL_BMASK_A;
                 break;
             case R:
-                channelOffset = LEFTSHIFT_OFFSET_R;
-                channelMask   = BITMASK_R;
+                channelOffset = COL_LSHIFT_OFST_R;
+                channelMask   = COL_BMASK_R;
                 break;
             case G:
-                channelOffset = LEFTSHIFT_OFFSET_G;
-                channelMask   = BITMASK_G;
+                channelOffset = COL_LSHIFT_OFST_G;
+                channelMask   = COL_BMASK_G;
                 break;
             case B:
-                channelOffset = LEFTSHIFT_OFFSET_B;
-                channelMask   = BITMASK_B;
+                channelOffset = COL_LSHIFT_OFST_B;
+                channelMask   = COL_BMASK_B;
                 break;
             default:
                 throw new QException(PointOfError.BadState, "bad switch state");
         }
 
-        val &= BITMASK_COLOR;
+        val &= COL_CHNL_BMASK;
         colorData = (colorData & ~(channelMask)) | (val << channelOffset);
 
         return this;
@@ -112,11 +104,6 @@ public final class QColor {
     public QColor set(QColor toCopy) {
         this.colorData = toCopy.colorData;
         return this;
-    }
-
-    public static QColor blend(QColor bottom, QColor top) {
-        // TODO: decide whether to implement color blending
-        return bottom;
     }
     
     /////////////////////////////////////////////////////////////////

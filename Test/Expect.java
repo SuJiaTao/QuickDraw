@@ -462,7 +462,7 @@ public final class Expect {
 
         QRenderBuffer rb = new QRenderBuffer(50, 50);
         QWindow window   = new QWindow("testwin", 500, 500);
-        rb.getColorData()[rb.coordToDataIndex(5, 5)] = QColor.red.toInt();
+        rb.getColorData()[rb.coordToDataIndex(5, 5)] = QColor.Red.toInt();
 
         window.setRenderBuffer(rb);
 
