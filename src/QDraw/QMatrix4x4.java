@@ -16,7 +16,7 @@ public final class QMatrix4x4 extends QEncoding {
         0.0f, 0.0f, 0.0f, 1.0f
     };
 
-    public static final QMatrix4x4 identity = new QMatrix4x4(COMPONENTS_IDENTITY);
+    public static final QMatrix4x4 Identity = new QMatrix4x4(COMPONENTS_IDENTITY);
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS

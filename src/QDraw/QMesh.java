@@ -25,7 +25,7 @@ public final class QMesh extends QEncoding {
         { 0, 0, 1, 1, 2, 2, 3, 3 }
     };
 
-    public static final QMesh unitPlane = new QMesh(
+    public static final QMesh UnitPlane = new QMesh(
         UNIT_PLANE_VERTEX_DATA, 
         UNIT_PLANE_UV_DATA, 
         UNIT_PLANE_FACE_DATA
@@ -130,7 +130,7 @@ public final class QMesh extends QEncoding {
             // tesselation is in triangle fan configuration
             for (int nthExtra = 0; nthExtra < extraVertCount; nthExtra++) {
 
-                // VERTEX/UV 0
+                // POSN/UV 0
                 // same as first vertex in face
                 triData[
                     triDataWriteOffset +
@@ -149,7 +149,7 @@ public final class QMesh extends QEncoding {
                     MESH_ATRS_OFST_UV
                 ];
 
-                // VERTEX/UV 1
+                // POSN/UV 1
                 // (2 + n)th vertex (zero indexed)
                 // where n is the current extra vertex index starting from 0
                 triData[
@@ -171,7 +171,7 @@ public final class QMesh extends QEncoding {
                     MESH_ATRS_OFST_UV
                 ];
 
-                // VERTEX/UV 2
+                // POSN/UV 2
                 // (2 + n + 1)th vertex (zero indexed)
                 // where n is the current extra vertex index starting from 0
                 triData[

@@ -20,16 +20,16 @@ public final class QVector4 extends QEncoding {
     private static final float[] COMPONENTS_ZW0  = {0.0f, 0.0f, 1.0f, 0.0f};
     private static final float[] COMPONENTS_W    = {0.0f, 0.0f, 0.0f, 1.0f};
     
-    public static final QVector4 zero4 = new QVector4(COMPONENTS_0000);
-    public static final QVector4 zero3 = new QVector4(COMPONENTS_0001);
-    public static final QVector4 one   = new QVector4(COMPONENTS_1111);
-    public static final QVector4 x3    = new QVector4(COMPONENTS_XW1);
-    public static final QVector4 x4    = new QVector4(COMPONENTS_XW0);
-    public static final QVector4 y3    = new QVector4(COMPONENTS_YW1);
-    public static final QVector4 y4    = new QVector4(COMPONENTS_YW0);
-    public static final QVector4 z3    = new QVector4(COMPONENTS_ZW1);
-    public static final QVector4 z4    = new QVector4(COMPONENTS_ZW0);
-    public static final QVector4 w     = new QVector4(COMPONENTS_W);
+    public static final QVector4 Zero4 = new QVector4(COMPONENTS_0000);
+    public static final QVector4 Zero3 = new QVector4(COMPONENTS_0001);
+    public static final QVector4 One   = new QVector4(COMPONENTS_1111);
+    public static final QVector4 X3    = new QVector4(COMPONENTS_XW1);
+    public static final QVector4 X4    = new QVector4(COMPONENTS_XW0);
+    public static final QVector4 Y3    = new QVector4(COMPONENTS_YW1);
+    public static final QVector4 Y4    = new QVector4(COMPONENTS_YW0);
+    public static final QVector4 Z3    = new QVector4(COMPONENTS_ZW1);
+    public static final QVector4 Z4    = new QVector4(COMPONENTS_ZW0);
+    public static final QVector4 W     = new QVector4(COMPONENTS_W);
     
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
