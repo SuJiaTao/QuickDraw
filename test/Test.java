@@ -341,7 +341,7 @@ public final class Test {
 
     public static void MeshTest( ) {
         AssertExpect(
-            QMesh.unitPlane.getTriData( ),
+            QMesh.unitPlane.getTriDataIndicies( ),
             new int[] { 0, 0, 1, 1, 2, 2, 0, 0, 2, 2, 3, 3 } 
         );
 
@@ -388,7 +388,7 @@ public final class Test {
                     { 0, 1, 1, 0, 2, 3 },
                     { 3, 3, 4, 4, 2, 2, 5, 5, 0, 0 }
                 }
-            ).getTriData(), 
+            ).getTriDataIndicies(), 
             new int[] {
                 0, 0, 1, 1, 2, 2,
                 0, 0, 2, 2, 3, 3,

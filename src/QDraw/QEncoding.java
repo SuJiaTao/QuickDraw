@@ -9,14 +9,30 @@ public class QEncoding {
     // COMMON ABBREVIATIONS:
     // ATRB -> attribute
     // CMPS -> components
+    // OFST -> offset
     // POSN -> position
     // MTR  -> matrix
     // NUM  -> number (of)
+    // TDI  -> triDataIndicies
     // VCTR -> vector
     // VERT -> vertex
 
     /////////////////////////////////////////////////////////////////
+    // DATA COMMENT INTERPRETATIONS:
+    // | x y z |            is array of exactly n elements
+    // < x y z >            is contiguous logical grouping of elements in array
+    // ( x y z )            is 3 important related class members
+    // | x y z ... |        is array of arbitrary number of elements
+    // | < x y z > ... |    is array of arbitrary number of groupings
+    // | | x1 y1 z1 | ... | is arbitrary length array of arrays
+    // : Type               is of Type
+    // : Type[]             is array of Type
+
+    /////////////////////////////////////////////////////////////////
     // QVECTOR ENCODINGS
+    // QVector is
+    // | x y z w | : float[]
+    // size 4 array of floats representing a 4-component vector
     protected static final int   VCTR_INDEX_X         = 0;
     protected static final int   VCTR_INDEX_Y         = 1;
     protected static final int   VCTR_INDEX_Z         = 2;
@@ -26,6 +42,12 @@ public class QEncoding {
 
     /////////////////////////////////////////////////////////////////
     // QMATRIX4x4 ENCODINGS
+    // QMatrix4x4 is
+    // | <x1 y1 z1 w1>
+    //   <x2 y2 z2 w2>
+    //   <x3 y3 z3 w3>
+    //   <x4 y4 z4 w4> | : float[]
+    // size 16 float array representing a 4x4 matrix
     protected static final int   MTR_NUM_ROWS    = VCTR_NUM_CMPS;
     protected static final int   MTR_NUM_COLUMNS = VCTR_NUM_CMPS;
     protected static final int   MTR_NUM_CMPS    = MTR_NUM_ROWS * MTR_NUM_COLUMNS;
@@ -33,27 +55,40 @@ public class QEncoding {
 
     /////////////////////////////////////////////////////////////////
     // QMESH ENCODINGS
-    public static final int COMPONENTS_PER_VERTEX = 3;
-    public static final int VERTEX_X_OFFSET       = 0;
-    public static final int VERTEX_Y_OFFSET       = 1;
-    public static final int VERTEX_Z_OFFSET       = 2;
+    // QMesh is
+    //   (posData, uvData, triDataIndicies)
+    // posData is
+    //   | <x1 y1 z1> <x2 y2 z2> ... | : float[]
+    //   groups of 3-space positions for each vertex
+    // uvData is
+    //   | <u1 v1> <u2 v2> ... | : float[]
+    //   groups of 2-space UV coordinates for each vertex
+    // triDataIndicies is
+    //   | <<p0 uv0> <p1 uv1> <p2 uv2>> ... | : int[]
+    //   groups of indicies into posData and uvData for each triangle
+    //   group <p uv> is an "attribute"
+    //   each indicie will point to first element in each grouping
+    public static final int MESH_POSN_NUM_CMPS = 3;
+    public static final int MESH_POSN_OFST_X   = 0;
+    public static final int MESH_POSN_OFST_Y   = 1;
+    public static final int MESH_POSN_OFST_Z   = 2;
 
-    public static final int COMPONENTS_PER_UV = 2;
-    public static final int UV_U_OFFSET       = 0;
-    public static final int UV_V_OFFSET       = 1;
+    public static final int MESH_UV_NUM_CMPS = 2;
+    public static final int MESH_UV_OFST_U   = 0;
+    public static final int MESH_UV_OFST_V   = 1;
 
-    public static final int COMPONENTS_PER_ATTRIBUTE     = 2;
-    public static final int MIN_ATTRIBUTES_PER_FACE_DATA = 3;
-    public static final int ATTRIBUTE_VERTEX_OFFSET      = 0;
-    public static final int ATTRIBUTE_UV_OFFSET          = 1;
+    public static final int MESH_ATRB_NUM_CMPS  = 2;
+    public static final int MESH_FACE_MIN_ATRBS = 3;
+    public static final int MESH_ATRS_OFST_POS  = 0;
+    public static final int MESH_ATRS_OFST_UV   = 1;
 
-    public static final int VERTICIES_PER_TRI        = 3;    
-    public static final int COMPONENTS_PER_TRI_DATA  = VERTICIES_PER_TRI * COMPONENTS_PER_ATTRIBUTE;
-    public static final int TRI_DATA_VERTEX_0_OFFSET = 0;
-    public static final int TRI_DATA_VERTEX_1_OFFSET = 2;
-    public static final int TRI_DATA_VERTEX_2_OFFSET = 4;
-    public static final int TRI_DATA_UV_0_OFFSET     = 1;
-    public static final int TRI_DATA_UV_1_OFFSET     = 3;
-    public static final int TRI_DATA_UV_2_OFFSET     = 5;
+    public static final int MESH_VERTS_PER_TRI = 3;    
+    public static final int MESH_TDI_NUM_CMPS  = MESH_VERTS_PER_TRI * MESH_ATRB_NUM_CMPS;
+    public static final int MESH_TDI_OFST_POS0 = 0;
+    public static final int MESH_TDI_OFST_POS1 = 2;
+    public static final int MESH_TDI_OFST_POS2 = 4;
+    public static final int MESH_TDI_OFST_UV0  = 1;
+    public static final int MESH_TDI_OFST_UV1  = 3;
+    public static final int MESH_TDI_OFST_UV2  = 5;
 
 }

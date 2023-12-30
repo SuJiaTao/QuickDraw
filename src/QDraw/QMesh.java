@@ -33,9 +33,12 @@ public final class QMesh extends QEncoding {
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
-    private float[] vertexData;  // PACKING | x y z | ...
-    private float[] uvData;      // PACKING | u v | ...
-    private int[]   triData;     // PACKING | vi1 uvi1 vi2 uvi2 vi3 uvi3 | ...
+    private float[] posData;
+    private int     posCount;
+    private float[] uvData;
+    private int     uvCount;
+    private int[]   triDataIndicies;
+    private int     triCount;
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE METHODS
@@ -46,34 +49,34 @@ public final class QMesh extends QEncoding {
             
             int faceDataLength = inFaceData[faceIndex].length;
 
-            if ((faceDataLength % COMPONENTS_PER_ATTRIBUTE) != 0) {
+            if ((faceDataLength % MESH_ATRB_NUM_CMPS) != 0) {
                 throw new QException(
                     PointOfError.MalformedData,
                     "inFaceData elements length must be multiple of " +
-                    COMPONENTS_PER_ATTRIBUTE + 
+                    MESH_ATRB_NUM_CMPS + 
                     ". face index " + faceIndex + " had " + faceDataLength
                 );
             }
 
-            int attributeCount = faceDataLength / COMPONENTS_PER_ATTRIBUTE;
-            if (attributeCount < MIN_ATTRIBUTES_PER_FACE_DATA) {
+            int attributeCount = faceDataLength / MESH_ATRB_NUM_CMPS;
+            if (attributeCount < MESH_FACE_MIN_ATRBS) {
                 throw new QException(
                     PointOfError.MalformedData,
                     "inFaceData elements must have at least " +
-                    MIN_ATTRIBUTES_PER_FACE_DATA + " attributes per face. " +
+                    MESH_FACE_MIN_ATRBS + " attributes per face. " +
                     "face index " + faceIndex + " had " + attributeCount
                 );
             }
 
             // check for bad index value
-            for (int faceReadOffset = 0; faceReadOffset < faceDataLength; faceReadOffset += COMPONENTS_PER_ATTRIBUTE) {
+            for (int faceReadOffset = 0; faceReadOffset < faceDataLength; faceReadOffset += MESH_ATRB_NUM_CMPS) {
 
                 int[] faceData = inFaceData[faceIndex];
-                int vertexIndex = faceData[faceReadOffset + ATTRIBUTE_VERTEX_OFFSET];
-                int uvIndex     = faceData[faceReadOffset + ATTRIBUTE_UV_OFFSET];
+                int vertexIndex = faceData[faceReadOffset + MESH_ATRS_OFST_POS];
+                int uvIndex     = faceData[faceReadOffset + MESH_ATRS_OFST_UV];
                 
-                final int vertexDataMaxIndex = vertexData.length / COMPONENTS_PER_VERTEX;
-                final int uvDataMaxIndex     = uvData.length / COMPONENTS_PER_UV;
+                final int vertexDataMaxIndex = posData.length / MESH_POSN_NUM_CMPS;
+                final int uvDataMaxIndex     = uvData.length / MESH_UV_NUM_CMPS;
 
                 if (vertexIndex < 0 || vertexIndex > vertexDataMaxIndex) {
                     throw new QException(
@@ -96,11 +99,11 @@ public final class QMesh extends QEncoding {
             }
 
             // 1 triangle per face + 1 extra tri for each new vert over 3
-            triCount += 1 + (attributeCount - VERTICIES_PER_TRI); 
+            triCount += 1 + (attributeCount - MESH_VERTS_PER_TRI); 
 
         }
 
-        int[] triData = new int[triCount * COMPONENTS_PER_TRI_DATA];
+        int[] triData = new int[triCount * MESH_TDI_NUM_CMPS];
 
         int triDataWriteOffset = 0;
         for (int faceIndex = 0; faceIndex < inFaceData.length; faceIndex++) {
@@ -109,22 +112,22 @@ public final class QMesh extends QEncoding {
             int extraVertCount = Math.max(0, (faceData.length / 2) - 3);
 
             // 1 element of triData can always be built from a face
-            triData[triDataWriteOffset + TRI_DATA_VERTEX_0_OFFSET] =
-                faceData[COMPONENTS_PER_ATTRIBUTE * 0 + ATTRIBUTE_VERTEX_OFFSET];
-            triData[triDataWriteOffset + TRI_DATA_UV_0_OFFSET] =
-                faceData[COMPONENTS_PER_ATTRIBUTE * 0 + ATTRIBUTE_UV_OFFSET];
+            triData[triDataWriteOffset + MESH_TDI_OFST_POS0] =
+                faceData[MESH_ATRB_NUM_CMPS * 0 + MESH_ATRS_OFST_POS];
+            triData[triDataWriteOffset + MESH_TDI_OFST_UV0] =
+                faceData[MESH_ATRB_NUM_CMPS * 0 + MESH_ATRS_OFST_UV];
 
-            triData[triDataWriteOffset + TRI_DATA_VERTEX_1_OFFSET] =
-                faceData[COMPONENTS_PER_ATTRIBUTE * 1 + ATTRIBUTE_VERTEX_OFFSET];
-            triData[triDataWriteOffset + TRI_DATA_UV_1_OFFSET] =
-                faceData[COMPONENTS_PER_ATTRIBUTE * 1 + ATTRIBUTE_UV_OFFSET];
+            triData[triDataWriteOffset + MESH_TDI_OFST_POS1] =
+                faceData[MESH_ATRB_NUM_CMPS * 1 + MESH_ATRS_OFST_POS];
+            triData[triDataWriteOffset + MESH_TDI_OFST_UV1] =
+                faceData[MESH_ATRB_NUM_CMPS * 1 + MESH_ATRS_OFST_UV];
 
-            triData[triDataWriteOffset + TRI_DATA_VERTEX_2_OFFSET] =
-                faceData[COMPONENTS_PER_ATTRIBUTE * 2 + ATTRIBUTE_VERTEX_OFFSET];
-            triData[triDataWriteOffset + TRI_DATA_UV_2_OFFSET] =
-                faceData[COMPONENTS_PER_ATTRIBUTE * 2 + ATTRIBUTE_UV_OFFSET];
+            triData[triDataWriteOffset + MESH_TDI_OFST_POS2] =
+                faceData[MESH_ATRB_NUM_CMPS * 2 + MESH_ATRS_OFST_POS];
+            triData[triDataWriteOffset + MESH_TDI_OFST_UV2] =
+                faceData[MESH_ATRB_NUM_CMPS * 2 + MESH_ATRS_OFST_UV];
             
-            triDataWriteOffset += COMPONENTS_PER_TRI_DATA;
+            triDataWriteOffset += MESH_TDI_NUM_CMPS;
 
             // build extra triangles, one for each extra vertex
             // tesselation is in triangle fan configuration
@@ -134,19 +137,19 @@ public final class QMesh extends QEncoding {
                 // same as first vertex in face
                 triData[
                     triDataWriteOffset +
-                    TRI_DATA_VERTEX_0_OFFSET
+                    MESH_TDI_OFST_POS0
                 ] =
                 faceData[
-                    COMPONENTS_PER_ATTRIBUTE * 0 +
-                    ATTRIBUTE_VERTEX_OFFSET
+                    MESH_ATRB_NUM_CMPS * 0 +
+                    MESH_ATRS_OFST_POS
                 ];
                 triData[
                     triDataWriteOffset +
-                    TRI_DATA_UV_0_OFFSET
+                    MESH_TDI_OFST_UV0
                 ] =
                 faceData[
-                    COMPONENTS_PER_ATTRIBUTE * 0 +
-                    ATTRIBUTE_UV_OFFSET
+                    MESH_ATRB_NUM_CMPS * 0 +
+                    MESH_ATRS_OFST_UV
                 ];
 
                 // VERTEX/UV 1
@@ -154,21 +157,21 @@ public final class QMesh extends QEncoding {
                 // where n is the current extra vertex index starting from 0
                 triData[
                     triDataWriteOffset +
-                    TRI_DATA_VERTEX_1_OFFSET
+                    MESH_TDI_OFST_POS1
                 ] =
                 faceData[
-                    COMPONENTS_PER_ATTRIBUTE * 2 +
-                    COMPONENTS_PER_ATTRIBUTE * nthExtra +
-                    ATTRIBUTE_VERTEX_OFFSET
+                    MESH_ATRB_NUM_CMPS * 2 +
+                    MESH_ATRB_NUM_CMPS * nthExtra +
+                    MESH_ATRS_OFST_POS
                 ];
                 triData[
                     triDataWriteOffset +
-                    TRI_DATA_UV_1_OFFSET
+                    MESH_TDI_OFST_UV1
                 ] =
                 faceData[
-                    COMPONENTS_PER_ATTRIBUTE * 2 +
-                    COMPONENTS_PER_ATTRIBUTE * nthExtra +
-                    ATTRIBUTE_UV_OFFSET
+                    MESH_ATRB_NUM_CMPS * 2 +
+                    MESH_ATRB_NUM_CMPS * nthExtra +
+                    MESH_ATRS_OFST_UV
                 ];
 
                 // VERTEX/UV 2
@@ -176,24 +179,24 @@ public final class QMesh extends QEncoding {
                 // where n is the current extra vertex index starting from 0
                 triData[
                     triDataWriteOffset +
-                    TRI_DATA_VERTEX_2_OFFSET
+                    MESH_TDI_OFST_POS2
                 ] =
                 faceData[
-                    COMPONENTS_PER_ATTRIBUTE * 3 +
-                    COMPONENTS_PER_ATTRIBUTE * nthExtra +
-                    ATTRIBUTE_VERTEX_OFFSET
+                    MESH_ATRB_NUM_CMPS * 3 +
+                    MESH_ATRB_NUM_CMPS * nthExtra +
+                    MESH_ATRS_OFST_POS
                 ];
                 triData[
                     triDataWriteOffset +
-                    TRI_DATA_UV_2_OFFSET
+                    MESH_TDI_OFST_UV2
                 ] =
                 faceData[
-                    COMPONENTS_PER_ATTRIBUTE * 3 +
-                    COMPONENTS_PER_ATTRIBUTE * nthExtra +
-                    ATTRIBUTE_UV_OFFSET
+                    MESH_ATRB_NUM_CMPS * 3 +
+                    MESH_ATRB_NUM_CMPS * nthExtra +
+                    MESH_ATRS_OFST_UV
                 ];
 
-                triDataWriteOffset += COMPONENTS_PER_TRI_DATA;
+                triDataWriteOffset += MESH_TDI_NUM_CMPS;
 
             } // END BUILD EXTRA TRIANGLES
 
@@ -208,57 +211,57 @@ public final class QMesh extends QEncoding {
         int[][] inFaceData // | ( v1 uv1 v2 uv2 ...) |
         ) {
 
-            if ((inVerts.length % COMPONENTS_PER_VERTEX) != 0) {
+            if ((inVerts.length % MESH_POSN_NUM_CMPS) != 0) {
                 throw new QException(
                     PointOfError.MalformedData,
-                    "inVerts length must be multiple of " + COMPONENTS_PER_VERTEX + " . " +
+                    "inVerts length must be multiple of " + MESH_POSN_NUM_CMPS + " . " +
                     "given was length " + inVerts.length
                 );
             }
 
-            if ((inUVs.length % COMPONENTS_PER_UV) != 0) {
+            if ((inUVs.length % MESH_UV_NUM_CMPS) != 0) {
                 throw new QException(
                     PointOfError.MalformedData,
-                    "inUVs length must be multiple of " + COMPONENTS_PER_UV + " . " +
+                    "inUVs length must be multiple of " + MESH_UV_NUM_CMPS + " . " +
                     "given was length " + inUVs.length
                 );
             }
 
-            vertexData = new float[inVerts.length];
-            System.arraycopy(inVerts, 0, vertexData, 0, vertexData.length);
+            posData = new float[inVerts.length];
+            System.arraycopy(inVerts, 0, posData, 0, posData.length);
 
             uvData = new float[inUVs.length];
             System.arraycopy(inUVs, 0, uvData, 0, uvData.length);
 
-            triData = generateTriData(inFaceData);
+            triDataIndicies = generateTriData(inFaceData);
     }
 
     /////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
-    public float[] getVertexData( ) {
-        return vertexData;
+    public float[] getPosData( ) {
+        return posData;
     }
     
     public float[] getUVData( ) {
         return uvData;
     }
 
-    public int[] getTriData( ) {
-        return triData;
+    public int[] getTriDataIndicies( ) {
+        return triDataIndicies;
     }
 
     public float[] getVertex(int index) {
         return new float[] { 
-            vertexData[index * COMPONENTS_PER_VERTEX + VERTEX_X_OFFSET],
-            vertexData[index * COMPONENTS_PER_VERTEX + VERTEX_Y_OFFSET],
-            vertexData[index * COMPONENTS_PER_VERTEX + VERTEX_Z_OFFSET]
+            posData[index * MESH_POSN_NUM_CMPS + MESH_POSN_OFST_X],
+            posData[index * MESH_POSN_NUM_CMPS + MESH_POSN_OFST_Y],
+            posData[index * MESH_POSN_NUM_CMPS + MESH_POSN_OFST_Z]
         };
     }
 
     public float[] getUV(int index) {
         return new float[] { 
-            uvData[index * COMPONENTS_PER_UV + UV_U_OFFSET],
-            uvData[index * COMPONENTS_PER_UV + UV_V_OFFSET],
+            uvData[index * MESH_UV_NUM_CMPS + MESH_UV_OFST_U],
+            uvData[index * MESH_UV_NUM_CMPS + MESH_UV_OFST_V],
         };
     }
 
