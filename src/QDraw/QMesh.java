@@ -42,17 +42,16 @@ public final class QMesh extends QEncoding {
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE METHODS
-    private int[] generateTriData(int[][] inFaceData) {
+    private int[] generateTriData(int[][] inFaceIndicies) {
         
-        int triCount = 0;
-        for (int faceIndex = 0; faceIndex < inFaceData.length; faceIndex++) {
+        for (int faceIndex = 0; faceIndex < inFaceIndicies.length; faceIndex++) {
             
-            int faceDataLength = inFaceData[faceIndex].length;
+            int faceDataLength = inFaceIndicies[faceIndex].length;
 
             if ((faceDataLength % MESH_ATRB_NUM_CMPS) != 0) {
                 throw new QException(
                     PointOfError.MalformedData,
-                    "inFaceData elements length must be multiple of " +
+                    "inFaceIndicies elements length must be multiple of " +
                     MESH_ATRB_NUM_CMPS + 
                     ". face index " + faceIndex + " had " + faceDataLength
                 );
@@ -62,7 +61,7 @@ public final class QMesh extends QEncoding {
             if (attributeCount < MESH_FACE_MIN_ATRBS) {
                 throw new QException(
                     PointOfError.MalformedData,
-                    "inFaceData elements must have at least " +
+                    "inFaceIndicies elements must have at least " +
                     MESH_FACE_MIN_ATRBS + " attributes per face. " +
                     "face index " + faceIndex + " had " + attributeCount
                 );
@@ -71,27 +70,24 @@ public final class QMesh extends QEncoding {
             // check for bad index value
             for (int faceReadOffset = 0; faceReadOffset < faceDataLength; faceReadOffset += MESH_ATRB_NUM_CMPS) {
 
-                int[] faceData = inFaceData[faceIndex];
+                int[] faceData = inFaceIndicies[faceIndex];
                 int vertexIndex = faceData[faceReadOffset + MESH_ATRS_OFST_POS];
                 int uvIndex     = faceData[faceReadOffset + MESH_ATRS_OFST_UV];
-                
-                final int vertexDataMaxIndex = posData.length / MESH_POSN_NUM_CMPS;
-                final int uvDataMaxIndex     = uvData.length / MESH_UV_NUM_CMPS;
 
-                if (vertexIndex < 0 || vertexIndex > vertexDataMaxIndex) {
+                if (vertexIndex < 0 || vertexIndex > posCount) {
                     throw new QException(
                         PointOfError.MalformedData,
-                        "faceData contained invalid vertex index. " +
-                        "valid index range is 0 to " + vertexDataMaxIndex + "but found " +
+                        "inFaceIndicies contained invalid vertex index. " +
+                        "valid index range is 0 to " + posCount + "but found " +
                         "index value of " + vertexIndex
                     );
                 }
 
-                if (uvIndex < 0 || uvIndex > uvDataMaxIndex) {
+                if (uvIndex < 0 || uvIndex > uvCount) {
                     throw new QException(
                         PointOfError.MalformedData,
-                        "faceData contained invalid uv index. " +
-                        "valid index range is 0 to " + uvDataMaxIndex + "but found " +
+                        "inFaceIndicies contained invalid uv index. " +
+                        "valid index range is 0 to " + uvCount + "but found " +
                         "index value of " + uvIndex
                     );
                 }
@@ -106,9 +102,9 @@ public final class QMesh extends QEncoding {
         int[] triData = new int[triCount * MESH_TDI_NUM_CMPS];
 
         int triDataWriteOffset = 0;
-        for (int faceIndex = 0; faceIndex < inFaceData.length; faceIndex++) {
+        for (int faceIndex = 0; faceIndex < inFaceIndicies.length; faceIndex++) {
             
-            int[] faceData     = inFaceData[faceIndex];
+            int[] faceData     = inFaceIndicies[faceIndex];
             int extraVertCount = Math.max(0, (faceData.length / 2) - 3);
 
             // 1 element of triData can always be built from a face
@@ -206,34 +202,37 @@ public final class QMesh extends QEncoding {
     }
 
     private void initMesh(
-        float[] inVerts,   // | x y z |
-        float[] inUVs,     // | u v |
-        int[][] inFaceData // | ( v1 uv1 v2 uv2 ...) |
+        float[] inPosns,
+        float[] inUVs,
+        int[][] inFaceIndicies
         ) {
 
-            if ((inVerts.length % MESH_POSN_NUM_CMPS) != 0) {
-                throw new QException(
-                    PointOfError.MalformedData,
-                    "inVerts length must be multiple of " + MESH_POSN_NUM_CMPS + " . " +
-                    "given was length " + inVerts.length
-                );
-            }
+        if ((inPosns.length % MESH_POSN_NUM_CMPS) != 0) {
+            throw new QException(
+                PointOfError.MalformedData,
+                "inPosns length must be multiple of " + MESH_POSN_NUM_CMPS + " . " +
+                "given was length " + inPosns.length
+            );
+        }
 
-            if ((inUVs.length % MESH_UV_NUM_CMPS) != 0) {
-                throw new QException(
-                    PointOfError.MalformedData,
-                    "inUVs length must be multiple of " + MESH_UV_NUM_CMPS + " . " +
-                    "given was length " + inUVs.length
-                );
-            }
+        if ((inUVs.length % MESH_UV_NUM_CMPS) != 0) {
+            throw new QException(
+                PointOfError.MalformedData,
+                "inUVs length must be multiple of " + MESH_UV_NUM_CMPS + " . " +
+                "given was length " + inUVs.length
+            );
+        }
 
-            posData = new float[inVerts.length];
-            System.arraycopy(inVerts, 0, posData, 0, posData.length);
+        posData  = new float[inPosns.length];
+        System.arraycopy(inPosns, 0, posData, 0, posData.length);
+        posCount = posData.length / MESH_POSN_NUM_CMPS;
 
-            uvData = new float[inUVs.length];
-            System.arraycopy(inUVs, 0, uvData, 0, uvData.length);
+        uvData  = new float[inUVs.length];
+        System.arraycopy(inUVs, 0, uvData, 0, uvData.length);
+        uvCount = uvData.length / MESH_UV_NUM_CMPS;
 
-            triDataIndicies = generateTriData(inFaceData);
+        triDataIndicies = generateTriData(inFaceIndicies);
+
     }
 
     /////////////////////////////////////////////////////////////////
@@ -241,16 +240,28 @@ public final class QMesh extends QEncoding {
     public float[] getPosData( ) {
         return posData;
     }
+
+    public int getPosCount( ) {
+        return posCount;
+    }
     
     public float[] getUVData( ) {
         return uvData;
+    }
+
+    public int getUVCount( ) {
+        return uvCount;
     }
 
     public int[] getTriDataIndicies( ) {
         return triDataIndicies;
     }
 
-    public float[] getVertex(int index) {
+    public int getTriCount( ) {
+        return triCount;
+    }
+
+    public float[] getPos(int index) {
         return new float[] { 
             posData[index * MESH_POSN_NUM_CMPS + MESH_POSN_OFST_X],
             posData[index * MESH_POSN_NUM_CMPS + MESH_POSN_OFST_Y],
@@ -267,12 +278,23 @@ public final class QMesh extends QEncoding {
 
     /////////////////////////////////////////////////////////////////
     // CONSTRUCTORS
+    // inPosn is:
+    //   | <x y z> ... | : float[]
+    //   array of contigugous 3 space vertex positions
+    // inUVs is:
+    //   | <u v> ... | : float[]
+    //   array of contiguous 2 space UV coordinates
+    // inFaceData is:
+    //   | | <p0 uv0> <p1 uv1> <p2 uv2> ... | ... | : int[][]
+    //   array of faceData attributes
+    //   faceData attributes is an array of at least 3 attributes
+    //   attributes are a pair indicies into inPosn and inUVs
     public QMesh(
-        float[] inVerts,   // | x y z |
-        float[] inUVs,     // | u v |
-        int[][] inFaceData // | ( v1 uv1 v2 uv2 ...) |
+        float[] inPosns,
+        float[] inUVs,
+        int[][] inFaceIndicies
         ) {
-            initMesh(inVerts, inUVs, inFaceData);
+            initMesh(inPosns, inUVs, inFaceIndicies);
     }
 
 }

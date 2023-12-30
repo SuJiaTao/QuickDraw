@@ -346,12 +346,12 @@ public final class Test {
         );
 
         AssertExpect(
-            QMesh.unitPlane.getVertex(0), 
+            QMesh.unitPlane.getPos(0), 
             new float[] { -1.0f, -1.0f, 0.0f }
         );
 
         AssertExpect(
-            QMesh.unitPlane.getVertex(1), 
+            QMesh.unitPlane.getPos(1), 
             new float[] { -1.0f, 1.0f, 0.0f }
         );
 
@@ -363,6 +363,21 @@ public final class Test {
         AssertExpect(
             QMesh.unitPlane.getUV(1), 
             new float[] { 0.0f, 1.0f }
+        );
+
+        AssertExpect(
+            QMesh.unitPlane.getPosCount(), 
+            4
+        );
+
+        AssertExpect(
+            QMesh.unitPlane.getUVCount(), 
+            4
+        );
+
+        AssertExpect(
+            QMesh.unitPlane.getTriCount(), 
+            2
         );
 
         AssertExpect(
