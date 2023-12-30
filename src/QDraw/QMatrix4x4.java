@@ -76,43 +76,15 @@ public final class QMatrix4x4 extends QEncoding {
         return components;
     }
 
-    private static float[] __m4dna_tempComponents  = { 0.0f, 0.0f, 0.0f, 0.0f };
-    public static void multiply4DestructiveNoAlloc(
-        QMatrix4x4 mat4x4, 
-        float[] vec
-    ) {
-        __m4dna_tempComponents[0] = 0.0f;
-        __m4dna_tempComponents[1] = 0.0f;
-        __m4dna_tempComponents[2] = 0.0f;
-        __m4dna_tempComponents[3] = 0.0f;
-
+    public static float[] multiply4(QMatrix4x4 mat4x4, float[] vec) {
+        float[] returnComponents = new float[VCTR_NUM_CMPS];
         for (int vCompIndex = 0; vCompIndex < VCTR_NUM_CMPS; vCompIndex++) {
             for (int columnIndex = 0; columnIndex < MTR_NUM_COLUMNS; columnIndex++) {
-                __m4dna_tempComponents[vCompIndex] +=
+                returnComponents[vCompIndex] +=
                     vec[columnIndex] * 
                     mat4x4.getValue(columnIndex, vCompIndex);
             }
         }
-
-        System.arraycopy(
-            __m4dna_tempComponents, 
-            0, 
-            vec, 
-            0, 
-            VCTR_NUM_CMPS
-        );
-    }
-
-    public static float[] multiply4(QMatrix4x4 mat4x4, float[] vec) {
-        float[] returnComponents = new float[VCTR_NUM_CMPS];
-        System.arraycopy(
-            vec, 
-            0, 
-            returnComponents, 
-            0,
-            VCTR_NUM_CMPS
-        );
-        multiply4DestructiveNoAlloc(mat4x4, returnComponents);
         return returnComponents;
     }
 
@@ -124,26 +96,8 @@ public final class QMatrix4x4 extends QEncoding {
         return multiply4(this, vec);
     }
 
-    private static float[] __m3dna_tempComponents = { 0.0f, 0.0f, 0.0f, 1.0f };
-    public static void multiply3DestructiveNoAlloc(QMatrix4x4 mat4x4, float[] vec3) {
-        __m3dna_tempComponents[0] = vec3[0];
-        __m3dna_tempComponents[1] = vec3[1];
-        __m3dna_tempComponents[2] = vec3[2];
-        __m3dna_tempComponents[3] = 1.0f;
-        multiply4DestructiveNoAlloc(mat4x4, __m3dna_tempComponents);
-        System.arraycopy(
-            __m3dna_tempComponents, 
-            0, 
-            vec3, 
-            0,
-            3
-        );
-    }
-
     public static float[] multiply3(QMatrix4x4 mat4x4, float[] vec3) {
-        float[] returnComponents = {vec3[0], vec3[1], vec3[2], 1.0f};
-        multiply3DestructiveNoAlloc(mat4x4, returnComponents);
-        return returnComponents;
+        return multiply4(mat4x4, new float[] { vec3[0], vec3[1], vec3[2], 1.0f });
     }
 
     public static QVector4 multiply3(QMatrix4x4 mat4x4, QVector4 vec3) {
