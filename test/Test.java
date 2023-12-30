@@ -10,7 +10,7 @@ import QDraw.QColor.Channel;
 
 public final class Test {
 
-    private static void AssertExpect(int[] val, int[] expected) {
+    private static void Expect(int[] val, int[] expected) {
         if (!(Arrays.equals(val, expected))) {
                 throw new QException(
                     PointOfError.BadState,
@@ -21,7 +21,7 @@ public final class Test {
             }
     }
     
-    private static void AssertExpect(float[] val, float[] expected) {
+    private static void Expect(float[] val, float[] expected) {
         if (!(Arrays.equals(val, expected))) {
                 throw new QException(
                     PointOfError.BadState,
@@ -32,7 +32,7 @@ public final class Test {
             }
     }
 
-    private static void AssertExpect(Object[] val, Object[] expected) {
+    private static void Expect(Object[] val, Object[] expected) {
         if (!(Arrays.equals(val, expected))) {
                 throw new QException(
                     PointOfError.BadState,
@@ -43,7 +43,7 @@ public final class Test {
             }
     }
 
-    private static void AssertExpect(Object val, Object expected) {
+    private static void Expect(Object val, Object expected) {
         if (!(expected.equals(val) && val.equals(expected))) {
             throw new QException(
                 PointOfError.BadState,
@@ -55,19 +55,19 @@ public final class Test {
     }
 
     private static void ColorTest( ) {
-        AssertExpect(
+        Expect(
             new Integer(new QColor().toInt()), 
             new Integer(0)
         );
-        AssertExpect(
+        Expect(
             new Integer(new QColor(0x12, 0x34, 0x56).toInt()), 
             new Integer(0xFF123456)
         );
-        AssertExpect(
+        Expect(
             new Integer(new QColor(0x12, 0x34, 0x56, 0x78).toInt()), 
             new Integer(0x78123456)
         );
-        AssertExpect(
+        Expect(
             new Integer(
                 new QColor(0x12, 0x34, 0x56, 0x78)
                     .setChannel(0x00, Channel.A)
@@ -77,70 +77,70 @@ public final class Test {
     }
 
     private static void RenderBufferTest( ) {
-        AssertExpect(
+        Expect(
             new QRenderBuffer(5, 5).getBufferedImage() != null, 
             true
         );
-        AssertExpect(
+        Expect(
             new QRenderBuffer(5, 5).getColorData().length,
             5 * 5
         );
-        AssertExpect(
+        Expect(
             new QRenderBuffer(10, 5).getColorData().length,
             10 * 5
         );
-        AssertExpect(
+        Expect(
             new QRenderBuffer(5, 7).getColorData().length,
             5 * 7
         );
-        AssertExpect(
+        Expect(
             new QRenderBuffer(5, 5).getDepthData().length,
             5 * 5
         );
-        AssertExpect(
+        Expect(
             new QRenderBuffer(10, 5).getDepthData().length,
             10 * 5
         );
-        AssertExpect(
+        Expect(
             new QRenderBuffer(5, 7).getDepthData().length,
             5 * 7
         );
     }
 
     private static void VectorTest( ) {
-        AssertExpect(
+        Expect(
             new QVector4(new float[]{1.0f, 2.0f, 3.0f}),
             new QVector4(1.0f, 2.0f, 3.0f)
         );
-        AssertExpect(
+        Expect(
             new QVector4(new float[]{1.0f, 2.0f, 3.0f, 4.0f}),
             new QVector4(1.0f, 2.0f, 3.0f, 4.0f)
         );
-        AssertExpect(
+        Expect(
             new QVector4(5.0f, 5.0f, 5.0f).getW(),
             1.0f
         );
-        AssertExpect(
+        Expect(
             new QVector4(5.0f, 5.0f, 5.0f, 2.0f).getW(),
             2.0f
         );
-        AssertExpect(
+        Expect(
             new QVector4(1.0f, 2.0f, 3.0f, 4.0f).getX(),
             1.0f
         );
-        AssertExpect(
+        Expect(
             new QVector4(1.0f, 2.0f, 3.0f, 4.0f).getY(),
             2.0f
         );
-        AssertExpect(
+        Expect(
             new QVector4(1.0f, 2.0f, 3.0f, 4.0f).getZ(),
             3.0f
         );
-        AssertExpect(
+        Expect(
             new QVector4(1.0f, 2.0f, 3.0f, 4.0f).getW(),
             4.0f
         );
-        AssertExpect(
+        Expect(
             new QVector4(1.0f, 2.0f, 3.0f, 4.0f)
                 .add3(new QVector4(5.0f, 6.0f, 7.0f, 8.0f)),
             QVector4.add3(
@@ -148,7 +148,7 @@ public final class Test {
                 new QVector4(5.0f, 6.0f, 7.0f, 8.0f)
             )
         );
-        AssertExpect(
+        Expect(
             new QVector4(1.0f, 2.0f, 3.0f, 4.0f)
                 .add4(new QVector4(5.0f, 6.0f, 7.0f, 8.0f)),
             QVector4.add4(
@@ -156,7 +156,7 @@ public final class Test {
                 new QVector4(5.0f, 6.0f, 7.0f, 8.0f)
             )
         );
-        AssertExpect(
+        Expect(
             new QVector4(1.0f, 2.0f, 3.0f, 4.0f)
                 .multiply3(3.0f),
             QVector4.multiply3(
@@ -164,7 +164,7 @@ public final class Test {
                 3.0f
             )
         );
-        AssertExpect(
+        Expect(
             new QVector4(1.0f, 2.0f, 3.0f, 4.0f)
                 .multiply4(3.0f),
             QVector4.multiply4(
@@ -172,22 +172,22 @@ public final class Test {
                 3.0f
             )
         );
-        AssertExpect(
+        Expect(
             new QVector4(1.0f, 2.0f, 3.0f, 4.0f)
                 .setX(0.0f),
             new QVector4(0.0f, 2.0f, 3.0f, 4.0f)
         );
-        AssertExpect(
+        Expect(
             new QVector4(1.0f, 2.0f, 3.0f, 4.0f)
                 .setY(0.0f),
             new QVector4(1.0f, 0.0f, 3.0f, 4.0f)
         );
-        AssertExpect(
+        Expect(
             new QVector4(1.0f, 2.0f, 3.0f, 4.0f)
                 .setZ(0.0f),
             new QVector4(1.0f, 2.0f, 0.0f, 4.0f)
         );
-        AssertExpect(
+        Expect(
             new QVector4(1.0f, 2.0f, 3.0f, 4.0f)
                 .setW(0.0f),
             new QVector4(1.0f, 2.0f, 3.0f, 0.0f)
@@ -195,21 +195,21 @@ public final class Test {
     }
 
     public static void MatrixTest( ) {
-        AssertExpect(
+        Expect(
             QMatrix4x4.multiply3(
                 QMatrix4x4.identity, 
                 new QVector4(1.0f, 2.0f, 3.0f, 4.0f)
             ),
             new QVector4(1.0f, 2.0f, 3.0f, 1.0f)
         );
-        AssertExpect(
+        Expect(
             QMatrix4x4.multiply4(
                 QMatrix4x4.identity, 
                 new QVector4(1.0f, 2.0f, 3.0f, 4.0f)
             ),
             new QVector4(1.0f, 2.0f, 3.0f, 4.0f)
         );
-        AssertExpect(
+        Expect(
             QMatrix4x4.multiply4(
                 QMatrix4x4.identity, 
                 new QVector4(1.0f, 2.0f, 3.0f, 1.0f)
@@ -219,14 +219,14 @@ public final class Test {
                 new QVector4(1.0f, 2.0f, 3.0f, 1.0f)
             )
         );
-        AssertExpect(
+        Expect(
             QMatrix4x4.multiply4(
                 QMatrix4x4.translationMatrix(1.0f, 2.0f, 3.0f), 
                 new QVector4(1.0f, 2.0f, 3.0f, 1.0f)
             ),
             new QVector4(1.0f + 1.0f, 2.0f + 2.0f, 3.0f + 3.0f, 1.0f)
         );
-        AssertExpect(
+        Expect(
             QMatrix4x4.multiply4(
                 QMatrix4x4.translationMatrix(1.0f, 2.0f, 3.0f), 
                 new QVector4(1.0f, 2.0f, 3.0f, 2.0f)
@@ -238,7 +238,7 @@ public final class Test {
                 2.0f
             )
         );
-        AssertExpect(
+        Expect(
             QMatrix4x4.multiply3(
                 QMatrix4x4.translationMatrix(1.0f, 2.0f, 3.0f), 
                 new QVector4(1.0f, 2.0f, 3.0f, 2.0f)
@@ -250,7 +250,7 @@ public final class Test {
                 1.0f
             )
         );
-        AssertExpect(
+        Expect(
             QMatrix4x4.multiply4(
                 QMatrix4x4.scaleMatrix(2.0f, 3.0f, 4.0f), 
                 new QVector4(1.0f, 2.0f, 3.0f, 2.0f)
@@ -262,7 +262,7 @@ public final class Test {
                 2.0f
             )
         );
-        AssertExpect(
+        Expect(
             QMatrix4x4.multiply3(
                 QMatrix4x4.scaleMatrix(2.0f, 3.0f, 4.0f), 
                 new QVector4(1.0f, 2.0f, 3.0f, 2.0f)
@@ -274,7 +274,7 @@ public final class Test {
                 1.0f
             )
         );
-        AssertExpect(
+        Expect(
             QMatrix4x4.multiply4(
                 QMatrix4x4.rotationMatrix(90.0f, 0.0f, 0.0f), 
                 new QVector4(1.0f, 0.0f, 0.0f, 1.0f)
@@ -283,7 +283,7 @@ public final class Test {
                 1.0f, 0.0f, 0.0f, 1.0f
             )
         );
-        AssertExpect(
+        Expect(
             QMatrix4x4.multiply4(
                 QMatrix4x4.rotationMatrix(0.0f, 90.0f, 0.0f), 
                 new QVector4(0.0f, 1.0f, 0.0f, 1.0f)
@@ -292,7 +292,7 @@ public final class Test {
                 0.0f, 1.0f, 0.0f, 1.0f
             )
         );
-        AssertExpect(
+        Expect(
             QMatrix4x4.multiply4(
                 QMatrix4x4.rotationMatrix(0.0f, 0.0f, 90.0f), 
                 new QVector4(0.0f, 0.0f, 1.0f, 1.0f)
@@ -301,7 +301,7 @@ public final class Test {
                 0.0f, 0.0f, 1.0f, 1.0f
             )
         );
-        AssertExpect(
+        Expect(
             QMatrix4x4.multiply4(
                 QMatrix4x4.rotationMatrix(0.0f, 90.0f, 0.0f), 
                 new QVector4(1.0f, 0.0f, 0.0f, 1.0f)
@@ -310,7 +310,7 @@ public final class Test {
                 0.0f, 0.0f, 1.0f, 1.0f
             )
         );
-        AssertExpect(
+        Expect(
             QMatrix4x4.multiply4(
                 QMatrix4x4.rotationMatrix(0.0f, -90.0f, 0.0f), 
                 new QVector4(1.0f, 0.0f, 0.0f, 1.0f)
@@ -319,7 +319,7 @@ public final class Test {
                 0.0f, 0.0f, -1.0f, 1.0f
             )
         );
-        AssertExpect(
+        Expect(
             QMatrix4x4.multiply4(
                 QMatrix4x4.rotationMatrix(0.0f, 0.0f, 90.0f), 
                 new QVector4(1.0f, 0.0f, 0.0f, 1.0f)
@@ -328,7 +328,7 @@ public final class Test {
                 0.0f, -1.0f, 0.0f, 1.0f
             )
         );
-        AssertExpect(
+        Expect(
             QMatrix4x4.multiply4(
                 QMatrix4x4.rotationMatrix(0.0f, 0.0f, -90.0f), 
                 new QVector4(1.0f, 0.0f, 0.0f, 1.0f)
@@ -340,47 +340,87 @@ public final class Test {
     }
 
     public static void MeshTest( ) {
-        AssertExpect(
+        Expect(
             QMesh.unitPlane.getTriDataIndicies( ),
             new int[] { 0, 0, 1, 1, 2, 2, 0, 0, 2, 2, 3, 3 } 
         );
 
-        AssertExpect(
+        Expect(
             QMesh.unitPlane.getPos(0), 
             new float[] { -1.0f, -1.0f, 0.0f }
         );
 
-        AssertExpect(
+        Expect(
             QMesh.unitPlane.getPos(1), 
             new float[] { -1.0f, 1.0f, 0.0f }
         );
 
-        AssertExpect(
+        Expect(
             QMesh.unitPlane.getUV(0), 
             new float[] { 0.0f, 0.0f }
         );
 
-        AssertExpect(
+        Expect(
             QMesh.unitPlane.getUV(1), 
             new float[] { 0.0f, 1.0f }
         );
 
-        AssertExpect(
+        Expect(
             QMesh.unitPlane.getPosCount(), 
             4
         );
 
-        AssertExpect(
+        Expect(
             QMesh.unitPlane.getUVCount(), 
             4
         );
 
-        AssertExpect(
+        Expect(
             QMesh.unitPlane.getTriCount(), 
             2
         );
 
-        AssertExpect(
+        Expect(
+            QMesh.unitPlane.getTriPos(0, 0), 
+            new float[] { -1.0f, -1.0f, 0.0f }
+        );
+
+        Expect(
+            QMesh.unitPlane.getTriUV(0, 0), 
+            new float[] { 0.0f, 0.0f}
+        );
+
+        Expect(
+            QMesh.unitPlane.getTriPos(0, 1), 
+            new float[] { -1.0f, 1.0f, 0.0f }
+        );
+
+        Expect(
+            QMesh.unitPlane.getTriUV(0, 1), 
+            new float[] { 0.0f, 1.0f}
+        );
+
+        Expect(
+            QMesh.unitPlane.getTriPos(1, 0), 
+            new float[] { -1.0f, -1.0f, 0.0f }
+        );
+
+        Expect(
+            QMesh.unitPlane.getTriUV(1, 0), 
+            new float[] { 0.0f, 0.0f}
+        );
+
+        Expect(
+            QMesh.unitPlane.getTriPos(1, 1), 
+            new float[] { 1.0f, 1.0f, 0.0f }
+        );
+
+        Expect(
+            QMesh.unitPlane.getTriUV(1, 1), 
+            new float[] { 1.0f, 1.0f}
+        );
+
+        Expect(
             new QMesh(
                 new float[] {
                     1.0f, 2.0f, 3.0f,

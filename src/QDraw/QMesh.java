@@ -261,6 +261,26 @@ public final class QMesh extends QEncoding {
         return triCount;
     }
 
+    public float[] getTriPos(int triIndex, int triVertIndex) {
+        return getPos(
+            triDataIndicies[
+                (triIndex * MESH_TDI_NUM_CMPS) + 
+                (triVertIndex * MESH_ATRB_NUM_CMPS) +
+                MESH_ATRS_OFST_POS
+            ]
+        );
+    }
+
+    public float[] getTriUV(int triIndex, int triUVIndex) {
+        return getUV(
+            triDataIndicies[
+                (triIndex * MESH_TDI_NUM_CMPS) + 
+                (triUVIndex * MESH_ATRB_NUM_CMPS) +
+                MESH_ATRS_OFST_UV
+            ]
+        );
+    }
+
     public float[] getPos(int index) {
         return new float[] { 
             posData[index * MESH_POSN_NUM_CMPS + MESH_POSN_OFST_X],
@@ -277,7 +297,7 @@ public final class QMesh extends QEncoding {
     }
 
     /////////////////////////////////////////////////////////////////
-    // CONSTRUCTORS
+    // CONSTRUCTOR
     // inPosn is:
     //   | <x y z> ... | : float[]
     //   array of contigugous 3 space vertex positions
