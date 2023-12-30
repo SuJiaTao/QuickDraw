@@ -6,14 +6,9 @@ package QDraw;
 
 import QDraw.QException.PointOfError;
 
-public final class QMatrix4x4 {
+public final class QMatrix4x4 extends QEncoding {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
-    private static final int ROW_COUNT       = QVector4.COMPONENT_COUNT;
-    private static final int COLUMN_COUNT    = QVector4.COMPONENT_COUNT;
-    private static final int COMPONENT_COUNT = ROW_COUNT * COLUMN_COUNT;
-    private static final float TO_RADIANS    = (float)Math.PI / 180.0f;
-
     private static final float[] COMPONENTS_IDENTITY = {
         1.0f, 0.0f, 0.0f, 0.0f,
         0.0f, 1.0f, 0.0f, 0.0f,
@@ -25,23 +20,23 @@ public final class QMatrix4x4 {
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
-    private float[] components = new float[COMPONENT_COUNT];
+    private float[] components = new float[MTR_NUM_CMPS];
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE METHODS
     private static float sinf(float degrees) {
         // TODO: optimize!!
-        return (float)Math.sin(degrees * TO_RADIANS);
+        return (float)Math.sin(degrees * MTR_TO_RADIANS);
     }
 
     private static float cosf(float degrees) {
         // TODO: optimize!!
-        return (float)Math.cos(degrees * TO_RADIANS);
+        return (float)Math.cos(degrees * MTR_TO_RADIANS);
     }
 
     // quick reference: col -> x, row -> y
     private static int getComponentIndex(int col, int row) {
-        return col + (ROW_COUNT * row);
+        return col + (MTR_NUM_ROWS * row);
     }
 
     private float getValue(int col, int row) {
@@ -51,7 +46,7 @@ public final class QMatrix4x4 {
     /////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
     public void set(float[] vec) {
-        if (!(vec.length == COMPONENT_COUNT)) {
+        if (!(vec.length == MTR_NUM_CMPS)) {
             throw new QException(
                 PointOfError.InvalidData, 
                 "can only construct matrix4x4 with size 16 vector." +
@@ -63,7 +58,7 @@ public final class QMatrix4x4 {
             0, 
             components, 
             0, 
-            COMPONENT_COUNT
+            MTR_NUM_CMPS
         );
     }
 
@@ -73,7 +68,7 @@ public final class QMatrix4x4 {
             0, 
             components,
             0,
-            COMPONENT_COUNT
+            MTR_NUM_CMPS
         );
     }
 
@@ -91,8 +86,8 @@ public final class QMatrix4x4 {
         __m4dna_tempComponents[2] = 0.0f;
         __m4dna_tempComponents[3] = 0.0f;
 
-        for (int vCompIndex = 0; vCompIndex < QVector4.COMPONENT_COUNT; vCompIndex++) {
-            for (int columnIndex = 0; columnIndex < COLUMN_COUNT; columnIndex++) {
+        for (int vCompIndex = 0; vCompIndex < VCTR_NUM_CMPS; vCompIndex++) {
+            for (int columnIndex = 0; columnIndex < MTR_NUM_COLUMNS; columnIndex++) {
                 __m4dna_tempComponents[vCompIndex] +=
                     vec[columnIndex] * 
                     mat4x4.getValue(columnIndex, vCompIndex);
@@ -104,18 +99,18 @@ public final class QMatrix4x4 {
             0, 
             vec, 
             0, 
-            QVector4.COMPONENT_COUNT
+            VCTR_NUM_CMPS
         );
     }
 
     public static float[] multiply4(QMatrix4x4 mat4x4, float[] vec) {
-        float[] returnComponents = new float[QVector4.COMPONENT_COUNT];
+        float[] returnComponents = new float[VCTR_NUM_CMPS];
         System.arraycopy(
             vec, 
             0, 
             returnComponents, 
             0,
-            QVector4.COMPONENT_COUNT
+            VCTR_NUM_CMPS
         );
         multiply4DestructiveNoAlloc(mat4x4, returnComponents);
         return returnComponents;
@@ -161,10 +156,10 @@ public final class QMatrix4x4 {
 
     public static float[] multiply4x4(float[] m1, float[] m2) {
         // stolen from https://github.com/SuJiaTao/Caesium/blob/master/csm_matrix.c
-        float[] returnComponents = new float[COMPONENT_COUNT];
-        for (int i = 0; i < ROW_COUNT; i++) {
-            for (int j = 0; j < COLUMN_COUNT; j++) {
-                for (int k = 0; k < ROW_COUNT; k++) {
+        float[] returnComponents = new float[MTR_NUM_CMPS];
+        for (int i = 0; i < MTR_NUM_ROWS; i++) {
+            for (int j = 0; j < MTR_NUM_COLUMNS; j++) {
+                for (int k = 0; k < MTR_NUM_ROWS; k++) {
                     returnComponents[getComponentIndex(i, j)] +=
                         m1[getComponentIndex(i, k)] * 
                         m2[getComponentIndex(k, j)];
@@ -185,7 +180,7 @@ public final class QMatrix4x4 {
             0, 
             components, 
             0, 
-            COMPONENT_COUNT
+            MTR_NUM_CMPS
         );
         return this;
     }
@@ -307,8 +302,8 @@ public final class QMatrix4x4 {
         }
         
         QMatrix4x4 m2 = (QMatrix4x4)o;
-        for (int i = 0; i < COMPONENT_COUNT; i++) {
-            if (!(Math.abs(components[i] - m2.components[i]) < QVector4.COMPARE_EPSILON))
+        for (int i = 0; i < MTR_NUM_CMPS; i++) {
+            if (!(Math.abs(components[i] - m2.components[i]) < VCTR_COMPARE_EPSILON))
                 return false;
         }
         return true;
@@ -336,7 +331,7 @@ public final class QMatrix4x4 {
             0, 
             components, 
             0, 
-            COMPONENT_COUNT
+            MTR_NUM_CMPS
         );
     }
 

@@ -10,6 +10,6 @@ public final class Profile {
     }
 
     public static void main(String[] args) {
-        float f = QDraw.DEFAULT_CLIP_NEAR;
+
     }    
 }

@@ -6,26 +6,9 @@ package QDraw;
 
 import QDraw.QException.PointOfError;
 
-public final class QMesh {
+public final class QMesh extends QEncoding {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
-    public static final int COMPONENTS_PER_VERTEX = 3;
-    public static final int COMPONENTS_PER_UV     = 2;
-
-    public static final int COMPONENTS_PER_ATTRIBUTE     = 2;
-    public static final int MIN_ATTRIBUTES_PER_FACE_DATA = 3;
-    public static final int ATTRIBUTE_VERTEX_OFFSET      = 0;
-    public static final int ATTRIBUTE_UV_OFFSET          = 1;
-
-    public static final int VERTICIES_PER_TRI        = 3;    
-    public static final int COMPONENTS_PER_TRI_DATA  = VERTICIES_PER_TRI * COMPONENTS_PER_ATTRIBUTE;
-    public static final int TRI_DATA_VERTEX_0_OFFSET = 0;
-    public static final int TRI_DATA_VERTEX_1_OFFSET = 2;
-    public static final int TRI_DATA_VERTEX_2_OFFSET = 4;
-    public static final int TRI_DATA_UV_0_OFFSET     = 1;
-    public static final int TRI_DATA_UV_1_OFFSET     = 3;
-    public static final int TRI_DATA_UV_2_OFFSET     = 5;
-
     private static final float[] UNIT_PLANE_VERTEX_DATA = {
         -1.0f, -1.0f, 0.0f,
         -1.0f,  1.0f, 0.0f,
@@ -88,21 +71,24 @@ public final class QMesh {
                 int[] faceData = inFaceData[faceIndex];
                 int vertexIndex = faceData[faceReadOffset + ATTRIBUTE_VERTEX_OFFSET];
                 int uvIndex     = faceData[faceReadOffset + ATTRIBUTE_UV_OFFSET];
+                
+                final int vertexDataMaxIndex = vertexData.length / COMPONENTS_PER_VERTEX;
+                final int uvDataMaxIndex     = uvData.length / COMPONENTS_PER_UV;
 
-                if (vertexIndex < 0 || vertexIndex > vertexData.length) {
+                if (vertexIndex < 0 || vertexIndex > vertexDataMaxIndex) {
                     throw new QException(
                         PointOfError.MalformedData,
                         "faceData contained invalid vertex index. " +
-                        "valid index range is 0 to " + vertexData.length + "but found " +
+                        "valid index range is 0 to " + vertexDataMaxIndex + "but found " +
                         "index value of " + vertexIndex
                     );
                 }
 
-                if (uvIndex < 0 || uvIndex > uvData.length) {
+                if (uvIndex < 0 || uvIndex > uvDataMaxIndex) {
                     throw new QException(
                         PointOfError.MalformedData,
                         "faceData contained invalid uv index. " +
-                        "valid index range is 0 to " + uvData.length + "but found " +
+                        "valid index range is 0 to " + uvDataMaxIndex + "but found " +
                         "index value of " + uvIndex
                     );
                 }
@@ -259,6 +245,21 @@ public final class QMesh {
 
     public int[] getTriData( ) {
         return triData;
+    }
+
+    public float[] getVertex(int index) {
+        return new float[] { 
+            vertexData[index * COMPONENTS_PER_VERTEX + VERTEX_X_OFFSET],
+            vertexData[index * COMPONENTS_PER_VERTEX + VERTEX_Y_OFFSET],
+            vertexData[index * COMPONENTS_PER_VERTEX + VERTEX_Z_OFFSET]
+        };
+    }
+
+    public float[] getUV(int index) {
+        return new float[] { 
+            uvData[index * COMPONENTS_PER_UV + UV_U_OFFSET],
+            uvData[index * COMPONENTS_PER_UV + UV_V_OFFSET],
+        };
     }
 
     /////////////////////////////////////////////////////////////////

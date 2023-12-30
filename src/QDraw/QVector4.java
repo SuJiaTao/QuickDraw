@@ -6,13 +6,9 @@ package QDraw;
 
 import QDraw.QException.PointOfError;
 
-public final class QVector4 {
+public final class QVector4 extends QEncoding {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
-    private static final int INDEX_X = 0;
-    private static final int INDEX_Y = 1;
-    private static final int INDEX_Z = 2;
-    private static final int INDEX_W = 3;
     private static final float[] COMPONENTS_0000 = {0.0f, 0.0f, 0.0f, 0.0f};
     private static final float[] COMPONENTS_0001 = {0.0f, 0.0f, 0.0f, 1.0f};
     private static final float[] COMPONENTS_1111 = {1.0f, 1.0f, 1.0f, 1.0f};
@@ -23,9 +19,7 @@ public final class QVector4 {
     private static final float[] COMPONENTS_ZW1  = {0.0f, 0.0f, 1.0f, 1.0f};
     private static final float[] COMPONENTS_ZW0  = {0.0f, 0.0f, 1.0f, 0.0f};
     private static final float[] COMPONENTS_W    = {0.0f, 0.0f, 0.0f, 1.0f};
-    public  static final float   COMPARE_EPSILON = 0.0005f;
-
-    public static final int COMPONENT_COUNT = 4;
+    
     public static final QVector4 zero4 = new QVector4(COMPONENTS_0000);
     public static final QVector4 zero3 = new QVector4(COMPONENTS_0001);
     public static final QVector4 one   = new QVector4(COMPONENTS_1111);
@@ -39,49 +33,49 @@ public final class QVector4 {
     
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
-    private float[] components = new float[COMPONENT_COUNT];
+    private float[] components = new float[VCTR_NUM_CMPS];
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE METHODS
     private static boolean compareFloatToEpsilon(float f1, float f2) {
-        return Math.abs(f1 - f2) < COMPARE_EPSILON;
+        return Math.abs(f1 - f2) < VCTR_COMPARE_EPSILON;
     }
 
     /////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
     public float getX( ) {
-        return components[INDEX_X];
+        return components[VCTR_INDEX_X];
     }
 
     public QVector4 setX(float val) {
-        components[INDEX_X] = val;
+        components[VCTR_INDEX_X] = val;
         return this;
     }
 
     public float getY( ) {
-        return components[INDEX_Y];
+        return components[VCTR_INDEX_Y];
     }
 
     public QVector4 setY(float val) {
-        components[INDEX_Y] = val;
+        components[VCTR_INDEX_Y] = val;
         return this;
     }
 
     public float getZ( ) {
-        return components[INDEX_Z];
+        return components[VCTR_INDEX_Z];
     }
 
     public QVector4 setZ(float val) {
-        components[INDEX_Z] = val;
+        components[VCTR_INDEX_Z] = val;
         return this;
     }
 
     public float getW( ) {
-        return components[INDEX_W];
+        return components[VCTR_INDEX_W];
     }
 
     public QVector4 setW(float val) {
-        components[INDEX_W] = val;
+        components[VCTR_INDEX_W] = val;
         return this;
     }
 
@@ -90,9 +84,9 @@ public final class QVector4 {
     }
 
     public float sqrMagnitude3( ) {
-        return components[INDEX_X] * components[INDEX_X] +
-               components[INDEX_Y] * components[INDEX_Y] + 
-               components[INDEX_Z] * components[INDEX_Z];
+        return components[VCTR_INDEX_X] * components[VCTR_INDEX_X] +
+               components[VCTR_INDEX_Y] * components[VCTR_INDEX_Y] + 
+               components[VCTR_INDEX_Z] * components[VCTR_INDEX_Z];
     }
 
     public float magnitude3( ) {
@@ -100,10 +94,10 @@ public final class QVector4 {
     }
 
     public float sqrMagnitude4( ) {
-        return components[INDEX_X] * components[INDEX_X] +
-               components[INDEX_Y] * components[INDEX_Y] + 
-               components[INDEX_Z] * components[INDEX_Z] +
-               components[INDEX_W] * components[INDEX_W];
+        return components[VCTR_INDEX_X] * components[VCTR_INDEX_X] +
+               components[VCTR_INDEX_Y] * components[VCTR_INDEX_Y] + 
+               components[VCTR_INDEX_Z] * components[VCTR_INDEX_Z] +
+               components[VCTR_INDEX_W] * components[VCTR_INDEX_W];
     }
 
     public float magnitude4( ) {
@@ -130,10 +124,10 @@ public final class QVector4 {
     }
 
     public QVector4 add3(QVector4 other) {
-        components[INDEX_X] += other.getX();
-        components[INDEX_Y] += other.getY();
-        components[INDEX_Z] += other.getZ();
-        components[INDEX_W]  = 1.0f;
+        components[VCTR_INDEX_X] += other.getX();
+        components[VCTR_INDEX_Y] += other.getY();
+        components[VCTR_INDEX_Z] += other.getZ();
+        components[VCTR_INDEX_W]  = 1.0f;
         return this;
     }
 
@@ -148,10 +142,10 @@ public final class QVector4 {
     }
 
     public QVector4 add4(QVector4 other) {
-        components[INDEX_X] += other.getX();
-        components[INDEX_Y] += other.getY();
-        components[INDEX_Z] += other.getZ();
-        components[INDEX_W] += other.getW();
+        components[VCTR_INDEX_X] += other.getX();
+        components[VCTR_INDEX_Y] += other.getY();
+        components[VCTR_INDEX_Z] += other.getZ();
+        components[VCTR_INDEX_W] += other.getW();
         return this;
     }
 
@@ -164,10 +158,10 @@ public final class QVector4 {
     }
 
     public QVector4 multiply3(float factor) {
-        components[INDEX_X] *= factor;
-        components[INDEX_Y] *= factor;
-        components[INDEX_Z] *= factor;
-        components[INDEX_W]  = 1.0f;
+        components[VCTR_INDEX_X] *= factor;
+        components[VCTR_INDEX_Y] *= factor;
+        components[VCTR_INDEX_Z] *= factor;
+        components[VCTR_INDEX_W]  = 1.0f;
         return this;
     }
 
@@ -181,21 +175,21 @@ public final class QVector4 {
     }
 
     public QVector4 multiply4(float factor) {
-        components[INDEX_X] *= factor;
-        components[INDEX_Y] *= factor;
-        components[INDEX_Z] *= factor;
-        components[INDEX_W] *= factor;
+        components[VCTR_INDEX_X] *= factor;
+        components[VCTR_INDEX_Y] *= factor;
+        components[VCTR_INDEX_Z] *= factor;
+        components[VCTR_INDEX_W] *= factor;
         return this;
     }
 
     public static QVector4 convertTo3(QVector4 v) {
         float[] components = v.components;
-        components[INDEX_W] = 1.0f;
+        components[VCTR_INDEX_W] = 1.0f;
         return new QVector4(components);
     }
 
     public QVector4 convertTo3( ) {
-        components[INDEX_W] = 1.0f;
+        components[VCTR_INDEX_W] = 1.0f;
         return this;
     }
 
@@ -206,10 +200,10 @@ public final class QVector4 {
 
         QVector4 v2 = (QVector4)o;
         
-        return compareFloatToEpsilon(v2.getX(), components[INDEX_X]) &&
-               compareFloatToEpsilon(v2.getY(), components[INDEX_Y]) &&
-               compareFloatToEpsilon(v2.getZ(), components[INDEX_Z]) &&
-               compareFloatToEpsilon(v2.getW(), components[INDEX_W]); 
+        return compareFloatToEpsilon(v2.getX(), components[VCTR_INDEX_X]) &&
+               compareFloatToEpsilon(v2.getY(), components[VCTR_INDEX_Y]) &&
+               compareFloatToEpsilon(v2.getZ(), components[VCTR_INDEX_Z]) &&
+               compareFloatToEpsilon(v2.getW(), components[VCTR_INDEX_W]); 
     }
 
     public boolean equals3(Object o) {
@@ -218,19 +212,19 @@ public final class QVector4 {
 
         QVector4 v2 = (QVector4)o;
         
-        return compareFloatToEpsilon(v2.getX(), components[INDEX_X]) &&
-               compareFloatToEpsilon(v2.getY(), components[INDEX_Y]) &&
-               compareFloatToEpsilon(v2.getZ(), components[INDEX_Z]);
+        return compareFloatToEpsilon(v2.getX(), components[VCTR_INDEX_X]) &&
+               compareFloatToEpsilon(v2.getY(), components[VCTR_INDEX_Y]) &&
+               compareFloatToEpsilon(v2.getZ(), components[VCTR_INDEX_Z]);
     }
 
     @Override
     public String toString( ) {
         return String.format(
                 "(%f, %f, %f, %f)",
-                components[INDEX_X],
-                components[INDEX_Y],
-                components[INDEX_Z],
-                components[INDEX_W]
+                components[VCTR_INDEX_X],
+                components[VCTR_INDEX_Y],
+                components[VCTR_INDEX_Z],
+                components[VCTR_INDEX_W]
             );
     }
 
@@ -242,7 +236,7 @@ public final class QVector4 {
             0, 
             components, 
             0, 
-            COMPONENT_COUNT
+            VCTR_NUM_CMPS
         );
     }
 
@@ -252,22 +246,22 @@ public final class QVector4 {
             0, 
             components, 
             0, 
-            COMPONENT_COUNT
+            VCTR_NUM_CMPS
         );
     }
 
     public QVector4(float x, float y, float z) {
-        components[INDEX_X] = x;
-        components[INDEX_Y] = y;
-        components[INDEX_Z] = z;
-        components[INDEX_W] = 1.0f;
+        components[VCTR_INDEX_X] = x;
+        components[VCTR_INDEX_Y] = y;
+        components[VCTR_INDEX_Z] = z;
+        components[VCTR_INDEX_W] = 1.0f;
     }
 
     public QVector4(float x, float y, float z, float w) {
-        components[INDEX_X] = x;
-        components[INDEX_Y] = y;
-        components[INDEX_Z] = z;
-        components[INDEX_W] = w;
+        components[VCTR_INDEX_X] = x;
+        components[VCTR_INDEX_Y] = y;
+        components[VCTR_INDEX_Z] = z;
+        components[VCTR_INDEX_W] = w;
     }
 
     public QVector4(float[] vec) {
@@ -283,18 +277,18 @@ public final class QVector4 {
             0, 
             components, 
             0, 
-            COMPONENT_COUNT
+            VCTR_NUM_CMPS
         );
 
         // TODO: possibly optimize with ArrayCopy (test first!!!!)
         switch (vec.length) {
             case 4:
-                components[INDEX_W] = vec[INDEX_W];
+                components[VCTR_INDEX_W] = vec[VCTR_INDEX_W];
 
             case 3:
-                components[INDEX_X] = vec[INDEX_X];
-                components[INDEX_Y] = vec[INDEX_Y];
-                components[INDEX_Z] = vec[INDEX_Z];
+                components[VCTR_INDEX_X] = vec[VCTR_INDEX_X];
+                components[VCTR_INDEX_Y] = vec[VCTR_INDEX_Y];
+                components[VCTR_INDEX_Z] = vec[VCTR_INDEX_Z];
                 break;
 
             default:

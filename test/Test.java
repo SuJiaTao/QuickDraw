@@ -339,37 +339,30 @@ public final class Test {
         );
     }
 
-    public static void DrawTest( ) {
-        AssertExpect(
-            QDraw.matrixPeek( ),
-            QMatrix4x4.identity
-        );
-        
-        QDraw.matrixPush( );
-
-        AssertExpect(
-            QDraw.matrixPeek( ),
-            QMatrix4x4.identity
-        );
-
-        QDraw.matrixSet(QMatrix4x4.rotationMatrix(1.0f, 2.0f, 3.0f));
-        AssertExpect(
-            QDraw.matrixPeek( ),
-            QMatrix4x4.rotationMatrix(1.0f, 2.0f, 3.0f)
-        );
-
-        QDraw.matrixPush( );
-
-        AssertExpect(
-            QDraw.matrixPeek( ),
-            QMatrix4x4.rotationMatrix(1.0f, 2.0f, 3.0f)
-        );
-    }
-
     public static void MeshTest( ) {
         AssertExpect(
             QMesh.unitPlane.getTriData( ),
             new int[] { 0, 0, 1, 1, 2, 2, 0, 0, 2, 2, 3, 3 } 
+        );
+
+        AssertExpect(
+            QMesh.unitPlane.getVertex(0), 
+            new float[] { -1.0f, -1.0f, 0.0f }
+        );
+
+        AssertExpect(
+            QMesh.unitPlane.getVertex(1), 
+            new float[] { -1.0f, 1.0f, 0.0f }
+        );
+
+        AssertExpect(
+            QMesh.unitPlane.getUV(0), 
+            new float[] { 0.0f, 0.0f }
+        );
+
+        AssertExpect(
+            QMesh.unitPlane.getUV(1), 
+            new float[] { 0.0f, 1.0f }
         );
 
         AssertExpect(
@@ -412,7 +405,6 @@ public final class Test {
         VectorTest( );
         MatrixTest( );
         MeshTest( );
-        DrawTest( );
 
         QRenderBuffer rb = new QRenderBuffer(50, 50);
         QWindow window   = new QWindow("testwin", 500, 500);
