@@ -33,6 +33,7 @@ public final class QMesh extends QEncoding {
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
+    // (refer to QEncoding.java for encoding details)
     private float[] posData;
     private int     posCount;
     private float[] uvData;

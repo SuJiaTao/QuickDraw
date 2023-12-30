@@ -20,6 +20,7 @@ public final class QMatrix4x4 extends QEncoding {
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
+    // (refer to QEncoding.java for encoding details)
     private float[] components = new float[MTR_NUM_CMPS];
 
     /////////////////////////////////////////////////////////////////

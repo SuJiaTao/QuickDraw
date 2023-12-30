@@ -68,27 +68,27 @@ public class QEncoding {
     //   groups of indicies into posData and uvData for each triangle
     //   group <p uv> is an "attribute"
     //   each indicie will point to first element in each grouping
-    public static final int MESH_POSN_NUM_CMPS = 3;
-    public static final int MESH_POSN_OFST_X   = 0;
-    public static final int MESH_POSN_OFST_Y   = 1;
-    public static final int MESH_POSN_OFST_Z   = 2;
+    protected static final int MESH_POSN_NUM_CMPS = 3;
+    protected static final int MESH_POSN_OFST_X   = 0;
+    protected static final int MESH_POSN_OFST_Y   = 1;
+    protected static final int MESH_POSN_OFST_Z   = 2;
 
-    public static final int MESH_UV_NUM_CMPS = 2;
-    public static final int MESH_UV_OFST_U   = 0;
-    public static final int MESH_UV_OFST_V   = 1;
+    protected static final int MESH_UV_NUM_CMPS = 2;
+    protected static final int MESH_UV_OFST_U   = 0;
+    protected static final int MESH_UV_OFST_V   = 1;
 
-    public static final int MESH_ATRB_NUM_CMPS  = 2;
-    public static final int MESH_FACE_MIN_ATRBS = 3;
-    public static final int MESH_ATRS_OFST_POS  = 0;
-    public static final int MESH_ATRS_OFST_UV   = 1;
+    protected static final int MESH_ATRB_NUM_CMPS  = 2;
+    protected static final int MESH_FACE_MIN_ATRBS = 3;
+    protected static final int MESH_ATRS_OFST_POS  = 0;
+    protected static final int MESH_ATRS_OFST_UV   = 1;
 
-    public static final int MESH_VERTS_PER_TRI = 3;    
-    public static final int MESH_TDI_NUM_CMPS  = MESH_VERTS_PER_TRI * MESH_ATRB_NUM_CMPS;
-    public static final int MESH_TDI_OFST_POS0 = 0;
-    public static final int MESH_TDI_OFST_POS1 = 2;
-    public static final int MESH_TDI_OFST_POS2 = 4;
-    public static final int MESH_TDI_OFST_UV0  = 1;
-    public static final int MESH_TDI_OFST_UV1  = 3;
-    public static final int MESH_TDI_OFST_UV2  = 5;
+    protected static final int MESH_VERTS_PER_TRI = 3;    
+    protected static final int MESH_TDI_NUM_CMPS  = MESH_VERTS_PER_TRI * MESH_ATRB_NUM_CMPS;
+    protected static final int MESH_TDI_OFST_POS0 = 0;
+    protected static final int MESH_TDI_OFST_POS1 = 2;
+    protected static final int MESH_TDI_OFST_POS2 = 4;
+    protected static final int MESH_TDI_OFST_UV0  = 1;
+    protected static final int MESH_TDI_OFST_UV1  = 3;
+    protected static final int MESH_TDI_OFST_UV2  = 5;
 
 }

@@ -33,6 +33,7 @@ public final class QVector4 extends QEncoding {
     
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
+    // (refer to QEncoding.java for encoding details)
     private float[] components = new float[VCTR_NUM_CMPS];
 
     /////////////////////////////////////////////////////////////////
