@@ -21,6 +21,7 @@ public final class QCamera {
     private float      nearClip;
     private QColor     clearColor;
     private QMatrix4x4 viewTransform;
+    private QMatrix4x4 cameraTransform;
 
     /////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
@@ -33,6 +34,26 @@ public final class QCamera {
     }
 
     public void setViewDims(float left, float right, float bottom, float top) {
+        // refer to
+        // https://registry.khronos.org/OpenGL-Refpages/gl2.1/xhtml/glOrtho.xml
+        viewTransform.set(QMatrix4x4.Identity);
+        viewTransform.scale(
+            2.0f / (right - left),
+            2.0f / (top - bottom),
+            1.0f
+        );
+        viewTransform.translate(
+            - (right + left) / (right - left),
+            - (top + bottom) / (top - bottom),
+            0.0f
+        );
+    }
+
+    public void setCamera(
+        QVector4 position,
+        QVector4 rotation,
+        QVector4 scale
+    ) {
         
     }
 

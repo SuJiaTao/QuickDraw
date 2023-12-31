@@ -230,6 +230,18 @@ public final class QMatrix4x4 extends QEncoding {
         return this;
     }
 
+    public static QMatrix4x4 scale(QMatrix4x4 mat, float s) {
+        return QMatrix4x4.multiply4x4(mat, QMatrix4x4.scaleMatrix(s));
+    }
+
+    public static QMatrix4x4 scale(QMatrix4x4 mat, float x, float y, float z) {
+        return QMatrix4x4.multiply4x4(mat, QMatrix4x4.scaleMatrix(x, y, z));
+    }
+
+    public static QMatrix4x4 scale(QMatrix4x4 mat, QVector4 vec3) {
+        return QMatrix4x4.multiply4x4(mat, QMatrix4x4.scaleMatrix(vec3));
+    }
+
     public QMatrix4x4 translate(float x, float y, float z) {
         multiply4x4(QMatrix4x4.translationMatrix(x, y, z));
         return this;
@@ -240,6 +252,14 @@ public final class QMatrix4x4 extends QEncoding {
         return this;
     }
 
+    public static QMatrix4x4 translate(QMatrix4x4 mat, float x, float y, float z) {
+        return QMatrix4x4.multiply4x4(mat, QMatrix4x4.translationMatrix(x, y, z));
+    }
+
+    public static QMatrix4x4 translate(QMatrix4x4 mat, QVector4 vec3) {
+        return QMatrix4x4.multiply4x4(mat, QMatrix4x4.translationMatrix(vec3));
+    }
+
     public QMatrix4x4 rotate(float x, float y, float z) {
         multiply4x4(QMatrix4x4.rotationMatrix(x, y, z));
         return this;
@@ -248,6 +268,23 @@ public final class QMatrix4x4 extends QEncoding {
     public QMatrix4x4 rotate(QVector4 vec3) {
         multiply4x4(QMatrix4x4.rotationMatrix(vec3));
         return this;
+    }
+
+    public static QMatrix4x4 rotate(QMatrix4x4 mat, float x, float y, float z) {
+        return QMatrix4x4.multiply4x4(mat, QMatrix4x4.rotationMatrix(x, y, z));
+    }
+
+    public static QMatrix4x4 rotate(QMatrix4x4 mat, QVector4 vec3) {
+        return QMatrix4x4.multiply4x4(mat, QMatrix4x4.rotationMatrix(vec3));
+    }
+
+    public static QMatrix4x4 TRS(
+        QVector4 translation,
+        QVector4 rotation,
+        QVector4 scale
+    ) {
+        // TODO: finish
+        return null;
     }
 
     @Override
