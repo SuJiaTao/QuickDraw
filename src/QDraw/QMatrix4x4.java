@@ -16,7 +16,15 @@ public final class QMatrix4x4 extends QEncoding {
         0.0f, 0.0f, 0.0f, 1.0f
     };
 
+    private static final float[] COMPONENTS_ZERO = {
+        0.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 0.0f
+    };
+
     public static final QMatrix4x4 Identity = new QMatrix4x4(COMPONENTS_IDENTITY);
+    public static final QMatrix4x4 Zero     = new QMatrix4x4(COMPONENTS_ZERO);
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
@@ -283,8 +291,7 @@ public final class QMatrix4x4 extends QEncoding {
         QVector4 rotation,
         QVector4 scale
     ) {
-        // TODO: finish
-        return null;
+        return translate(rotate(scale(Identity, scale), rotation), translation);
     }
 
     @Override
