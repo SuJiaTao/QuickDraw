@@ -29,6 +29,20 @@ public final class QViewer {
     private class QTri {
         QVector pos0, pos1, pos2;
         QVector uv0, uv1, uv2;
+
+        public QTri(
+            QVector _pos0, QVector _pos1, QVector _pos2,
+            QVector _uv0,  QVector _uv1,  QVector _uv2
+        ) {
+
+            pos0 = _pos0;
+            pos1 = _pos1;
+            pos2 = _pos2;
+            uv0 = _uv0;
+            uv1 = _uv1;
+            uv2 = _uv2;
+
+        }
     }
 
     /////////////////////////////////////////////////////////////////
@@ -48,14 +62,42 @@ public final class QViewer {
         QMatrix4x4 meshTransform
     ) {
         
-        
+        QMesh viewMesh = new QMesh(mesh);
+        for (int posIndex = 0; posIndex < viewMesh.getPosCount(); posIndex++) {
+            QVector vert = new QVector(viewMesh.getPos(posIndex));
+            vert = QMatrix4x4.multiply3(meshTransform, vert);
+            vert = QMatrix4x4.multiply3(viewTransform, vert);
+            vert = QMatrix4x4.multiply3(projectionTransform, vert);
+            viewMesh.setPos(posIndex, vert.getX(), vert.getY(), vert.getZ());
+        }
+
+        for (int tdiIndex = 0; tdiIndex < viewMesh.getTriCount(); tdiIndex++) {
+            // TODO: cleanup this horrid mess
+            QTri viewTri = new QTri(
+                new QVector(viewMesh.getTriPos(tdiIndex, 0)),
+                new QVector(viewMesh.getTriPos(tdiIndex, 1)),
+                new QVector(viewMesh.getTriPos(tdiIndex, 2)),
+                new QVector(viewMesh.getTriUV(tdiIndex, 0)),
+                new QVector(viewMesh.getTriUV(tdiIndex, 1)),
+                new QVector(viewMesh.getTriUV(tdiIndex, 2))
+            );
+
+            QTri[] clipTris = internalClipTri(viewTri);
+
+            for (QTri tri : clipTris) {
+                internalViewTri(tri);
+            }
+        }
 
     }
 
-    private void internalViewTri(
+    private QTri[] internalClipTri(QTri tri) {
+        // TODO: complete
+        return null;
+    }
 
-    ) {
-
+    private void internalViewTri(QTri tri) {
+        // TODO: complete
     }
 
     /////////////////////////////////////////////////////////////////

@@ -290,11 +290,22 @@ public final class QMesh extends QEncoding {
         };
     }
 
+    public void setPos(int index, float x, float y, float z) {
+        posData[index * MESH_POSN_NUM_CMPS + MESH_POSN_OFST_X] = x;
+        posData[index * MESH_POSN_NUM_CMPS + MESH_POSN_OFST_Y] = y;
+        posData[index * MESH_POSN_NUM_CMPS + MESH_POSN_OFST_Z] = z;
+    }
+
     public float[] getUV(int index) {
         return new float[] { 
             uvData[index * MESH_UV_NUM_CMPS + MESH_UV_OFST_U],
             uvData[index * MESH_UV_NUM_CMPS + MESH_UV_OFST_V],
         };
+    }
+
+    public void setUV(int index, float u, float v) {
+        uvData[index * MESH_UV_NUM_CMPS + MESH_UV_OFST_U] = u;
+        uvData[index * MESH_UV_NUM_CMPS + MESH_UV_OFST_V] = v;
     }
 
     /////////////////////////////////////////////////////////////////
