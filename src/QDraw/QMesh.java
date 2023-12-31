@@ -318,4 +318,35 @@ public final class QMesh extends QEncoding {
             initMesh(inPosns, inUVs, inFaceIndicies);
     }
 
+    public QMesh(QMesh toCopy) {
+        posCount = toCopy.posCount;
+        uvCount  = toCopy.uvCount;
+        triCount = toCopy.triCount;
+
+        posData = new float[toCopy.posData.length];
+        System.arraycopy(
+            toCopy.posData, 
+            0, 
+            posData, 
+            0, 
+            posData.length
+        );
+        uvData  = new float[toCopy.uvData.length];
+        System.arraycopy(
+            toCopy.uvData, 
+            0, 
+            uvData, 
+            0, 
+            uvData.length
+        );
+        triDataIndicies = new int[toCopy.triDataIndicies.length];
+        System.arraycopy(
+            toCopy.triDataIndicies, 
+            0, 
+            triDataIndicies, 
+            0, 
+            triDataIndicies.length
+        );
+    }
+
 }

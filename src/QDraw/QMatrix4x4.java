@@ -97,11 +97,11 @@ public final class QMatrix4x4 extends QEncoding {
         return returnComponents;
     }
 
-    public static QVector4 multiply4(QMatrix4x4 mat4x4, QVector4 vec) {
-        return new QVector4(multiply4(mat4x4, vec.getComponents()));
+    public static QVector multiply4(QMatrix4x4 mat4x4, QVector vec) {
+        return new QVector(multiply4(mat4x4, vec.getComponents()));
     }
 
-    public QVector4 multiply4(QVector4 vec) {
+    public QVector multiply4(QVector vec) {
         return multiply4(this, vec);
     }
 
@@ -109,11 +109,11 @@ public final class QMatrix4x4 extends QEncoding {
         return multiply4(mat4x4, new float[] { vec3[0], vec3[1], vec3[2], 1.0f });
     }
 
-    public static QVector4 multiply3(QMatrix4x4 mat4x4, QVector4 vec3) {
+    public static QVector multiply3(QMatrix4x4 mat4x4, QVector vec3) {
         return multiply4(mat4x4, vec3).setW(1.0f);
     }
 
-    public QVector4 multiply3(QVector4 vec3) {
+    public QVector multiply3(QVector vec3) {
         return multiply3(this, vec3);
     }
 
@@ -152,7 +152,7 @@ public final class QMatrix4x4 extends QEncoding {
         return scaleMatrix(s, s, s);
     }
 
-    public static QMatrix4x4 scaleMatrix(QVector4 vec3) {
+    public static QMatrix4x4 scaleMatrix(QVector vec3) {
         return scaleMatrix(vec3.getX(), vec3.getY(), vec3.getZ());
     }
 
@@ -166,7 +166,7 @@ public final class QMatrix4x4 extends QEncoding {
         return new QMatrix4x4(returnComponents);
     }
 
-    public static QMatrix4x4 translationMatrix(QVector4 vec3) {
+    public static QMatrix4x4 translationMatrix(QVector vec3) {
         return translationMatrix(vec3.getX(), vec3.getY(), vec3.getZ());
     }
 
@@ -180,7 +180,7 @@ public final class QMatrix4x4 extends QEncoding {
         return new QMatrix4x4(returnComponents);
     }
 
-    public static QMatrix4x4 rotationMatrix(QVector4 vec3) {
+    public static QMatrix4x4 rotationMatrix(QVector vec3) {
         return rotationMatrix(vec3.getX(), vec3.getY(), vec3.getZ());
     }
 
@@ -233,7 +233,7 @@ public final class QMatrix4x4 extends QEncoding {
         return this;
     }
 
-    public QMatrix4x4 scale(QVector4 vec3) {
+    public QMatrix4x4 scale(QVector vec3) {
         multiply4x4(QMatrix4x4.scaleMatrix(vec3));
         return this;
     }
@@ -246,7 +246,7 @@ public final class QMatrix4x4 extends QEncoding {
         return QMatrix4x4.multiply4x4(mat, QMatrix4x4.scaleMatrix(x, y, z));
     }
 
-    public static QMatrix4x4 scale(QMatrix4x4 mat, QVector4 vec3) {
+    public static QMatrix4x4 scale(QMatrix4x4 mat, QVector vec3) {
         return QMatrix4x4.multiply4x4(mat, QMatrix4x4.scaleMatrix(vec3));
     }
 
@@ -255,7 +255,7 @@ public final class QMatrix4x4 extends QEncoding {
         return this;
     }
 
-    public QMatrix4x4 translate(QVector4 vec3) {
+    public QMatrix4x4 translate(QVector vec3) {
         multiply4x4(QMatrix4x4.translationMatrix(vec3));
         return this;
     }
@@ -264,7 +264,7 @@ public final class QMatrix4x4 extends QEncoding {
         return QMatrix4x4.multiply4x4(mat, QMatrix4x4.translationMatrix(x, y, z));
     }
 
-    public static QMatrix4x4 translate(QMatrix4x4 mat, QVector4 vec3) {
+    public static QMatrix4x4 translate(QMatrix4x4 mat, QVector vec3) {
         return QMatrix4x4.multiply4x4(mat, QMatrix4x4.translationMatrix(vec3));
     }
 
@@ -273,7 +273,7 @@ public final class QMatrix4x4 extends QEncoding {
         return this;
     }
 
-    public QMatrix4x4 rotate(QVector4 vec3) {
+    public QMatrix4x4 rotate(QVector vec3) {
         multiply4x4(QMatrix4x4.rotationMatrix(vec3));
         return this;
     }
@@ -282,14 +282,14 @@ public final class QMatrix4x4 extends QEncoding {
         return QMatrix4x4.multiply4x4(mat, QMatrix4x4.rotationMatrix(x, y, z));
     }
 
-    public static QMatrix4x4 rotate(QMatrix4x4 mat, QVector4 vec3) {
+    public static QMatrix4x4 rotate(QMatrix4x4 mat, QVector vec3) {
         return QMatrix4x4.multiply4x4(mat, QMatrix4x4.rotationMatrix(vec3));
     }
 
     public static QMatrix4x4 TRS(
-        QVector4 translation,
-        QVector4 rotation,
-        QVector4 scale
+        QVector translation,
+        QVector rotation,
+        QVector scale
     ) {
         return translate(rotate(scale(Identity, scale), rotation), translation);
     }

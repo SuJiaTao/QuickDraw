@@ -108,88 +108,100 @@ public final class Expect {
 
     private static void VectorTest( ) {
         Expect(
-            new QVector4(new float[]{1.0f, 2.0f, 3.0f}),
-            new QVector4(1.0f, 2.0f, 3.0f)
+            new QVector(new float[]{1.0f, 2.0f}),
+            new QVector(1.0f, 2.0f)
         );
         Expect(
-            new QVector4(new float[]{1.0f, 2.0f, 3.0f, 4.0f}),
-            new QVector4(1.0f, 2.0f, 3.0f, 4.0f)
+            new QVector(new float[]{1.0f, 2.0f}),
+            new QVector(1.0f, 2.0f, 0.0f)
         );
         Expect(
-            new QVector4(5.0f, 5.0f, 5.0f).getW(),
+            new QVector(new float[]{1.0f, 2.0f}),
+            new QVector(1.0f, 2.0f, 0.0f, 1.0f)
+        );
+        Expect(
+            new QVector(new float[]{1.0f, 2.0f, 3.0f}),
+            new QVector(1.0f, 2.0f, 3.0f)
+        );
+        Expect(
+            new QVector(new float[]{1.0f, 2.0f, 3.0f, 4.0f}),
+            new QVector(1.0f, 2.0f, 3.0f, 4.0f)
+        );
+        Expect(
+            new QVector(5.0f, 5.0f, 5.0f).getW(),
             1.0f
         );
         Expect(
-            new QVector4(5.0f, 5.0f, 5.0f, 2.0f).getW(),
+            new QVector(5.0f, 5.0f, 5.0f, 2.0f).getW(),
             2.0f
         );
         Expect(
-            new QVector4(1.0f, 2.0f, 3.0f, 4.0f).getX(),
+            new QVector(1.0f, 2.0f, 3.0f, 4.0f).getX(),
             1.0f
         );
         Expect(
-            new QVector4(1.0f, 2.0f, 3.0f, 4.0f).getY(),
+            new QVector(1.0f, 2.0f, 3.0f, 4.0f).getY(),
             2.0f
         );
         Expect(
-            new QVector4(1.0f, 2.0f, 3.0f, 4.0f).getZ(),
+            new QVector(1.0f, 2.0f, 3.0f, 4.0f).getZ(),
             3.0f
         );
         Expect(
-            new QVector4(1.0f, 2.0f, 3.0f, 4.0f).getW(),
+            new QVector(1.0f, 2.0f, 3.0f, 4.0f).getW(),
             4.0f
         );
         Expect(
-            new QVector4(1.0f, 2.0f, 3.0f, 4.0f)
-                .add3(new QVector4(5.0f, 6.0f, 7.0f, 8.0f)),
-            QVector4.add3(
-                new QVector4(1.0f, 2.0f, 3.0f, 4.0f),
-                new QVector4(5.0f, 6.0f, 7.0f, 8.0f)
+            new QVector(1.0f, 2.0f, 3.0f, 4.0f)
+                .add3(new QVector(5.0f, 6.0f, 7.0f, 8.0f)),
+            QVector.add3(
+                new QVector(1.0f, 2.0f, 3.0f, 4.0f),
+                new QVector(5.0f, 6.0f, 7.0f, 8.0f)
             )
         );
         Expect(
-            new QVector4(1.0f, 2.0f, 3.0f, 4.0f)
-                .add4(new QVector4(5.0f, 6.0f, 7.0f, 8.0f)),
-            QVector4.add4(
-                new QVector4(1.0f, 2.0f, 3.0f, 4.0f),
-                new QVector4(5.0f, 6.0f, 7.0f, 8.0f)
+            new QVector(1.0f, 2.0f, 3.0f, 4.0f)
+                .add4(new QVector(5.0f, 6.0f, 7.0f, 8.0f)),
+            QVector.add4(
+                new QVector(1.0f, 2.0f, 3.0f, 4.0f),
+                new QVector(5.0f, 6.0f, 7.0f, 8.0f)
             )
         );
         Expect(
-            new QVector4(1.0f, 2.0f, 3.0f, 4.0f)
+            new QVector(1.0f, 2.0f, 3.0f, 4.0f)
                 .multiply3(3.0f),
-            QVector4.multiply3(
-                new QVector4(1.0f, 2.0f, 3.0f, 4.0f),
+            QVector.multiply3(
+                new QVector(1.0f, 2.0f, 3.0f, 4.0f),
                 3.0f
             )
         );
         Expect(
-            new QVector4(1.0f, 2.0f, 3.0f, 4.0f)
+            new QVector(1.0f, 2.0f, 3.0f, 4.0f)
                 .multiply4(3.0f),
-            QVector4.multiply4(
-                new QVector4(1.0f, 2.0f, 3.0f, 4.0f),
+            QVector.multiply4(
+                new QVector(1.0f, 2.0f, 3.0f, 4.0f),
                 3.0f
             )
         );
         Expect(
-            new QVector4(1.0f, 2.0f, 3.0f, 4.0f)
+            new QVector(1.0f, 2.0f, 3.0f, 4.0f)
                 .setX(0.0f),
-            new QVector4(0.0f, 2.0f, 3.0f, 4.0f)
+            new QVector(0.0f, 2.0f, 3.0f, 4.0f)
         );
         Expect(
-            new QVector4(1.0f, 2.0f, 3.0f, 4.0f)
+            new QVector(1.0f, 2.0f, 3.0f, 4.0f)
                 .setY(0.0f),
-            new QVector4(1.0f, 0.0f, 3.0f, 4.0f)
+            new QVector(1.0f, 0.0f, 3.0f, 4.0f)
         );
         Expect(
-            new QVector4(1.0f, 2.0f, 3.0f, 4.0f)
+            new QVector(1.0f, 2.0f, 3.0f, 4.0f)
                 .setZ(0.0f),
-            new QVector4(1.0f, 2.0f, 0.0f, 4.0f)
+            new QVector(1.0f, 2.0f, 0.0f, 4.0f)
         );
         Expect(
-            new QVector4(1.0f, 2.0f, 3.0f, 4.0f)
+            new QVector(1.0f, 2.0f, 3.0f, 4.0f)
                 .setW(0.0f),
-            new QVector4(1.0f, 2.0f, 3.0f, 0.0f)
+            new QVector(1.0f, 2.0f, 3.0f, 0.0f)
         );
     }
 
@@ -197,40 +209,40 @@ public final class Expect {
         Expect(
             QMatrix4x4.multiply3(
                 QMatrix4x4.Identity, 
-                new QVector4(1.0f, 2.0f, 3.0f, 4.0f)
+                new QVector(1.0f, 2.0f, 3.0f, 4.0f)
             ),
-            new QVector4(1.0f, 2.0f, 3.0f, 1.0f)
+            new QVector(1.0f, 2.0f, 3.0f, 1.0f)
         );
         Expect(
             QMatrix4x4.multiply4(
                 QMatrix4x4.Identity, 
-                new QVector4(1.0f, 2.0f, 3.0f, 4.0f)
+                new QVector(1.0f, 2.0f, 3.0f, 4.0f)
             ),
-            new QVector4(1.0f, 2.0f, 3.0f, 4.0f)
+            new QVector(1.0f, 2.0f, 3.0f, 4.0f)
         );
         Expect(
             QMatrix4x4.multiply4(
                 QMatrix4x4.Identity, 
-                new QVector4(1.0f, 2.0f, 3.0f, 1.0f)
+                new QVector(1.0f, 2.0f, 3.0f, 1.0f)
             ),
             QMatrix4x4.multiply3(
                 QMatrix4x4.Identity, 
-                new QVector4(1.0f, 2.0f, 3.0f, 1.0f)
+                new QVector(1.0f, 2.0f, 3.0f, 1.0f)
             )
         );
         Expect(
             QMatrix4x4.multiply4(
                 QMatrix4x4.translationMatrix(1.0f, 2.0f, 3.0f), 
-                new QVector4(1.0f, 2.0f, 3.0f, 1.0f)
+                new QVector(1.0f, 2.0f, 3.0f, 1.0f)
             ),
-            new QVector4(1.0f + 1.0f, 2.0f + 2.0f, 3.0f + 3.0f, 1.0f)
+            new QVector(1.0f + 1.0f, 2.0f + 2.0f, 3.0f + 3.0f, 1.0f)
         );
         Expect(
             QMatrix4x4.multiply4(
                 QMatrix4x4.translationMatrix(1.0f, 2.0f, 3.0f), 
-                new QVector4(1.0f, 2.0f, 3.0f, 2.0f)
+                new QVector(1.0f, 2.0f, 3.0f, 2.0f)
             ),
-            new QVector4(
+            new QVector(
                 1.0f + 1.0f * 2.0f, 
                 2.0f + 2.0f * 2.0f, 
                 3.0f + 3.0f * 2.0f, 
@@ -240,9 +252,9 @@ public final class Expect {
         Expect(
             QMatrix4x4.multiply3(
                 QMatrix4x4.translationMatrix(1.0f, 2.0f, 3.0f), 
-                new QVector4(1.0f, 2.0f, 3.0f, 2.0f)
+                new QVector(1.0f, 2.0f, 3.0f, 2.0f)
             ),
-            new QVector4(
+            new QVector(
                 1.0f + 1.0f * 2.0f, 
                 2.0f + 2.0f * 2.0f, 
                 3.0f + 3.0f * 2.0f, 
@@ -252,9 +264,9 @@ public final class Expect {
         Expect(
             QMatrix4x4.multiply4(
                 QMatrix4x4.scaleMatrix(2.0f, 3.0f, 4.0f), 
-                new QVector4(1.0f, 2.0f, 3.0f, 2.0f)
+                new QVector(1.0f, 2.0f, 3.0f, 2.0f)
             ),
-            new QVector4(
+            new QVector(
                 1.0f * 2.0f,
                 2.0f * 3.0f,
                 3.0f * 4.0f,
@@ -264,9 +276,9 @@ public final class Expect {
         Expect(
             QMatrix4x4.multiply3(
                 QMatrix4x4.scaleMatrix(2.0f, 3.0f, 4.0f), 
-                new QVector4(1.0f, 2.0f, 3.0f, 2.0f)
+                new QVector(1.0f, 2.0f, 3.0f, 2.0f)
             ),
-            new QVector4(
+            new QVector(
                 1.0f * 2.0f,
                 2.0f * 3.0f,
                 3.0f * 4.0f,
@@ -276,63 +288,63 @@ public final class Expect {
         Expect(
             QMatrix4x4.multiply4(
                 QMatrix4x4.rotationMatrix(90.0f, 0.0f, 0.0f), 
-                new QVector4(1.0f, 0.0f, 0.0f, 1.0f)
+                new QVector(1.0f, 0.0f, 0.0f, 1.0f)
             ),
-            new QVector4(
+            new QVector(
                 1.0f, 0.0f, 0.0f, 1.0f
             )
         );
         Expect(
             QMatrix4x4.multiply4(
                 QMatrix4x4.rotationMatrix(0.0f, 90.0f, 0.0f), 
-                new QVector4(0.0f, 1.0f, 0.0f, 1.0f)
+                new QVector(0.0f, 1.0f, 0.0f, 1.0f)
             ),
-            new QVector4(
+            new QVector(
                 0.0f, 1.0f, 0.0f, 1.0f
             )
         );
         Expect(
             QMatrix4x4.multiply4(
                 QMatrix4x4.rotationMatrix(0.0f, 0.0f, 90.0f), 
-                new QVector4(0.0f, 0.0f, 1.0f, 1.0f)
+                new QVector(0.0f, 0.0f, 1.0f, 1.0f)
             ),
-            new QVector4(
+            new QVector(
                 0.0f, 0.0f, 1.0f, 1.0f
             )
         );
         Expect(
             QMatrix4x4.multiply4(
                 QMatrix4x4.rotationMatrix(0.0f, 90.0f, 0.0f), 
-                new QVector4(1.0f, 0.0f, 0.0f, 1.0f)
+                new QVector(1.0f, 0.0f, 0.0f, 1.0f)
             ),
-            new QVector4(
+            new QVector(
                 0.0f, 0.0f, 1.0f, 1.0f
             )
         );
         Expect(
             QMatrix4x4.multiply4(
                 QMatrix4x4.rotationMatrix(0.0f, -90.0f, 0.0f), 
-                new QVector4(1.0f, 0.0f, 0.0f, 1.0f)
+                new QVector(1.0f, 0.0f, 0.0f, 1.0f)
             ),
-            new QVector4(
+            new QVector(
                 0.0f, 0.0f, -1.0f, 1.0f
             )
         );
         Expect(
             QMatrix4x4.multiply4(
                 QMatrix4x4.rotationMatrix(0.0f, 0.0f, 90.0f), 
-                new QVector4(1.0f, 0.0f, 0.0f, 1.0f)
+                new QVector(1.0f, 0.0f, 0.0f, 1.0f)
             ),
-            new QVector4(
+            new QVector(
                 0.0f, -1.0f, 0.0f, 1.0f
             )
         );
         Expect(
             QMatrix4x4.multiply4(
                 QMatrix4x4.rotationMatrix(0.0f, 0.0f, -90.0f), 
-                new QVector4(1.0f, 0.0f, 0.0f, 1.0f)
+                new QVector(1.0f, 0.0f, 0.0f, 1.0f)
             ),
-            new QVector4(
+            new QVector(
                 0.0f, 1.0f, 0.0f, 1.0f
             )
         );
@@ -376,6 +388,46 @@ public final class Expect {
 
         Expect(
             QMesh.UnitPlane.getTriCount(), 
+            2
+        );
+
+        Expect(
+            new QMesh(QMesh.UnitPlane).getTriDataIndicies( ),
+            new int[] { 0, 0, 1, 1, 2, 2, 0, 0, 2, 2, 3, 3 } 
+        );
+
+        Expect(
+            new QMesh(QMesh.UnitPlane).getPos(0), 
+            new float[] { -1.0f, -1.0f, 0.0f }
+        );
+
+        Expect(
+            new QMesh(QMesh.UnitPlane).getPos(1), 
+            new float[] { -1.0f, 1.0f, 0.0f }
+        );
+
+        Expect(
+            new QMesh(QMesh.UnitPlane).getUV(0), 
+            new float[] { 0.0f, 0.0f }
+        );
+
+        Expect(
+            new QMesh(QMesh.UnitPlane).getUV(1), 
+            new float[] { 0.0f, 1.0f }
+        );
+
+        Expect(
+            new QMesh(QMesh.UnitPlane).getPosCount(), 
+            4
+        );
+
+        Expect(
+            new QMesh(QMesh.UnitPlane).getUVCount(), 
+            4
+        );
+
+        Expect(
+            new QMesh(QMesh.UnitPlane).getTriCount(), 
             2
         );
 
