@@ -31,12 +31,11 @@ public final class QViewer extends QEncoding {
     /////////////////////////////////////////////////////////////////
     // PRIVATE CLASSES
     private class Tri extends QEncoding {
-        public float[] posDat;
-        public float[] uvDat;
+        public float[] posDat = new float[VTRI_POSDAT_NUM_CMPS];
+        public float[] uvDat  = new float[VTRI_UVDAT_NUM_UVS];
 
         public Tri( ) {
-            posDat = new float[VTRI_POSDAT_NUM_CMPS];
-            uvDat  = new float[VTRI_UVDAT_NUM_UVS];
+
         }
 
         public Tri(Tri toCopy) {
@@ -77,10 +76,10 @@ public final class QViewer extends QEncoding {
         ) {
             QMath.copy3(
                 getPosOffset(posIndex), 
-                posDat, 
+                posDat,
                 meshSrc.getPosOffset(meshSrc.getTriPosIndex(tdiIndex, posIndex)),
                 meshSrc.getPosData()
-            );;
+            );
         }
 
         public void setUVFromTri(
@@ -88,10 +87,10 @@ public final class QViewer extends QEncoding {
             int   tdiIndex,
             int   uvIndex
         ) {
-            QMath.copy3(
+            QMath.copy2(
                 getUVOffset(uvIndex), 
                 uvDat, 
-                meshSrc.getPosOffset(meshSrc.getTriUVIndex(tdiIndex, uvIndex)),
+                meshSrc.getUVOffset(meshSrc.getTriUVIndex(tdiIndex, uvIndex)),
                 meshSrc.getUVData()
             );;
         }

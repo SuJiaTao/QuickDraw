@@ -52,7 +52,13 @@ public final class QMath extends QEncoding {
         int     srcoffset,
         float[] src
     ) {
-        System.arraycopy(src, srcoffset, trg, trgoffset, 3);
+        // System.arraycopy(src, srcoffset, trg, trgoffset, 3);
+
+        // TODO: this is for DEBUG only. remove
+        for (int i = 0; i < 3; i++) {
+            trg[trgoffset + i] = 
+            src[srcoffset + i];
+        }
     }
 
     public static void copy4x4(float[] trg_4x4, float[] src_4x4) {
@@ -172,9 +178,9 @@ public final class QMath extends QEncoding {
         float[] m4x4
     ) {
         float[] v_4 = new float[] {
-            v_3[VCTR_INDEX_X],
-            v_3[VCTR_INDEX_Y],
-            v_3[VCTR_INDEX_Z],
+            v_3[voffset + VCTR_INDEX_X],
+            v_3[voffset + VCTR_INDEX_Y],
+            v_3[voffset + VCTR_INDEX_Z],
             1.0f
         };
 
@@ -183,12 +189,12 @@ public final class QMath extends QEncoding {
         for (int vCompIndex = 0; vCompIndex < v_4.length; vCompIndex++) {
             for (int columnIndex = 0; columnIndex < MTR_NUM_COLUMNS; columnIndex++) {
                 ret_4[vCompIndex] +=
-                    v_4[voffset + columnIndex] * 
+                    v_4[columnIndex] * 
                     get4x4(moffset, m4x4, columnIndex, vCompIndex);
             }
         }
 
-        copy3(v_3, ret_4);
+        copy3(voffset, v_3, 0, ret_4);
     }
 
     public static float[] mul4x4(float[] m1_4x4, float[] m2_4x4) {

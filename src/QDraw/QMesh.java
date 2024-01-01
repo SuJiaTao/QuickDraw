@@ -283,31 +283,23 @@ public final class QMesh extends QEncoding {
     }
 
     public int getTriPosIndex(int triIndex, int triVertIndex) {
-        return (triIndex * MESH_TDI_NUM_CMPS) + 
-                (triVertIndex * MESH_ATRB_NUM_CMPS) +
-                MESH_ATRS_OFST_POS;
+        return triDataIndicies[(triIndex * MESH_TDI_NUM_CMPS) + 
+               (triVertIndex * MESH_ATRB_NUM_CMPS) +
+               MESH_ATRS_OFST_POS];
     }
 
     public float[] getTriPos(int triIndex, int triVertIndex) {
-        return getPos(
-            triDataIndicies[
-                getTriPosIndex(triIndex, triVertIndex)
-            ]
-        );
+        return getPos(getTriPosIndex(triIndex, triVertIndex));
     }
 
     public int getTriUVIndex(int triIndex, int triUVIndex) {
-        return (triIndex * MESH_TDI_NUM_CMPS) + 
+        return triDataIndicies[(triIndex * MESH_TDI_NUM_CMPS) + 
                 (triUVIndex * MESH_ATRB_NUM_CMPS) +
-                MESH_ATRS_OFST_UV;
+                MESH_ATRS_OFST_UV];
     }
 
     public float[] getTriUV(int triIndex, int triUVIndex) {
-        return getUV(
-            triDataIndicies[
-                getTriUVIndex(triIndex, triUVIndex)
-            ]
-        );
+        return getUV(getTriUVIndex(triIndex, triUVIndex));
     }
 
     public int getPosOffset(int index) {
