@@ -524,25 +524,24 @@ public final class Expect {
         MatrixTest( );
         MeshTest( );
 
-        QRenderBuffer rb = new QRenderBuffer(50, 50);
+        QRenderBuffer rb = new QRenderBuffer(125, 125);
         QWindow window   = new QWindow("testwin", 500, 500);
         rb.getColorData()[rb.coordToDataIndex(5, 5)] = QColor.Red.toInt();
 
-        QViewer eyes = new QViewer(rb);
+        QViewer eyes = new QViewer(rb, -2.0f, 2.0f, -2.0f, 2.0f);
+        eyes.setNearClip(-1.0f);
 
         window.setRenderBuffer(rb);
         
-        
-
         float rot = 0;
         while(true) {
             
             eyes.blink( );
 
-            rot += 0.01f;
+            rot += 0.05f;
             QMatrix4x4 meshMatr = QMatrix4x4.TRS(
-                new QVector(0.0f, 0.0f, -3.0f), 
-                new QVector(0, 0, rot), 
+                new QVector(0.0f, 0.0f, -1.75f), 
+                new QVector(rot, 35.0f, 0.0f), 
                 QVector.One
             );
 

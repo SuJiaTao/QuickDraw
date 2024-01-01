@@ -194,7 +194,6 @@ public final class QViewer {
     }
 
     private Tri[] internalClipTriCase1(Tri tri, ClipState clipState) {
-        
         // refer to
         // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_cliptri.c
 
@@ -266,14 +265,13 @@ public final class QViewer {
         quadTri0.set(pos02, null, shuffledTri.pos0, null, shuffledTri.pos1, null);
 
         Tri quadTri1 = new Tri();
-        quadTri0.set(shuffledTri.pos1, null, pos12, null, pos02, null);
+        quadTri1.set(shuffledTri.pos1, null, pos12, null, pos02, null);
 
         return new Tri[] { quadTri0, quadTri1 };
 
     }
 
     private Tri[] internalClipTriCase2(Tri tri, ClipState clipState) {
-
         // refer to
         // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_cliptri.c
 
@@ -353,7 +351,7 @@ public final class QViewer {
         // - after being cut, the top two verticies will be sorted from left to right
 
         Tri sortedTri = internalSortTriVertsByHeight(tri);
-        
+
         float invSlope20 =
             (sortedTri.pos0.getX() - sortedTri.pos2.getX()) / 
             (sortedTri.pos0.getY() - sortedTri.pos2.getY());
@@ -373,30 +371,6 @@ public final class QViewer {
         flatBottomTri.set(
             sortedTri.pos1, null, midPoint, null, sortedTri.pos0, null
         );
-
-        try {
-            renderTarget.setColor((int)sortedTri.pos0.getX(), (int)sortedTri.pos0.getY(), QColor.Green.toInt());
-            renderTarget.setColor((int)sortedTri.pos1.getX(), (int)sortedTri.pos1.getY(), QColor.Green.toInt());
-            renderTarget.setColor((int)sortedTri.pos2.getX(), (int)sortedTri.pos2.getY(), QColor.Green.toInt());
-        } catch (Exception e) {
-
-        }
-
-        try {
-            renderTarget.setColor((int)flatTopTri.pos0.getX(), (int)flatTopTri.pos0.getY(), QColor.Blue.toInt());
-            renderTarget.setColor((int)flatTopTri.pos1.getX(), (int)flatTopTri.pos1.getY(), QColor.Blue.toInt());
-            renderTarget.setColor((int)flatTopTri.pos2.getX(), (int)flatTopTri.pos2.getY(), QColor.Blue.toInt());
-        } catch (Exception e) {
-
-        }
-
-        try {
-            renderTarget.setColor((int)flatBottomTri.pos0.getX(), (int)flatBottomTri.pos0.getY(), QColor.Red.toInt());
-            renderTarget.setColor((int)flatBottomTri.pos1.getX(), (int)flatBottomTri.pos1.getY(), QColor.Red.toInt());
-            renderTarget.setColor((int)flatBottomTri.pos2.getX(), (int)flatBottomTri.pos2.getY(), QColor.Red.toInt());
-        } catch (Exception e) {
-
-        }
 
         internalDrawFlatTopTri(flatTopTri, sortedTri);
         internalDrawFlatBottomTri(flatBottomTri, sortedTri);
