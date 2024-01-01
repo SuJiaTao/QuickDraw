@@ -83,6 +83,19 @@ public final class QMath extends QEncoding {
         v1_3[v1offset + VCTR_INDEX_Z] += v2_3[v2offset + VCTR_INDEX_Z];
     }
 
+    public static void mult2(float[] v_2, float fac) {
+        mult2(0, v_2, fac);
+    }
+
+    public static void mult2(
+        int voffset,
+        float[] v1_2,
+        float fac
+    ) {
+        v1_2[voffset + VCTR_INDEX_X] *= fac;
+        v1_2[voffset + VCTR_INDEX_Y] *= fac;
+    }
+
     public static void mult3(float[] v_3, float fac) {
         mult3(0, v_3, fac);
     }

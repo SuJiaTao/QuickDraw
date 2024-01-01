@@ -123,6 +123,12 @@ public final class QViewer extends QEncoding {
             QMath.copy3(getUVOffset(uvNum), uvDat, offsetIn, in);
         }
 
+        private void projectPos(int vertNum) {
+            float invZ = 1.0f / getPosZ(vertNum);
+            setPosZ(vertNum, invZ);
+            QMath.mult2(getPosOffset(vertNum), posDat, invZ);
+        }
+
         public int getPosOffset(int posNum) {
             return MESH_POSN_NUM_CMPS * posNum;
         }
@@ -131,12 +137,24 @@ public final class QViewer extends QEncoding {
             return posDat[getPosOffset(posNum) + VCTR_INDEX_X];
         }
 
+        public void setPosX(int posNum, float x) {
+            posDat[getPosOffset(posNum) + VCTR_INDEX_X] = x;
+        }
+
         public float getPosY(int posNum) {
             return posDat[getPosOffset(posNum) + VCTR_INDEX_Y];
         }
 
+        public void setPosY(int posNum, float y) {
+            posDat[getPosOffset(posNum) + VCTR_INDEX_Y] = y;
+        }
+
         public float getPosZ(int posNum) {
             return posDat[getPosOffset(posNum) + VCTR_INDEX_Z];
+        }
+
+        public void setPosZ(int posNum, float z) {
+            posDat[getPosOffset(posNum) + VCTR_INDEX_Z] = z;
         }
 
         public int getUVOffset(int uvNum) {
@@ -269,6 +287,17 @@ public final class QViewer extends QEncoding {
         Tri srcTri,
         int pI,
         int pF,
+        int tReplace
+    ) {
+        internalFindClipIntersect(
+            srcTri, pI, pF, srcTri.getPosOffset(tReplace), srcTri.posDat
+        );
+    }
+
+    private void internalFindClipIntersect(
+        Tri srcTri,
+        int pI,
+        int pF,
         int offsetOut,
         float[] out
     ) {
@@ -377,22 +406,22 @@ public final class QViewer extends QEncoding {
             // VERTS 1 & 2 ARE CLIPPED
             case (1 + 2):
                 
-                tri.pos1 = internalFindClipIntersect(tri.pos0, tri.pos1);
-                tri.pos2 = internalFindClipIntersect(tri.pos0, tri.pos2);
+                internalFindClipIntersect(tri, 0, 1, 1);
+                internalFindClipIntersect(tri, 0, 2, 2);
                 return new Tri[] { tri };
 
             // VERTS 0 & 2 ARE CLIPPED
             case (0 + 2):
 
-                tri.pos0 = internalFindClipIntersect(tri.pos1, tri.pos0);
-                tri.pos2 = internalFindClipIntersect(tri.pos1, tri.pos2);
+                internalFindClipIntersect(tri, 1, 0, 0);
+                internalFindClipIntersect(tri, 1, 2, 2);
                 return new Tri[] { tri };
 
             // VERTS 0 & 1 ARE CLIPPED
             case (0 + 1):
 
-                tri.pos0 = internalFindClipIntersect(tri.pos2, tri.pos0);
-                tri.pos1 = internalFindClipIntersect(tri.pos2, tri.pos1);
+                internalFindClipIntersect(tri, 2, 0, 0);
+                internalFindClipIntersect(tri, 2, 1, 1);
                 return new Tri[] { tri };
         
             // BAD STATE
@@ -405,7 +434,7 @@ public final class QViewer extends QEncoding {
 
     }
 
-    private void internalMapVertToScreenSpace(QVector3 vert) {
+    private void internalMapVertToScreenSpace(Tri srcTri, int vertNum) {
         // NOTE:
         //  - this transformation will map (left, right) -> (0, targetWidth) and
         //    (bottom, top) -> (0, targetheight). this is essentially a worldspace
@@ -413,32 +442,30 @@ public final class QViewer extends QEncoding {
         //  - in order to do this, the space is translated such that the bottom left
         //    corner is (0, 0), and then it is scaled to fit the screenspace
 
-        vert.setX(vert.getX() - viewLeft);
-        vert.setY(vert.getY() - viewBottom);
-        vert.setX(vert.getX() * (renderTarget.getWidth()  / (viewRight - viewLeft)));
-        vert.setY(vert.getY() * (renderTarget.getHeight() / (viewTop - viewBottom)));
+        srcTri.setPosX(vertNum, srcTri.getPosX(vertNum) - viewLeft);
+        srcTri.setPosY(vertNum, srcTri.getPosY(vertNum) - viewBottom);
+
+        srcTri.setPosX(vertNum, 
+            srcTri.getPosX(vertNum) * 
+            (renderTarget.getWidth()  / (viewRight - viewLeft)));
+        srcTri.setPosY(vertNum, 
+            srcTri.getPosY(vertNum) * 
+            (renderTarget.getHeight() / (viewTop - viewBottom)));
+
     }
 
     private void internalViewTri(Tri tri) {
         
         // NOTE:
         // - from this point forward, all z values will be inverted
-        tri.pos0.setZ(1.0f / tri.pos0.getZ());
-        tri.pos1.setZ(1.0f / tri.pos1.getZ());
-        tri.pos2.setZ(1.0f / tri.pos2.getZ());
-
-        // PROJECT TRI
-        tri.pos0.setX(tri.pos0.getX() * tri.pos0.getZ());
-        tri.pos0.setY(tri.pos0.getY() * tri.pos0.getZ());
-        tri.pos1.setX(tri.pos1.getX() * tri.pos1.getZ());
-        tri.pos1.setY(tri.pos1.getY() * tri.pos1.getZ());
-        tri.pos2.setX(tri.pos2.getX() * tri.pos2.getZ());
-        tri.pos2.setY(tri.pos2.getY() * tri.pos2.getZ());
+        tri.projectPos(0);
+        tri.projectPos(1);
+        tri.projectPos(2);
 
         // MAP TO SCREEN SPACE
-        internalMapVertToScreenSpace(tri.pos0);
-        internalMapVertToScreenSpace(tri.pos1);
-        internalMapVertToScreenSpace(tri.pos2);
+        internalMapVertToScreenSpace(tri, 0);
+        internalMapVertToScreenSpace(tri, 1);
+        internalMapVertToScreenSpace(tri, 2);
 
         // NOTE:
         // - a triangle must be rasterized in two parts, a line will be cut
@@ -450,24 +477,26 @@ public final class QViewer extends QEncoding {
         Tri sortedTri = internalSortTriVertsByHeight(tri);
 
         float invSlope20 =
-            (sortedTri.pos0.getX() - sortedTri.pos2.getX()) / 
-            (sortedTri.pos0.getY() - sortedTri.pos2.getY());
-        float dY21 = sortedTri.pos1.getY() - sortedTri.pos2.getY();
+            (sortedTri.getPosX(0) - sortedTri.getPosX(2)) / 
+            (sortedTri.getPosY(0) - sortedTri.getPosY(2));
+        float dY21 = sortedTri.getPosY(1) - sortedTri.getPosY(2);
 
-        QVector3 midPoint = new QVector3(
-            sortedTri.pos2.getX() + (invSlope20 * dY21),
-            sortedTri.pos1.getY()
-        );
+        float[] midPoint = new float[] {
+            sortedTri.getPosX(2) + (invSlope20 * dY21),
+            sortedTri.getPosY(1),
+            0.0f // TODO: interpolate Z
+        };
 
-        Tri flatTopTri = new Tri();
-        flatTopTri.set(
-            sortedTri.pos1, null, midPoint, null, sortedTri.pos2, null
-        );
+        // flatTopTri is (1, mid, 2)
+        Tri flatTopTri = new Tri(sortedTri);
+        flatTopTri.swapVerts(0, 1); // (0 1 2) -> (1 0 2)
+        flatTopTri.setPos(1, 0, midPoint); // (1 0 2) -> (1 mid 2)
 
-        Tri flatBottomTri = new Tri();
-        flatBottomTri.set(
-            sortedTri.pos1, null, midPoint, null, sortedTri.pos0, null
-        );
+        // flatBottomTri is (1, mid, 0)
+        Tri flatBottomTri = new Tri(sortedTri);
+        flatBottomTri.swapVerts(0, 1); // (0 1 2) -> (1 0 2)
+        flatBottomTri.swapVerts(1, 2); // (1 0 2) -> (1 2 0)
+        flatBottomTri.setPos(1, 0, midPoint); // (1 2 0) -> (1 mid 0)
 
         internalDrawFlatTopTri(flatTopTri, sortedTri);
         internalDrawFlatBottomTri(flatBottomTri, sortedTri);
@@ -476,21 +505,14 @@ public final class QViewer extends QEncoding {
 
     private Tri internalSortTriVertsByHeight(Tri tri) { 
 
-        QVector3 temp;
-        if (tri.pos0.getY() < tri.pos1.getY()) {
-            temp = tri.pos1;
-            tri.pos1 = tri.pos0;
-            tri.pos0 = temp;
+        if (tri.getPosY(1) > tri.getPosY(0)) {
+            tri.swapVerts(0, 1);
         }
-        if (tri.pos1.getY() < tri.pos2.getY()) {
-            temp = tri.pos2;
-            tri.pos2 = tri.pos1;
-            tri.pos1 = temp;
+        if (tri.getPosY(2) > tri.getPosY(1)) {
+            tri.swapVerts(1, 2);
         }
-        if (tri.pos0.getY() < tri.pos1.getY()) {
-            temp = tri.pos1;
-            tri.pos1 = tri.pos0;
-            tri.pos0 = temp;
+        if (tri.getPosY(1) > tri.getPosY(0)) {
+            tri.swapVerts(0, 1);
         }
 
         return tri;
@@ -505,30 +527,28 @@ public final class QViewer extends QEncoding {
         // - flattop triangle is drawn from bottom to top
 
         // sort top 2 verticies from left to right
-        if (flatTri.pos0.getX() > flatTri.pos1.getX()) {
-            QVector3 temp = flatTri.pos1;
-            flatTri.pos1 = flatTri.pos0;
-            flatTri.pos0 = temp;
+        if (flatTri.getPosX(0) > flatTri.getPosX(1)) {
+            flatTri.swapVerts(1, 0);
         }
 
-        float invDY = 1.0f / (flatTri.pos0.getY() - flatTri.pos2.getY());
+        float invDY = 1.0f / (flatTri.getPosY(0) - flatTri.getPosY(2));
         if (Float.isNaN(invDY)) { return; }
 
-        float invSlope20 = (flatTri.pos0.getX() - flatTri.pos2.getX()) * invDY;
-        float invSlope21 = (flatTri.pos1.getX() - flatTri.pos2.getX()) * invDY;
+        float invSlope20 = (flatTri.getPosX(0) - flatTri.getPosX(2)) * invDY;
+        float invSlope21 = (flatTri.getPosX(1) - flatTri.getPosX(2)) * invDY;
 
-        int Y_START = Math.max((int)flatTri.pos2.getY(), 0);
-        int Y_END   = Math.min((int)flatTri.pos0.getY(), renderTarget.getHeight() - 1);
+        int Y_START = Math.max((int)flatTri.getPosY(2), 0);
+        int Y_END   = Math.min((int)flatTri.getPosY(0), renderTarget.getHeight() - 1);
 
         for (int drawY = Y_START; drawY <= Y_END; drawY++) {
 
-            float distY = Math.max(0.0f, drawY - flatTri.pos2.getY());
+            float distY = Math.max(0.0f, drawY - flatTri.getPosY(2));
             int X_START = Math.max(
-                (int)(flatTri.pos2.getX() + (invSlope20 * distY)),
+                (int)(flatTri.getPosX(2) + (invSlope20 * distY)),
                 0
             );
             int X_END   = Math.min(
-                (int)(flatTri.pos2.getX() + (invSlope21 * distY)), 
+                (int)(flatTri.getPosX(2) + (invSlope21 * distY)), 
                 renderTarget.getWidth() - 1
             );
 
@@ -549,30 +569,28 @@ public final class QViewer extends QEncoding {
         // - flatbottom triangle is drawn from bottom to top
 
         // sort bottom 2 verticies from left to right
-        if (flatTri.pos0.getX() > flatTri.pos1.getX()) {
-            QVector3 temp = flatTri.pos1;
-            flatTri.pos1 = flatTri.pos0;
-            flatTri.pos0 = temp;
+        if (flatTri.getPosX(0) > flatTri.getPosX(1)) {
+            flatTri.swapVerts(1, 0);
         }
 
-        float invDY = 1.0f / (flatTri.pos2.getY() - flatTri.pos0.getY());
+        float invDY = 1.0f / (flatTri.getPosY(2) - flatTri.getPosY(0));
         if (Float.isNaN(invDY)) { return; }
 
-        float invSlope02 = (flatTri.pos2.getX() - flatTri.pos0.getX()) * invDY;
-        float invSlope12 = (flatTri.pos2.getX() - flatTri.pos1.getX()) * invDY;
+        float invSlope02 = (flatTri.getPosX(2) - flatTri.getPosX(0)) * invDY;
+        float invSlope12 = (flatTri.getPosX(2) - flatTri.getPosX(1)) * invDY;
 
-        int Y_START = Math.max((int)flatTri.pos0.getY(), 0);
-        int Y_END   = Math.min((int)flatTri.pos2.getY(), renderTarget.getHeight() - 1);
+        int Y_START = Math.max((int)flatTri.getPosY(0), 0);
+        int Y_END   = Math.min((int)flatTri.getPosY(2), renderTarget.getHeight() - 1);
 
         for (int drawY = Y_START; drawY <= Y_END; drawY++) {
 
-            float distY = Math.max(0.0f, drawY - flatTri.pos0.getY());
+            float distY = Math.max(0.0f, drawY - flatTri.getPosY(0));
             int X_START = Math.max(
-                (int)(flatTri.pos0.getX() + (invSlope02 * distY)),
+                (int)(flatTri.getPosX(0) + (invSlope02 * distY)),
                 0
             );
             int X_END   = Math.min(
-                (int)(flatTri.pos1.getX() + (invSlope12 * distY)), 
+                (int)(flatTri.getPosX(1) + (invSlope12 * distY)), 
                 renderTarget.getWidth() - 1
             );
 
