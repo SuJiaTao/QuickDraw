@@ -353,14 +353,14 @@ public final class QViewer {
         // - after being cut, the top two verticies will be sorted from left to right
 
         Tri sortedTri = internalSortTriVertsByHeight(tri);
-
+        
         float invSlope20 =
-            (sortedTri.pos0.getY() - sortedTri.pos2.getY()) / 
-            (sortedTri.pos0.getX() - sortedTri.pos2.getX());
+            (sortedTri.pos0.getX() - sortedTri.pos2.getX()) / 
+            (sortedTri.pos0.getY() - sortedTri.pos2.getY());
         float dY21 = sortedTri.pos1.getY() - sortedTri.pos2.getY();
 
         QVector midPoint = new QVector(
-            sortedTri.pos2.getX() + invSlope20 * dY21,
+            sortedTri.pos2.getX() + (invSlope20 * dY21),
             sortedTri.pos1.getY()
         );
 
@@ -374,8 +374,32 @@ public final class QViewer {
             sortedTri.pos1, null, midPoint, null, sortedTri.pos0, null
         );
 
+        try {
+            renderTarget.setColor((int)sortedTri.pos0.getX(), (int)sortedTri.pos0.getY(), QColor.Green.toInt());
+            renderTarget.setColor((int)sortedTri.pos1.getX(), (int)sortedTri.pos1.getY(), QColor.Green.toInt());
+            renderTarget.setColor((int)sortedTri.pos2.getX(), (int)sortedTri.pos2.getY(), QColor.Green.toInt());
+        } catch (Exception e) {
+
+        }
+
+        try {
+            renderTarget.setColor((int)flatTopTri.pos0.getX(), (int)flatTopTri.pos0.getY(), QColor.Blue.toInt());
+            renderTarget.setColor((int)flatTopTri.pos1.getX(), (int)flatTopTri.pos1.getY(), QColor.Blue.toInt());
+            renderTarget.setColor((int)flatTopTri.pos2.getX(), (int)flatTopTri.pos2.getY(), QColor.Blue.toInt());
+        } catch (Exception e) {
+
+        }
+
+        try {
+            renderTarget.setColor((int)flatBottomTri.pos0.getX(), (int)flatBottomTri.pos0.getY(), QColor.Red.toInt());
+            renderTarget.setColor((int)flatBottomTri.pos1.getX(), (int)flatBottomTri.pos1.getY(), QColor.Red.toInt());
+            renderTarget.setColor((int)flatBottomTri.pos2.getX(), (int)flatBottomTri.pos2.getY(), QColor.Red.toInt());
+        } catch (Exception e) {
+
+        }
+
         internalDrawFlatTopTri(flatTopTri, sortedTri);
-        //internalDrawFlatBottomTri(flatBottomTri, sortedTri);
+        internalDrawFlatBottomTri(flatBottomTri, sortedTri);
 
     }
 
@@ -404,63 +428,12 @@ public final class QViewer {
 
     private void internalDrawFlatTopTri(Tri flatTri, Tri sortedTri) {
         
+        // NOTE: 
+        // - vertex arrangement is as follows:
+        //   0 -> LEFT, 1 -> RIGHT, 2 -> BOTTOM POINT
+        // - flattop triangle is drawn from bottom to top
+
         // sort top 2 verticies from left to right
-        if (flatTri.pos0.getX() > flatTri.pos1.getX()) {
-            QVector temp = flatTri.pos1;
-            flatTri.pos1 = flatTri.pos0;
-            flatTri.pos0 = temp;
-        }
-
-        System.out.println("flattop: " + flatTri.toString());
-
-        float invDY = 1.0f / (flatTri.pos0.getY() - flatTri.pos2.getY());
-        System.out.println("invDY: " + invDY);
-        if (Float.isNaN(invDY)) { return; }
-
-        float invSlope20 = (flatTri.pos0.getX() - flatTri.pos2.getX()) * invDY;
-        float invSlope21 = (flatTri.pos1.getX() - flatTri.pos2.getX()) * invDY;
-
-        int Y_START = Math.max((int)flatTri.pos2.getY(), 0);
-        int Y_END   = Math.min((int)flatTri.pos0.getY(), renderTarget.getHeight() - 1);
-
-        System.out.println(String.format("yrange: (%d %d)", Y_START, Y_END));
-
-        for (int drawY = Y_START; drawY <= Y_END; drawY++) {
-
-            float distY = Math.max(0.0f, flatTri.pos0.getY() - drawY);
-            System.out.println("distY: " + distY);
-            int X_START = Math.max(
-                (int)(flatTri.pos2.getX() + (invSlope20 * distY)),
-                0
-            );
-            int X_END   = Math.min(
-                (int)(flatTri.pos2.getX() + (invSlope21 * distY)), 
-                renderTarget.getWidth() - 1
-            );
-
-            System.out.println(String.format("xrange: (%d %d)", X_START, X_END));
-
-            for (int drawX = X_START; drawX <= X_END; drawX++) {
-                renderTarget.getColorData()[renderTarget.coordToDataIndex(drawX, drawY)] = 
-                    QColor.White.toInt();
-            }
-
-        }
-
-        try {
-            renderTarget.setColor((int)flatTri.pos0.getX(), (int)flatTri.pos0.getY(), QColor.Green.toInt());
-            renderTarget.setColor((int)flatTri.pos1.getX(), (int)flatTri.pos1.getY(), QColor.Green.toInt());
-            renderTarget.setColor((int)flatTri.pos2.getX(), (int)flatTri.pos2.getY(), QColor.Green.toInt());
-        } catch (Exception e) {
-            
-        }
-        
-
-    }
-
-    private void internalDrawFlatBottomTri(Tri flatTri, Tri sortedTri) {
-        
-        // sort bottom 2 verticies from left to right
         if (flatTri.pos0.getX() > flatTri.pos1.getX()) {
             QVector temp = flatTri.pos1;
             flatTri.pos1 = flatTri.pos0;
@@ -480,11 +453,55 @@ public final class QViewer {
 
             float distY = Math.max(0.0f, drawY - flatTri.pos2.getY());
             int X_START = Math.max(
-                (int)(flatTri.pos0.getX() + (invSlope20 * distY)),
+                (int)(flatTri.pos2.getX() + (invSlope20 * distY)),
                 0
             );
             int X_END   = Math.min(
-                (int)(flatTri.pos0.getX() + (invSlope21 * distY)), 
+                (int)(flatTri.pos2.getX() + (invSlope21 * distY)), 
+                renderTarget.getWidth() - 1
+            );
+
+            for (int drawX = X_START; drawX <= X_END; drawX++) {
+                renderTarget.getColorData()[renderTarget.coordToDataIndex(drawX, drawY)] = 
+                    QColor.White.toInt();
+            }
+
+        }
+
+    }
+
+    private void internalDrawFlatBottomTri(Tri flatTri, Tri sortedTri) {
+        
+        // NOTE: 
+        // - vertex arrangement is as follows:
+        //   0 -> LEFT, 1 -> RIGHT, 2 -> TOP POINT
+        // - flatbottom triangle is drawn from bottom to top
+
+        // sort bottom 2 verticies from left to right
+        if (flatTri.pos0.getX() > flatTri.pos1.getX()) {
+            QVector temp = flatTri.pos1;
+            flatTri.pos1 = flatTri.pos0;
+            flatTri.pos0 = temp;
+        }
+
+        float invDY = 1.0f / (flatTri.pos2.getY() - flatTri.pos0.getY());
+        if (Float.isNaN(invDY)) { return; }
+
+        float invSlope02 = (flatTri.pos2.getX() - flatTri.pos0.getX()) * invDY;
+        float invSlope12 = (flatTri.pos2.getX() - flatTri.pos1.getX()) * invDY;
+
+        int Y_START = Math.max((int)flatTri.pos0.getY(), 0);
+        int Y_END   = Math.min((int)flatTri.pos2.getY(), renderTarget.getHeight() - 1);
+
+        for (int drawY = Y_START; drawY <= Y_END; drawY++) {
+
+            float distY = Math.max(0.0f, drawY - flatTri.pos0.getY());
+            int X_START = Math.max(
+                (int)(flatTri.pos0.getX() + (invSlope02 * distY)),
+                0
+            );
+            int X_END   = Math.min(
+                (int)(flatTri.pos1.getX() + (invSlope12 * distY)), 
                 renderTarget.getWidth() - 1
             );
 

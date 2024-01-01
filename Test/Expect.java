@@ -532,21 +532,24 @@ public final class Expect {
 
         window.setRenderBuffer(rb);
         
-        QMatrix4x4 meshMatr = QMatrix4x4.TRS(
-                new QVector(0.0f, 0.0f, -3.0f), 
-                QVector.Zero3, 
-                QVector.One
-            );
+        
 
+        float rot = 0;
         while(true) {
             
             eyes.blink( );
+
+            rot += 0.01f;
+            QMatrix4x4 meshMatr = QMatrix4x4.TRS(
+                new QVector(0.0f, 0.0f, -3.0f), 
+                new QVector(0, 0, rot), 
+                QVector.One
+            );
+
             eyes.viewMesh(
                 QMesh.UnitPlane,
                 meshMatr
             );
-
-            meshMatr.rotate(0, 0, 0.1f);
 
             window.updateFrame();
 
