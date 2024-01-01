@@ -299,6 +299,56 @@ public final class QViewer {
 
     }
 
+    private void internalViewTri(Tri tri) {
+        
+        // NOTE:
+        // - from this point forward, all z values will be inverted
+        tri.pos0.setZ(1.0f / tri.pos0.getZ());
+        tri.pos1.setZ(1.0f / tri.pos1.getZ());
+        tri.pos2.setZ(1.0f / tri.pos2.getZ());
+
+        // PROJECT TRI
+        tri.pos0.setX(tri.pos0.getX() * tri.pos0.getZ());
+        tri.pos0.setY(tri.pos0.getY() * tri.pos0.getZ());
+        tri.pos1.setX(tri.pos1.getX() * tri.pos1.getZ());
+        tri.pos1.setY(tri.pos1.getY() * tri.pos1.getZ());
+        tri.pos2.setX(tri.pos2.getX() * tri.pos2.getZ());
+        tri.pos2.setY(tri.pos2.getY() * tri.pos2.getZ());
+
+        // NOTE:
+        // - a triangle must be rasterized in two parts, a line will be cut
+        //   through it's middle highest verticie horizontally, and each partition
+        //   will be draw seperately
+        // - the triangle will have to be sorted by height then cut
+        // - after being cut, the top two verticies will be sorted from left to right
+
+        Tri sortedTri = internalSortTriVertsByHeight(tri);
+
+        float invSlope20 =
+            (sortedTri.pos0.getY() - sortedTri.pos2.getY()) / 
+            (sortedTri.pos0.getX() - sortedTri.pos2.getX());
+        float dY21 = sortedTri.pos1.getY() - sortedTri.pos2.getY();
+
+        QVector midPoint = new QVector(
+            sortedTri.pos2.getX() + invSlope20 * dY21,
+            sortedTri.pos1.getY()
+        );
+
+        Tri flatTopTri = new Tri();
+        flatTopTri.set(
+            sortedTri.pos1, null, midPoint, null, sortedTri.pos2, null
+        );
+
+        Tri flatBottomTri = new Tri();
+        flatBottomTri.set(
+            sortedTri.pos1, null, midPoint, null, sortedTri.pos0, null
+        );
+
+        internalDrawFlatTopTri(flatTopTri, sortedTri);
+        internalDrawFlatBottomTri(flatBottomTri, sortedTri);
+
+    }
+
     private Tri internalSortTriVertsByHeight(Tri tri) { 
 
         QVector temp;
@@ -322,48 +372,81 @@ public final class QViewer {
 
     }
 
-    private Tri[] internalMakeFlatTris(Tri tri) {
-
-        // TODO: finish
-
-        // NOTE:
-        // - a triangle must be rasterized in two parts, a line will be cut
-        //   through it's middle highest verticie horizontally, and each partition
-        //   will be draw seperately
-        // - the triangle will have to be sorted by height then cut
-        // - after being cut, the top two verticies will be sorted from left to right
-        // - this function will output the lower triangle in flatTris[0] and the
-        //   higher in flatTris[1]
-
-        Tri[] flatTris = new Tri[2];
-
-        Tri sortedTri = internalSortTriVertsByHeight(tri);
-
-        float invSlope20 =
-            (sortedTri.pos0.getY() - sortedTri.pos2.getY()) / 
-            (sortedTri.pos0.getX() - sortedTri.pos2.getX());
-
+    private void internalDrawFlatTopTri(Tri flatTri, Tri sortedTri) {
         
-        
+        // sort top 2 verticies from left to right
+        if (flatTri.pos0.getX() > flatTri.pos1.getX()) {
+            QVector temp = flatTri.pos1;
+            flatTri.pos1 = flatTri.pos0;
+            flatTri.pos0 = temp;
+        }
+
+        float invDY = 1.0f / (flatTri.pos0.getY() - flatTri.pos1.getY());
+        if (Float.isNaN(invDY)) { return; }
+
+        float invSlope02 = (flatTri.pos2.getX() - flatTri.pos0.getX()) * invDY;
+        float invSlope12 = (flatTri.pos2.getX() - flatTri.pos1.getX()) * invDY;
+
+        int Y_START = Math.max((int)flatTri.pos0.getY(), 0);
+        int Y_END   = Math.min((int)flatTri.pos2.getY(), renderTarget.getHeight() - 1);
+
+        for (int drawY = Y_START; drawY <= Y_END; drawY++) {
+
+            float distY = Math.max(0.0f, drawY - flatTri.pos0.getY());
+            int X_START = Math.max(
+                (int)(flatTri.pos0.getX() + (invSlope02 * distY)),
+                0
+            );
+            int X_END   = Math.min(
+                (int)(flatTri.pos0.getX() + (invSlope12 * distY)), 
+                renderTarget.getWidth() - 1
+            );
+
+            for (int drawX = X_START; drawX <= X_END; drawX++) {
+                renderTarget.getColorData()[renderTarget.coordToDataIndex(drawX, drawY)] = 
+                    QColor.White.toInt();
+            }
+
+        }
+
     }
 
-    private void internalViewTri(Tri tri) {
+    private void internalDrawFlatBottomTri(Tri flatTri, Tri sortedTri) {
         
-        // NOTE:
-        // - from this point forward, all z values will be inverted
-        tri.pos0.setZ(1.0f / tri.pos0.getZ());
-        tri.pos1.setZ(1.0f / tri.pos1.getZ());
-        tri.pos2.setZ(1.0f / tri.pos2.getZ());
+        // sort bottom 2 verticies from left to right
+        if (flatTri.pos0.getX() > flatTri.pos1.getX()) {
+            QVector temp = flatTri.pos1;
+            flatTri.pos1 = flatTri.pos0;
+            flatTri.pos0 = temp;
+        }
 
-        // PROJECT TRI
-        tri.pos0.setX(tri.pos0.getX() * tri.pos0.getZ());
-        tri.pos0.setY(tri.pos0.getY() * tri.pos0.getZ());
-        tri.pos1.setX(tri.pos1.getX() * tri.pos1.getZ());
-        tri.pos1.setY(tri.pos1.getY() * tri.pos1.getZ());
-        tri.pos2.setX(tri.pos2.getX() * tri.pos2.getZ());
-        tri.pos2.setY(tri.pos2.getY() * tri.pos2.getZ());
+        float invDY = 1.0f / (flatTri.pos0.getY() - flatTri.pos1.getY());
+        if (Float.isNaN(invDY)) { return; }
 
-        //
+        float invSlope20 = (flatTri.pos0.getX() - flatTri.pos2.getX()) * invDY;
+        float invSlope21 = (flatTri.pos1.getX() - flatTri.pos2.getX()) * invDY;
+
+        int Y_START = Math.max((int)flatTri.pos2.getY(), 0);
+        int Y_END   = Math.min((int)flatTri.pos0.getY(), renderTarget.getHeight() - 1);
+
+        for (int drawY = Y_START; drawY <= Y_END; drawY++) {
+
+            float distY = Math.max(0.0f, drawY - flatTri.pos2.getY());
+            int X_START = Math.max(
+                (int)(flatTri.pos0.getX() + (invSlope20 * distY)),
+                0
+            );
+            int X_END   = Math.min(
+                (int)(flatTri.pos0.getX() + (invSlope21 * distY)), 
+                renderTarget.getWidth() - 1
+            );
+
+            for (int drawX = X_START; drawX <= X_END; drawX++) {
+                renderTarget.getColorData()[renderTarget.coordToDataIndex(drawX, drawY)] = 
+                    QColor.White.toInt();
+            }
+
+        }
 
     }
 

@@ -58,6 +58,14 @@ public final class QRenderBuffer {
             (buffer.getWidth() * (buffer.getHeight() - y - 1));
     }
 
+    public int getWidth( ) {
+        return buffer.getWidth( );
+    }
+
+    public int getHeight( ) {
+        return buffer.getHeight( );
+    }
+
     public void clearColorBuffer( ) {
         // TODO: possibly optimize
         // (ensure to profile against regular clear)
