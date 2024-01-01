@@ -529,19 +529,27 @@ public final class Expect {
         rb.getColorData()[rb.coordToDataIndex(5, 5)] = QColor.Red.toInt();
 
         QViewer eyes = new QViewer(rb);
-        eyes.viewMesh(
-            QMesh.UnitPlane, 
-            QMatrix4x4.TRS(
+
+        window.setRenderBuffer(rb);
+        
+        QMatrix4x4 meshMatr = QMatrix4x4.TRS(
                 new QVector(0.0f, 0.0f, -3.0f), 
                 QVector.Zero3, 
                 QVector.One
-            ));
-
-        window.setRenderBuffer(rb);
-        window.updateFrame();
+            );
 
         while(true) {
             
+            eyes.blink( );
+            eyes.viewMesh(
+                QMesh.UnitPlane,
+                meshMatr
+            );
+
+            meshMatr.rotate(0, 0, 0.1f);
+
+            window.updateFrame();
+
         }
     }
 }

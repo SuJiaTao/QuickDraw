@@ -24,9 +24,9 @@ public final class QViewer {
     // PRIVATE MEMBERS
     private float         nearClip   = DEFAULT_NEAR_CLIP;
     private QColor        clearColor = DEFAULT_CLEAR_COLOR;
-    private QMatrix4x4    projectionTransform = new QMatrix4x4(QMatrix4x4.Identity);
     private QMatrix4x4    viewTransform       = new QMatrix4x4(QMatrix4x4.Identity);
     private QRenderBuffer renderTarget        = null;
+    private float         viewLeft, viewRight, viewBottom, viewTop;
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE CLASSES
@@ -101,10 +101,10 @@ public final class QViewer {
         QMesh viewMesh = new QMesh(mesh);
         for (int posIndex = 0; posIndex < viewMesh.getPosCount(); posIndex++) {
             QVector vert = new QVector(viewMesh.getPos(posIndex));
+            
             vert = QMatrix4x4.multiply3(meshTransform, vert);
             vert = QMatrix4x4.multiply3(viewTransform, vert);
-            vert = QMatrix4x4.multiply3(projectionTransform, vert);
-            System.out.print(vert);
+            
             viewMesh.setPos(posIndex, vert.getX(), vert.getY(), vert.getZ());
         }
 
@@ -121,10 +121,8 @@ public final class QViewer {
             );
 
             Tri[] clipTris = internalClipTri(viewTri);
-            System.out.println("clip tris: " + clipTris.length);
 
             for (Tri tri : clipTris) {
-                System.out.println("tri: " + tri.toString());
                 internalViewTri(tri);
             }
         }
@@ -312,6 +310,20 @@ public final class QViewer {
 
     }
 
+    private void internalMapVertToScreenSpace(QVector vert) {
+        // NOTE:
+        //  - this transformation will map (left, right) -> (0, targetWidth) and
+        //    (bottom, top) -> (0, targetheight). this is essentially a worldspace
+        //    to screenspace transformation
+        //  - in order to do this, the space is translated such that the bottom left
+        //    corner is (0, 0), and then it is scaled to fit the screenspace
+
+        vert.setX(vert.getX() - viewLeft);
+        vert.setY(vert.getY() - viewBottom);
+        vert.setX(vert.getX() * (renderTarget.getWidth()  / (viewRight - viewLeft)));
+        vert.setY(vert.getY() * (renderTarget.getHeight() / (viewTop - viewBottom)));
+    }
+
     private void internalViewTri(Tri tri) {
         
         // NOTE:
@@ -327,6 +339,11 @@ public final class QViewer {
         tri.pos1.setY(tri.pos1.getY() * tri.pos1.getZ());
         tri.pos2.setX(tri.pos2.getX() * tri.pos2.getZ());
         tri.pos2.setY(tri.pos2.getY() * tri.pos2.getZ());
+
+        // MAP TO SCREEN SPACE
+        internalMapVertToScreenSpace(tri.pos0);
+        internalMapVertToScreenSpace(tri.pos1);
+        internalMapVertToScreenSpace(tri.pos2);
 
         // NOTE:
         // - a triangle must be rasterized in two parts, a line will be cut
@@ -357,12 +374,8 @@ public final class QViewer {
             sortedTri.pos1, null, midPoint, null, sortedTri.pos0, null
         );
 
-        System.out.println("sorted tri: " + sortedTri.toString());
-        System.out.println("flattop tri: " + flatTopTri.toString());
-        System.out.println("flatbot tri: " + flatBottomTri.toString());
-
         internalDrawFlatTopTri(flatTopTri, sortedTri);
-        internalDrawFlatBottomTri(flatBottomTri, sortedTri);
+        //internalDrawFlatBottomTri(flatBottomTri, sortedTri);
 
     }
 
@@ -398,26 +411,34 @@ public final class QViewer {
             flatTri.pos0 = temp;
         }
 
-        float invDY = 1.0f / (flatTri.pos0.getY() - flatTri.pos1.getY());
+        System.out.println("flattop: " + flatTri.toString());
+
+        float invDY = 1.0f / (flatTri.pos0.getY() - flatTri.pos2.getY());
+        System.out.println("invDY: " + invDY);
         if (Float.isNaN(invDY)) { return; }
 
-        float invSlope02 = (flatTri.pos2.getX() - flatTri.pos0.getX()) * invDY;
-        float invSlope12 = (flatTri.pos2.getX() - flatTri.pos1.getX()) * invDY;
+        float invSlope20 = (flatTri.pos0.getX() - flatTri.pos2.getX()) * invDY;
+        float invSlope21 = (flatTri.pos1.getX() - flatTri.pos2.getX()) * invDY;
 
-        int Y_START = Math.max((int)flatTri.pos0.getY(), 0);
-        int Y_END   = Math.min((int)flatTri.pos2.getY(), renderTarget.getHeight() - 1);
+        int Y_START = Math.max((int)flatTri.pos2.getY(), 0);
+        int Y_END   = Math.min((int)flatTri.pos0.getY(), renderTarget.getHeight() - 1);
+
+        System.out.println(String.format("yrange: (%d %d)", Y_START, Y_END));
 
         for (int drawY = Y_START; drawY <= Y_END; drawY++) {
 
-            float distY = Math.max(0.0f, drawY - flatTri.pos0.getY());
+            float distY = Math.max(0.0f, flatTri.pos0.getY() - drawY);
+            System.out.println("distY: " + distY);
             int X_START = Math.max(
-                (int)(flatTri.pos0.getX() + (invSlope02 * distY)),
+                (int)(flatTri.pos2.getX() + (invSlope20 * distY)),
                 0
             );
             int X_END   = Math.min(
-                (int)(flatTri.pos0.getX() + (invSlope12 * distY)), 
+                (int)(flatTri.pos2.getX() + (invSlope21 * distY)), 
                 renderTarget.getWidth() - 1
             );
+
+            System.out.println(String.format("xrange: (%d %d)", X_START, X_END));
 
             for (int drawX = X_START; drawX <= X_END; drawX++) {
                 renderTarget.getColorData()[renderTarget.coordToDataIndex(drawX, drawY)] = 
@@ -425,6 +446,15 @@ public final class QViewer {
             }
 
         }
+
+        try {
+            renderTarget.setColor((int)flatTri.pos0.getX(), (int)flatTri.pos0.getY(), QColor.Green.toInt());
+            renderTarget.setColor((int)flatTri.pos1.getX(), (int)flatTri.pos1.getY(), QColor.Green.toInt());
+            renderTarget.setColor((int)flatTri.pos2.getX(), (int)flatTri.pos2.getY(), QColor.Green.toInt());
+        } catch (Exception e) {
+            
+        }
+        
 
     }
 
@@ -437,7 +467,7 @@ public final class QViewer {
             flatTri.pos0 = temp;
         }
 
-        float invDY = 1.0f / (flatTri.pos0.getY() - flatTri.pos1.getY());
+        float invDY = 1.0f / (flatTri.pos0.getY() - flatTri.pos2.getY());
         if (Float.isNaN(invDY)) { return; }
 
         float invSlope20 = (flatTri.pos0.getX() - flatTri.pos2.getX()) * invDY;
@@ -445,9 +475,6 @@ public final class QViewer {
 
         int Y_START = Math.max((int)flatTri.pos2.getY(), 0);
         int Y_END   = Math.min((int)flatTri.pos0.getY(), renderTarget.getHeight() - 1);
-        System.out.println(
-            String.format("y:<%f %f> (%d %d)", flatTri.pos2.getY(), flatTri.pos0.getY(), Y_START, Y_END)
-        );
 
         for (int drawY = Y_START; drawY <= Y_END; drawY++) {
 
@@ -462,9 +489,7 @@ public final class QViewer {
             );
 
             for (int drawX = X_START; drawX <= X_END; drawX++) {
-                System.out.println(String.format("\tx:(%d %d)", X_START, X_END));
-                renderTarget.getColorData()[renderTarget.coordToDataIndex(drawX, drawY)] = 
-                    QColor.White.toInt();
+                renderTarget.setColor(drawX, drawY, QColor.White.toInt());
             }
 
         }
@@ -473,20 +498,26 @@ public final class QViewer {
 
     /////////////////////////////////////////////////////////////////
     // CONSTRUCTORS
-    public QViewer( ) {
-        init(null);
-    }
-
     public QViewer(QRenderBuffer renderTarget) {
         init(renderTarget);
     }
 
-    /////////////////////////////////////////////////////////////////
-    // PUBLIC METHODS
-    public void setRenderTarget(QRenderBuffer target) {
-        renderTarget = target;
+    public QViewer(QRenderBuffer renderTarget, float aspect) {
+        init(renderTarget);
+        setViewBounds(-aspect, aspect, -1.0f, 1.0f);
     }
 
+    public QViewer(
+        QRenderBuffer renderTarget, 
+        float viewLeft, float viewRight,
+        float viewBottom, float viewTop
+    ) {
+        init(renderTarget);
+        setViewBounds(viewLeft, viewRight, viewBottom, viewTop);
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // PUBLIC METHODS
     public void setNearClip(float val) {
         nearClip = Math.min(MIN_NEAR_CLIP, val);
     }
@@ -496,20 +527,10 @@ public final class QViewer {
     }
 
     public void setViewBounds(float left, float right, float bottom, float top) {
-        // TODO: this may also be completely wrong
-        // refer to
-        // https://registry.khronos.org/OpenGL-Refpages/gl2.1/xhtml/glOrtho.xml
-        projectionTransform.set(QMatrix4x4.Identity);
-        projectionTransform.scale(
-            2.0f / (right - left),
-            2.0f / (top - bottom),
-            1.0f
-        );
-        projectionTransform.translate(
-            - (right + left) / (right - left),
-            - (top + bottom) / (top - bottom),
-            0.0f
-        );
+        viewLeft   = left;
+        viewRight  = right;
+        viewBottom = bottom;
+        viewTop    = top;
     }
 
     public void setCamera(
@@ -527,6 +548,11 @@ public final class QViewer {
                 1.0f / scale.getZ()
             )
         );
+    }
+
+    public void blink( ) {
+        renderTarget.clearColorBuffer();
+        renderTarget.clearDepthBuffer();
     }
 
     public void viewMesh(

@@ -48,8 +48,24 @@ public final class QRenderBuffer {
         return colorBuffer;
     }
 
+    public int getColor(int x, int y) {
+        return colorBuffer[coordToDataIndex(x, y)];
+    }
+
+    public void setColor(int x, int y, int c) {
+        colorBuffer[coordToDataIndex(x, y)] = c;
+    }
+
     public float[] getDepthData( ) {
         return depthBuffer;
+    }
+
+    public float getDepth(int x, int y) {
+        return depthBuffer[coordToDataIndex(x, y)];
+    }
+
+    public void setDepth(int x, int y, float d) {
+        depthBuffer[coordToDataIndex(x, y)] = d;
     }
 
     public int coordToDataIndex(int x, int y) {
