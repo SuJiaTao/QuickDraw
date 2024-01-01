@@ -299,6 +299,54 @@ public final class QViewer {
 
     }
 
+    private Tri internalSortTriVertsByHeight(Tri tri) { 
+
+        QVector temp;
+        if (tri.pos0.getY() > tri.pos1.getY()) {
+            temp = tri.pos1;
+            tri.pos1 = tri.pos0;
+            tri.pos0 = temp;
+        }
+        if (tri.pos1.getY() > tri.pos2.getY()) {
+            temp = tri.pos2;
+            tri.pos2 = tri.pos1;
+            tri.pos1 = temp;
+        }
+        if (tri.pos0.getY() > tri.pos1.getY()) {
+            temp = tri.pos1;
+            tri.pos1 = tri.pos0;
+            tri.pos0 = temp;
+        }
+
+        return tri;
+
+    }
+
+    private Tri[] internalMakeFlatTris(Tri tri) {
+
+        // TODO: finish
+
+        // NOTE:
+        // - a triangle must be rasterized in two parts, a line will be cut
+        //   through it's middle highest verticie horizontally, and each partition
+        //   will be draw seperately
+        // - the triangle will have to be sorted by height then cut
+        // - after being cut, the top two verticies will be sorted from left to right
+        // - this function will output the lower triangle in flatTris[0] and the
+        //   higher in flatTris[1]
+
+        Tri[] flatTris = new Tri[2];
+
+        Tri sortedTri = internalSortTriVertsByHeight(tri);
+
+        float invSlope20 =
+            (sortedTri.pos0.getY() - sortedTri.pos2.getY()) / 
+            (sortedTri.pos0.getX() - sortedTri.pos2.getX());
+
+        
+        
+    }
+
     private void internalViewTri(Tri tri) {
         
         // NOTE:
