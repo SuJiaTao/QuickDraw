@@ -48,6 +48,15 @@ public final class QViewer {
             uv2  = _uv2;
 
         }
+
+        public String toString( ) {
+            return String.format(
+                "<tri %s %s %s>",
+                pos0.toString(),
+                pos1.toString(),
+                pos2.toString()
+            );
+        }
     }
 
     private class ClipState {
@@ -95,6 +104,7 @@ public final class QViewer {
             vert = QMatrix4x4.multiply3(meshTransform, vert);
             vert = QMatrix4x4.multiply3(viewTransform, vert);
             vert = QMatrix4x4.multiply3(projectionTransform, vert);
+            System.out.print(vert);
             viewMesh.setPos(posIndex, vert.getX(), vert.getY(), vert.getZ());
         }
 
@@ -111,8 +121,10 @@ public final class QViewer {
             );
 
             Tri[] clipTris = internalClipTri(viewTri);
+            System.out.println("clip tris: " + clipTris.length);
 
             for (Tri tri : clipTris) {
+                System.out.println("tri: " + tri.toString());
                 internalViewTri(tri);
             }
         }
@@ -345,6 +357,10 @@ public final class QViewer {
             sortedTri.pos1, null, midPoint, null, sortedTri.pos0, null
         );
 
+        System.out.println("sorted tri: " + sortedTri.toString());
+        System.out.println("flattop tri: " + flatTopTri.toString());
+        System.out.println("flatbot tri: " + flatBottomTri.toString());
+
         internalDrawFlatTopTri(flatTopTri, sortedTri);
         internalDrawFlatBottomTri(flatBottomTri, sortedTri);
 
@@ -353,17 +369,17 @@ public final class QViewer {
     private Tri internalSortTriVertsByHeight(Tri tri) { 
 
         QVector temp;
-        if (tri.pos0.getY() > tri.pos1.getY()) {
+        if (tri.pos0.getY() < tri.pos1.getY()) {
             temp = tri.pos1;
             tri.pos1 = tri.pos0;
             tri.pos0 = temp;
         }
-        if (tri.pos1.getY() > tri.pos2.getY()) {
+        if (tri.pos1.getY() < tri.pos2.getY()) {
             temp = tri.pos2;
             tri.pos2 = tri.pos1;
             tri.pos1 = temp;
         }
-        if (tri.pos0.getY() > tri.pos1.getY()) {
+        if (tri.pos0.getY() < tri.pos1.getY()) {
             temp = tri.pos1;
             tri.pos1 = tri.pos0;
             tri.pos0 = temp;
@@ -429,6 +445,9 @@ public final class QViewer {
 
         int Y_START = Math.max((int)flatTri.pos2.getY(), 0);
         int Y_END   = Math.min((int)flatTri.pos0.getY(), renderTarget.getHeight() - 1);
+        System.out.println(
+            String.format("y:<%f %f> (%d %d)", flatTri.pos2.getY(), flatTri.pos0.getY(), Y_START, Y_END)
+        );
 
         for (int drawY = Y_START; drawY <= Y_END; drawY++) {
 
@@ -443,6 +462,7 @@ public final class QViewer {
             );
 
             for (int drawX = X_START; drawX <= X_END; drawX++) {
+                System.out.println(String.format("\tx:(%d %d)", X_START, X_END));
                 renderTarget.getColorData()[renderTarget.coordToDataIndex(drawX, drawY)] = 
                     QColor.White.toInt();
             }

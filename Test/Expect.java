@@ -532,7 +532,7 @@ public final class Expect {
         eyes.viewMesh(
             QMesh.UnitPlane, 
             QMatrix4x4.TRS(
-                new QVector(0.0f, -5.0f, -0.005f), 
+                new QVector(0.0f, 0.0f, -3.0f), 
                 QVector.Zero3, 
                 QVector.One
             ));
