@@ -9,7 +9,7 @@ import QDraw.QException.PointOfError;
 public final class QMesh extends QEncoding {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
-    private static final float[] UNIT_PLANE_VERTEX_DATA = {
+    private static final float[] UNIT_PLANE_POSN_DATA = {
         -1.0f, -1.0f, 0.0f,
         -1.0f,  1.0f, 0.0f,
          1.0f,  1.0f, 0.0f,
@@ -26,9 +26,29 @@ public final class QMesh extends QEncoding {
     };
 
     public static final QMesh UnitPlane = new QMesh(
-        UNIT_PLANE_VERTEX_DATA, 
+        UNIT_PLANE_POSN_DATA, 
         UNIT_PLANE_UV_DATA, 
         UNIT_PLANE_FACE_DATA
+    );
+
+    private static final float[] RIGHT_TRIANGLE_POSN_DATA = {
+        -1.0f, -1.0f, 0.0f,
+        -1.0f,  1.0f, 0.0f,
+         1.0f,  1.0f, 0.0f,
+    };
+    private static final float[] RIGHT_TRI_UV_DATA = {
+        0.0f, 0.0f,
+        0.0f, 1.0f,
+        1.0f, 1.0f,
+    };
+    private static final int[][] RIGHT_TRI_FACE_DATA = {
+        { 0, 0, 1, 1, 2, 2 }
+    };
+
+    public static final QMesh RightTriangle = new QMesh(
+        RIGHT_TRIANGLE_POSN_DATA,
+        RIGHT_TRI_UV_DATA,
+        RIGHT_TRI_FACE_DATA
     );
 
     /////////////////////////////////////////////////////////////////

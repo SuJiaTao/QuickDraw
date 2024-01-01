@@ -252,20 +252,26 @@ public final class QVector extends QEncoding {
     }
 
     public QVector(float x, float y) {
-        components[VCTR_INDEX_X] = x;
-        components[VCTR_INDEX_Y] = y;
-        components[VCTR_INDEX_Z] = 0.0f;
-        components[VCTR_INDEX_W] = 1.0f;
+        set(x, y, 0.0f, 1.0f);
     }
 
     public QVector(float x, float y, float z) {
-        components[VCTR_INDEX_X] = x;
-        components[VCTR_INDEX_Y] = y;
-        components[VCTR_INDEX_Z] = z;
-        components[VCTR_INDEX_W] = 1.0f;
+        set(x, y, z, 1.0f);
     }
 
     public QVector(float x, float y, float z, float w) {
+        set(x, y, z, w);
+    }
+
+    public void set(QVector other) {
+        set(other.getComponents());
+    }
+
+    public void set(float[] comp4) {
+        System.arraycopy(comp4, 0, components, 0, VCTR_NUM_CMPS);
+    }
+
+    public void set(float x, float y, float z, float w) {
         components[VCTR_INDEX_X] = x;
         components[VCTR_INDEX_Y] = y;
         components[VCTR_INDEX_Z] = z;

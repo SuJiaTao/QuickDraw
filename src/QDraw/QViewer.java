@@ -31,8 +31,12 @@ public final class QViewer {
     /////////////////////////////////////////////////////////////////
     // PRIVATE CLASSES
     private class Tri {
-        public QVector pos0 = null, pos1 = null, pos2 = null;
-        public QVector uv0  = null, uv1  = null, uv2  = null;
+        public QVector pos0 = new QVector(), 
+                       pos1 = new QVector(), 
+                       pos2 = new QVector();
+        public QVector uv0  = new QVector(), 
+                       uv1  = new QVector(), 
+                       uv2  = new QVector();
 
         public void set(
             QVector _pos0, QVector _uv0, 
@@ -40,12 +44,14 @@ public final class QViewer {
             QVector _pos2, QVector _uv2
         ) {
 
-            pos0 = _pos0;
-            pos1 = _pos1;
-            pos2 = _pos2;
-            uv0  = _uv0;
-            uv1  = _uv1;
-            uv2  = _uv2;
+            pos0.set(_pos0);
+            pos1.set(_pos1);
+            pos2.set(_pos2);
+            
+            // todo: finish UV interpolation
+            // uv0.set(_uv0);
+            // uv1.set(_uv1);
+            // uv2.set(_uv2);
 
         }
 
@@ -182,15 +188,20 @@ public final class QViewer {
     }
 
     private QVector internalFindClipIntersect(QVector pI, QVector pF) {
+        // refer to
+        // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_cliptri.c
+
         float invDZ   = 1.0f / (pF.getZ() - pI.getZ());
         float slopeXZ = (pF.getX() - pI.getX()) * invDZ;
         float slopeYZ = (pF.getY() - pI.getY()) * invDZ;
         float dClip   = (nearClip - pI.getZ());
+
         return new QVector(
             pI.getX() + slopeXZ * dClip,
             pI.getY() + slopeYZ * dClip,
             nearClip
         );
+        
     }
 
     private Tri[] internalClipTriCase1(Tri tri, ClipState clipState) {
@@ -265,7 +276,7 @@ public final class QViewer {
         quadTri0.set(pos02, null, shuffledTri.pos0, null, shuffledTri.pos1, null);
 
         Tri quadTri1 = new Tri();
-        quadTri1.set(shuffledTri.pos1, null, pos12, null, pos02, null);
+        quadTri1.set(pos02, null, shuffledTri.pos1, null, pos12, null);
 
         return new Tri[] { quadTri0, quadTri1 };
 

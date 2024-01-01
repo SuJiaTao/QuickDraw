@@ -540,8 +540,8 @@ public final class Expect {
 
             rot += 0.05f;
             QMatrix4x4 meshMatr = QMatrix4x4.TRS(
-                new QVector(0.0f, 0.0f, -1.75f), 
-                new QVector(rot, 35.0f, 0.0f), 
+                new QVector(0.0f, 0.0f, -1.25f), 
+                new QVector(rot, rot, rot), 
                 QVector.One
             );
 
