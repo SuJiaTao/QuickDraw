@@ -24,8 +24,8 @@ public final class QViewer {
     // PRIVATE MEMBERS
     private float         nearClip   = DEFAULT_NEAR_CLIP;
     private QColor        clearColor = DEFAULT_CLEAR_COLOR;
-    private QMatrix4x4    projectionTransform = QMatrix4x4.Identity;
-    private QMatrix4x4    viewTransform       = QMatrix4x4.Identity;
+    private QMatrix4x4    projectionTransform = new QMatrix4x4(QMatrix4x4.Identity);
+    private QMatrix4x4    viewTransform       = new QMatrix4x4(QMatrix4x4.Identity);
     private QRenderBuffer renderTarget        = null;
 
     /////////////////////////////////////////////////////////////////
@@ -506,6 +506,13 @@ public final class QViewer {
                 1.0f / scale.getZ()
             )
         );
+    }
+
+    public void viewMesh(
+        QMesh mesh,
+        QMatrix4x4 meshTransform
+    ) {
+        internalViewMesh(mesh, meshTransform);
     }
 
 }

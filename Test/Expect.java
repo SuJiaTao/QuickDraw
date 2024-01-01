@@ -348,6 +348,18 @@ public final class Expect {
                 0.0f, 1.0f, 0.0f, 1.0f
             )
         );
+        Expect(
+            QMatrix4x4.rotate(new QMatrix4x4(), new QVector(1.0f, 2.0f, 3.0f)),
+            new QMatrix4x4().rotate(new QVector(1.0f, 2.0f, 3.0f))
+        );
+        Expect(
+            QMatrix4x4.translate(new QMatrix4x4(), new QVector(1.0f, 2.0f, 3.0f)),
+            new QMatrix4x4().translate(new QVector(1.0f, 2.0f, 3.0f))
+        );
+        Expect(
+            QMatrix4x4.scale(new QMatrix4x4(), new QVector(1.0f, 2.0f, 3.0f)),
+            new QMatrix4x4().scale(new QVector(1.0f, 2.0f, 3.0f))
+        );
     }
 
     public static void MeshTest( ) {
@@ -516,10 +528,20 @@ public final class Expect {
         QWindow window   = new QWindow("testwin", 500, 500);
         rb.getColorData()[rb.coordToDataIndex(5, 5)] = QColor.Red.toInt();
 
+        QViewer eyes = new QViewer(rb);
+        eyes.viewMesh(
+            QMesh.UnitPlane, 
+            QMatrix4x4.TRS(
+                new QVector(0.0f, -5.0f, -0.005f), 
+                QVector.Zero3, 
+                QVector.One
+            ));
+
         window.setRenderBuffer(rb);
+        window.updateFrame();
 
         while(true) {
-            window.updateFrame();
+            
         }
     }
 }

@@ -139,7 +139,7 @@ public final class QMatrix4x4 extends QEncoding {
     public QMatrix4x4 multiply4x4(QMatrix4x4 m2) {
         // TODO: possibly optimize?
         System.arraycopy(
-            multiply4x4(this, m2), 
+            multiply4x4(this, m2).getComponents(), 
             0, 
             components, 
             0, 
