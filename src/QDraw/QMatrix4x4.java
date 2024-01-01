@@ -1,8 +1,10 @@
 // Bailey JT Brown
-// 2023
+// 2023-2024
 // QMatrix4x4.java
 
 package QDraw;
+
+import java.util.Arrays;
 
 import QDraw.QException.PointOfError;
 
@@ -23,8 +25,13 @@ public final class QMatrix4x4 extends QEncoding {
         0.0f, 0.0f, 0.0f, 0.0f
     };
 
-    public static final QMatrix4x4 Identity = new QMatrix4x4(COMPONENTS_IDENTITY);
-    public static final QMatrix4x4 Zero     = new QMatrix4x4(COMPONENTS_ZERO);
+    public static QMatrix4x4 Identity( ) {
+        return new QMatrix4x4(COMPONENTS_IDENTITY);
+    }
+
+    public static final QMatrix4x4 Zero( ) {
+        return new QMatrix4x4(COMPONENTS_ZERO);
+    }
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
@@ -32,127 +39,46 @@ public final class QMatrix4x4 extends QEncoding {
     private float[] components = new float[MTR_NUM_CMPS];
 
     /////////////////////////////////////////////////////////////////
-    // PRIVATE METHODS
-    private static float sinf(float degrees) {
-        // TODO: optimize!!
-        return (float)Math.sin(degrees * MTR_TO_RADIANS);
-    }
-
-    private static float cosf(float degrees) {
-        // TODO: optimize!!
-        return (float)Math.cos(degrees * MTR_TO_RADIANS);
-    }
-
-    // quick reference: col -> x, row -> y
-    private static int getComponentIndex(int col, int row) {
-        return col + (MTR_NUM_ROWS * row);
-    }
-
-    private float getValue(int col, int row) {
-        return components[getComponentIndex(col, row)];
-    }
-
-    /////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
+    public float getValue(int col, int row) {
+        return QMath.get4x4(components, col, row);
+    }
+
+    public void setValue(int col, int row, float val) {
+        QMath.set4x4(0, components, col, row, val);
+    }
+
     public void set(float[] vec) {
-        if (!(vec.length == MTR_NUM_CMPS)) {
-            throw new QException(
-                PointOfError.InvalidData, 
-                "can only construct matrix4x4 with size 16 vector." +
-                " given was size " + vec.length
-            );
-        }
-        System.arraycopy(
-            vec, 
-            0, 
-            components, 
-            0, 
-            MTR_NUM_CMPS
-        );
+        QMath.copy4x4(components, vec);
     }
 
     public void set(QMatrix4x4 m2) {
-        System.arraycopy(
-            m2.getComponents(),
-            0, 
-            components,
-            0,
-            MTR_NUM_CMPS
-        );
+        QMath.copy4x4(0, components, 0, m2.components);
     }
 
     public float[] getComponents( ) {
         return components;
     }
 
-    public static float[] multiply4(QMatrix4x4 mat4x4, float[] vec) {
-        float[] returnComponents = new float[VCTR_NUM_CMPS];
-        for (int vCompIndex = 0; vCompIndex < VCTR_NUM_CMPS; vCompIndex++) {
-            for (int columnIndex = 0; columnIndex < MTR_NUM_COLUMNS; columnIndex++) {
-                returnComponents[vCompIndex] +=
-                    vec[columnIndex] * 
-                    mat4x4.getValue(columnIndex, vCompIndex);
-            }
-        }
-        return returnComponents;
+    public static QVector3 multiply(QMatrix4x4 m, QVector3 v) {
+        QVector3 temp = v.copy();
+        QMath.mul3_4x4(temp.getComponents(), m.components);
+        return temp;
     }
 
-    public static QVector multiply4(QMatrix4x4 mat4x4, QVector vec) {
-        return new QVector(multiply4(mat4x4, vec.getComponents()));
+    public static QMatrix4x4 multiply(QMatrix4x4 m1, QMatrix4x4 m2) {
+        return new QMatrix4x4(QMath.mul4x4(m1.components, m2.components));
     }
 
-    public QVector multiply4(QVector vec) {
-        return multiply4(this, vec);
-    }
-
-    public static float[] multiply3(QMatrix4x4 mat4x4, float[] vec3) {
-        return multiply4(mat4x4, new float[] { vec3[0], vec3[1], vec3[2], 1.0f });
-    }
-
-    public static QVector multiply3(QMatrix4x4 mat4x4, QVector vec3) {
-        return multiply4(mat4x4, vec3).setW(1.0f);
-    }
-
-    public QVector multiply3(QVector vec3) {
-        return multiply3(this, vec3);
-    }
-
-    public static float[] multiply4x4(float[] m1, float[] m2) {
-        // stolen from https://github.com/SuJiaTao/Caesium/blob/master/csm_matrix.c
-        float[] returnComponents = new float[MTR_NUM_CMPS];
-        for (int i = 0; i < MTR_NUM_ROWS; i++) {
-            for (int j = 0; j < MTR_NUM_COLUMNS; j++) {
-                for (int k = 0; k < MTR_NUM_ROWS; k++) {
-                    returnComponents[getComponentIndex(i, j)] +=
-                        m1[getComponentIndex(i, k)] * 
-                        m2[getComponentIndex(k, j)];
-                }
-            }
-        }
-        return returnComponents;
-    }
-
-    public static QMatrix4x4 multiply4x4(QMatrix4x4 m1, QMatrix4x4 m2) {
-        return new QMatrix4x4(multiply4x4(m1.getComponents(), m2.getComponents()));
-    }
-
-    public QMatrix4x4 multiply4x4(QMatrix4x4 m2) {
-        // TODO: possibly optimize?
-        System.arraycopy(
-            multiply4x4(this, m2).getComponents(), 
-            0, 
-            components, 
-            0, 
-            MTR_NUM_CMPS
-        );
-        return this;
+    public void multiply(QMatrix4x4 m2) {
+        set(QMath.mul4x4(this.components, m2.components));
     }
 
     public static QMatrix4x4 scaleMatrix(float s) {
         return scaleMatrix(s, s, s);
     }
 
-    public static QMatrix4x4 scaleMatrix(QVector vec3) {
+    public static QMatrix4x4 scaleMatrix(QVector3 vec3) {
         return scaleMatrix(vec3.getX(), vec3.getY(), vec3.getZ());
     }
 
@@ -166,7 +92,7 @@ public final class QMatrix4x4 extends QEncoding {
         return new QMatrix4x4(returnComponents);
     }
 
-    public static QMatrix4x4 translationMatrix(QVector vec3) {
+    public static QMatrix4x4 translationMatrix(QVector3 vec3) {
         return translationMatrix(vec3.getX(), vec3.getY(), vec3.getZ());
     }
 
@@ -180,7 +106,7 @@ public final class QMatrix4x4 extends QEncoding {
         return new QMatrix4x4(returnComponents);
     }
 
-    public static QMatrix4x4 rotationMatrix(QVector vec3) {
+    public static QMatrix4x4 rotationMatrix(QVector3 vec3) {
         return rotationMatrix(vec3.getX(), vec3.getY(), vec3.getZ());
     }
 
@@ -189,12 +115,12 @@ public final class QMatrix4x4 extends QEncoding {
         // references:
         // https://github.com/SuJiaTao/Caesium/blob/master/csm_matrix.c
         // https://math.stackexchange.com/questions/1882276/combining-all-three-rotation-matrices
-        float cosX = cosf(x);
-        float cosY = cosf(y);
-        float cosZ = cosf(z);
-        float sinX = sinf(x);
-        float sinY = sinf(y);
-        float sinZ = sinf(z);
+        float cosX = QMath.cosf(x);
+        float cosY = QMath.cosf(y);
+        float cosZ = QMath.cosf(z);
+        float sinX = QMath.sinf(x);
+        float sinY = QMath.sinf(y);
+        float sinZ = QMath.sinf(z);
         float sinXsinY = sinX * sinY;
         float cosXsinY = cosX * sinY;
 
@@ -224,74 +150,74 @@ public final class QMatrix4x4 extends QEncoding {
     }
 
     public QMatrix4x4 scale(float s) {
-        multiply4x4(QMatrix4x4.scaleMatrix(s));
+        multiply(QMatrix4x4.scaleMatrix(s));
         return this;
     }
 
     public QMatrix4x4 scale(float x, float y, float z) {
-        multiply4x4(QMatrix4x4.scaleMatrix(x, y, z));
+        multiply(QMatrix4x4.scaleMatrix(x, y, z));
         return this;
     }
 
-    public QMatrix4x4 scale(QVector vec3) {
-        multiply4x4(QMatrix4x4.scaleMatrix(vec3));
+    public QMatrix4x4 scale(QVector3 vec3) {
+        multiply(QMatrix4x4.scaleMatrix(vec3));
         return this;
     }
 
     public static QMatrix4x4 scale(QMatrix4x4 mat, float s) {
-        return QMatrix4x4.multiply4x4(mat, QMatrix4x4.scaleMatrix(s));
+        return QMatrix4x4.multiply(mat, QMatrix4x4.scaleMatrix(s));
     }
 
     public static QMatrix4x4 scale(QMatrix4x4 mat, float x, float y, float z) {
-        return QMatrix4x4.multiply4x4(mat, QMatrix4x4.scaleMatrix(x, y, z));
+        return QMatrix4x4.multiply(mat, QMatrix4x4.scaleMatrix(x, y, z));
     }
 
-    public static QMatrix4x4 scale(QMatrix4x4 mat, QVector vec3) {
-        return QMatrix4x4.multiply4x4(mat, QMatrix4x4.scaleMatrix(vec3));
+    public static QMatrix4x4 scale(QMatrix4x4 mat, QVector3 vec3) {
+        return QMatrix4x4.multiply(mat, QMatrix4x4.scaleMatrix(vec3));
     }
 
     public QMatrix4x4 translate(float x, float y, float z) {
-        multiply4x4(QMatrix4x4.translationMatrix(x, y, z));
+        multiply(QMatrix4x4.translationMatrix(x, y, z));
         return this;
     }
 
-    public QMatrix4x4 translate(QVector vec3) {
-        multiply4x4(QMatrix4x4.translationMatrix(vec3));
+    public QMatrix4x4 translate(QVector3 vec3) {
+        multiply(QMatrix4x4.translationMatrix(vec3));
         return this;
     }
 
     public static QMatrix4x4 translate(QMatrix4x4 mat, float x, float y, float z) {
-        return QMatrix4x4.multiply4x4(mat, QMatrix4x4.translationMatrix(x, y, z));
+        return QMatrix4x4.multiply(mat, QMatrix4x4.translationMatrix(x, y, z));
     }
 
-    public static QMatrix4x4 translate(QMatrix4x4 mat, QVector vec3) {
-        return QMatrix4x4.multiply4x4(mat, QMatrix4x4.translationMatrix(vec3));
+    public static QMatrix4x4 translate(QMatrix4x4 mat, QVector3 vec3) {
+        return QMatrix4x4.multiply(mat, QMatrix4x4.translationMatrix(vec3));
     }
 
     public QMatrix4x4 rotate(float x, float y, float z) {
-        multiply4x4(QMatrix4x4.rotationMatrix(x, y, z));
+        multiply(QMatrix4x4.rotationMatrix(x, y, z));
         return this;
     }
 
-    public QMatrix4x4 rotate(QVector vec3) {
-        multiply4x4(QMatrix4x4.rotationMatrix(vec3));
+    public QMatrix4x4 rotate(QVector3 vec3) {
+        multiply(QMatrix4x4.rotationMatrix(vec3));
         return this;
     }
 
     public static QMatrix4x4 rotate(QMatrix4x4 mat, float x, float y, float z) {
-        return QMatrix4x4.multiply4x4(mat, QMatrix4x4.rotationMatrix(x, y, z));
+        return QMatrix4x4.multiply(mat, QMatrix4x4.rotationMatrix(x, y, z));
     }
 
-    public static QMatrix4x4 rotate(QMatrix4x4 mat, QVector vec3) {
-        return QMatrix4x4.multiply4x4(mat, QMatrix4x4.rotationMatrix(vec3));
+    public static QMatrix4x4 rotate(QMatrix4x4 mat, QVector3 vec3) {
+        return QMatrix4x4.multiply(mat, QMatrix4x4.rotationMatrix(vec3));
     }
 
     public static QMatrix4x4 TRS(
-        QVector translation,
-        QVector rotation,
-        QVector scale
+        QVector3 translation,
+        QVector3 rotation,
+        QVector3 scale
     ) {
-        return translate(rotate(scale(Identity, scale), rotation), translation);
+        return translate(rotate(scale(Identity(), scale), rotation), translation);
     }
 
     @Override

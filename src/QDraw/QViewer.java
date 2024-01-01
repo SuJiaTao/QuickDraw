@@ -1,5 +1,5 @@
 // Bailey JT Brown
-// 2023
+// 2023-2024
 // QViwer.java
 
 package QDraw;
@@ -24,31 +24,31 @@ public final class QViewer {
     // PRIVATE MEMBERS
     private float         nearClip   = DEFAULT_NEAR_CLIP;
     private QColor        clearColor = DEFAULT_CLEAR_COLOR;
-    private QMatrix4x4    viewTransform       = new QMatrix4x4(QMatrix4x4.Identity);
+    private QMatrix4x4    viewTransform       = new QMatrix4x4(QMatrix4x4.Identity());
     private QRenderBuffer renderTarget        = null;
     private float         viewLeft, viewRight, viewBottom, viewTop;
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE CLASSES
     private class Tri {
-        public QVector pos0 = new QVector(), 
-                       pos1 = new QVector(), 
-                       pos2 = new QVector();
-        public QVector uv0  = new QVector(), 
-                       uv1  = new QVector(), 
-                       uv2  = new QVector();
+        public QVector3 pos0 = new QVector3(), 
+                       pos1 = new QVector3(), 
+                       pos2 = new QVector3();
+        public QVector3 uv0  = new QVector3(), 
+                       uv1  = new QVector3(), 
+                       uv2  = new QVector3();
 
         public void set(
-            QVector _pos0, QVector _uv0, 
-            QVector _pos1, QVector _uv1,  
-            QVector _pos2, QVector _uv2
+            QVector3 _pos0, QVector3 _uv0, 
+            QVector3 _pos1, QVector3 _uv1,  
+            QVector3 _pos2, QVector3 _uv2
         ) {
 
             pos0.set(_pos0);
             pos1.set(_pos1);
             pos2.set(_pos2);
             
-            // todo: finish UV interpolation
+            // TODO: finish UV interpolation
             // uv0.set(_uv0);
             // uv1.set(_uv1);
             // uv2.set(_uv2);
@@ -106,10 +106,10 @@ public final class QViewer {
 
         QMesh viewMesh = new QMesh(mesh);
         for (int posIndex = 0; posIndex < viewMesh.getPosCount(); posIndex++) {
-            QVector vert = new QVector(viewMesh.getPos(posIndex));
+            QVector3 vert = new QVector3(viewMesh.getPos(posIndex));
             
-            vert = QMatrix4x4.multiply3(meshTransform, vert);
-            vert = QMatrix4x4.multiply3(viewTransform, vert);
+            vert = QMatrix4x4.multiply(meshTransform, vert);
+            vert = QMatrix4x4.multiply(viewTransform, vert);
             
             viewMesh.setPos(posIndex, vert.getX(), vert.getY(), vert.getZ());
         }
@@ -118,12 +118,12 @@ public final class QViewer {
             // TODO: cleanup this horrid mess
             Tri viewTri = new Tri();
             viewTri.set(
-                new QVector(viewMesh.getTriPos(tdiIndex, 0)),
-                new QVector(viewMesh.getTriUV(tdiIndex, 0)),
-                new QVector(viewMesh.getTriPos(tdiIndex, 1)),
-                new QVector(viewMesh.getTriUV(tdiIndex, 1)),
-                new QVector(viewMesh.getTriPos(tdiIndex, 2)),
-                new QVector(viewMesh.getTriUV(tdiIndex, 2))
+                new QVector3(viewMesh.getTriPos(tdiIndex, 0)),
+                new QVector3(viewMesh.getTriUV(tdiIndex, 0)),
+                new QVector3(viewMesh.getTriPos(tdiIndex, 1)),
+                new QVector3(viewMesh.getTriUV(tdiIndex, 1)),
+                new QVector3(viewMesh.getTriPos(tdiIndex, 2)),
+                new QVector3(viewMesh.getTriUV(tdiIndex, 2))
             );
 
             Tri[] clipTris = internalClipTri(viewTri);
@@ -187,7 +187,7 @@ public final class QViewer {
         }
     }
 
-    private QVector internalFindClipIntersect(QVector pI, QVector pF) {
+    private QVector3 internalFindClipIntersect(QVector3 pI, QVector3 pF) {
         // refer to
         // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_cliptri.c
 
@@ -196,7 +196,7 @@ public final class QViewer {
         float slopeYZ = (pF.getY() - pI.getY()) * invDZ;
         float dClip   = (nearClip - pI.getZ());
 
-        return new QVector(
+        return new QVector3(
             pI.getX() + slopeXZ * dClip,
             pI.getY() + slopeYZ * dClip,
             nearClip
@@ -268,8 +268,8 @@ public final class QViewer {
                 );
         }
 
-        QVector pos02 = internalFindClipIntersect(shuffledTri.pos0, shuffledTri.pos2);
-        QVector pos12 = internalFindClipIntersect(shuffledTri.pos1, shuffledTri.pos2);
+        QVector3 pos02 = internalFindClipIntersect(shuffledTri.pos0, shuffledTri.pos2);
+        QVector3 pos12 = internalFindClipIntersect(shuffledTri.pos1, shuffledTri.pos2);
 
         // TODO: complete UV interpolation logic
         Tri quadTri0 = new Tri();
@@ -319,7 +319,7 @@ public final class QViewer {
 
     }
 
-    private void internalMapVertToScreenSpace(QVector vert) {
+    private void internalMapVertToScreenSpace(QVector3 vert) {
         // NOTE:
         //  - this transformation will map (left, right) -> (0, targetWidth) and
         //    (bottom, top) -> (0, targetheight). this is essentially a worldspace
@@ -368,7 +368,7 @@ public final class QViewer {
             (sortedTri.pos0.getY() - sortedTri.pos2.getY());
         float dY21 = sortedTri.pos1.getY() - sortedTri.pos2.getY();
 
-        QVector midPoint = new QVector(
+        QVector3 midPoint = new QVector3(
             sortedTri.pos2.getX() + (invSlope20 * dY21),
             sortedTri.pos1.getY()
         );
@@ -390,7 +390,7 @@ public final class QViewer {
 
     private Tri internalSortTriVertsByHeight(Tri tri) { 
 
-        QVector temp;
+        QVector3 temp;
         if (tri.pos0.getY() < tri.pos1.getY()) {
             temp = tri.pos1;
             tri.pos1 = tri.pos0;
@@ -420,7 +420,7 @@ public final class QViewer {
 
         // sort top 2 verticies from left to right
         if (flatTri.pos0.getX() > flatTri.pos1.getX()) {
-            QVector temp = flatTri.pos1;
+            QVector3 temp = flatTri.pos1;
             flatTri.pos1 = flatTri.pos0;
             flatTri.pos0 = temp;
         }
@@ -464,7 +464,7 @@ public final class QViewer {
 
         // sort bottom 2 verticies from left to right
         if (flatTri.pos0.getX() > flatTri.pos1.getX()) {
-            QVector temp = flatTri.pos1;
+            QVector3 temp = flatTri.pos1;
             flatTri.pos1 = flatTri.pos0;
             flatTri.pos0 = temp;
         }
@@ -536,15 +536,15 @@ public final class QViewer {
     }
 
     public void setCamera(
-        QVector position,
-        QVector rotation,
-        QVector scale
+        QVector3 position,
+        QVector3 rotation,
+        QVector3 scale
     ) {
         // TODO: this may be totally wrong
         viewTransform = QMatrix4x4.TRS(
             position.multiply3(-1.0f), 
             rotation.multiply3(-1.0f), 
-            new QVector(
+            new QVector3(
                 1.0f / scale.getX(),
                 1.0f / scale.getY(),
                 1.0f / scale.getZ()

@@ -1,5 +1,5 @@
 // Bailey JT Brown
-// 2023
+// 2023-2024
 // QColor.java
 
 package QDraw;

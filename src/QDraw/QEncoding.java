@@ -1,5 +1,5 @@
 // Bailey JT Brown
-// 2023
+// 2023-2024
 // QEncoding.java
 
 package QDraw;
@@ -49,13 +49,12 @@ public class QEncoding {
     /////////////////////////////////////////////////////////////////
     // QVECTOR ENCODINGS
     // QVector is
-    // | x y z w | : float[]
-    // size 4 array of floats representing a 4-component vector
+    // | x y z | : float[]
+    // size 3 array of floats representing a 3-component vector
     protected static final int   VCTR_INDEX_X         = 0;
     protected static final int   VCTR_INDEX_Y         = 1;
     protected static final int   VCTR_INDEX_Z         = 2;
-    protected static final int   VCTR_INDEX_W         = 3;
-    protected static final int   VCTR_NUM_CMPS        = 4;
+    protected static final int   VCTR_NUM_CMPS        = 3;
     protected static final float VCTR_COMPARE_EPSILON = 0.0005f;
 
     /////////////////////////////////////////////////////////////////
@@ -66,10 +65,9 @@ public class QEncoding {
     //   <x3 y3 z3 w3>
     //   <x4 y4 z4 w4> | : float[]
     // size 16 float array representing a 4x4 matrix
-    protected static final int   MTR_NUM_ROWS    = VCTR_NUM_CMPS;
-    protected static final int   MTR_NUM_COLUMNS = VCTR_NUM_CMPS;
+    protected static final int   MTR_NUM_ROWS    = 4;
+    protected static final int   MTR_NUM_COLUMNS = 4;
     protected static final int   MTR_NUM_CMPS    = MTR_NUM_ROWS * MTR_NUM_COLUMNS;
-    protected static final float MTR_TO_RADIANS  = (float)Math.PI / 180.0f;
 
     /////////////////////////////////////////////////////////////////
     // QMESH ENCODINGS
