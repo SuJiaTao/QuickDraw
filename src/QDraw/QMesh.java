@@ -282,50 +282,66 @@ public final class QMesh extends QEncoding {
         return triCount;
     }
 
+    public int getTriPosIndex(int triIndex, int triVertIndex) {
+        return (triIndex * MESH_TDI_NUM_CMPS) + 
+                (triVertIndex * MESH_ATRB_NUM_CMPS) +
+                MESH_ATRS_OFST_POS;
+    }
+
     public float[] getTriPos(int triIndex, int triVertIndex) {
         return getPos(
             triDataIndicies[
-                (triIndex * MESH_TDI_NUM_CMPS) + 
-                (triVertIndex * MESH_ATRB_NUM_CMPS) +
-                MESH_ATRS_OFST_POS
+                getTriPosIndex(triIndex, triVertIndex)
             ]
         );
+    }
+
+    public int getTriUVIndex(int triIndex, int triUVIndex) {
+        return (triIndex * MESH_TDI_NUM_CMPS) + 
+                (triUVIndex * MESH_ATRB_NUM_CMPS) +
+                MESH_ATRS_OFST_UV;
     }
 
     public float[] getTriUV(int triIndex, int triUVIndex) {
         return getUV(
             triDataIndicies[
-                (triIndex * MESH_TDI_NUM_CMPS) + 
-                (triUVIndex * MESH_ATRB_NUM_CMPS) +
-                MESH_ATRS_OFST_UV
+                getTriUVIndex(triIndex, triUVIndex)
             ]
         );
     }
 
+    public int getPosOffset(int index) {
+        return index * MESH_POSN_NUM_CMPS;
+    }
+
     public float[] getPos(int index) {
         return new float[] { 
-            posData[index * MESH_POSN_NUM_CMPS + MESH_POSN_OFST_X],
-            posData[index * MESH_POSN_NUM_CMPS + MESH_POSN_OFST_Y],
-            posData[index * MESH_POSN_NUM_CMPS + MESH_POSN_OFST_Z]
+            posData[getPosOffset(index) + MESH_POSN_OFST_X],
+            posData[getPosOffset(index) + MESH_POSN_OFST_Y],
+            posData[getPosOffset(index) + MESH_POSN_OFST_Z]
         };
     }
 
     public void setPos(int index, float x, float y, float z) {
-        posData[index * MESH_POSN_NUM_CMPS + MESH_POSN_OFST_X] = x;
-        posData[index * MESH_POSN_NUM_CMPS + MESH_POSN_OFST_Y] = y;
-        posData[index * MESH_POSN_NUM_CMPS + MESH_POSN_OFST_Z] = z;
+        posData[getPosOffset(index) + MESH_POSN_OFST_X] = x;
+        posData[getPosOffset(index) + MESH_POSN_OFST_Y] = y;
+        posData[getPosOffset(index) + MESH_POSN_OFST_Z] = z;
+    }
+
+    public int getUVOffset(int index) {
+        return index * MESH_UV_NUM_CMPS;
     }
 
     public float[] getUV(int index) {
         return new float[] { 
-            uvData[index * MESH_UV_NUM_CMPS + MESH_UV_OFST_U],
-            uvData[index * MESH_UV_NUM_CMPS + MESH_UV_OFST_V],
+            uvData[getUVOffset(index) + MESH_UV_OFST_U],
+            uvData[getUVOffset(index) + MESH_UV_OFST_V],
         };
     }
 
     public void setUV(int index, float u, float v) {
-        uvData[index * MESH_UV_NUM_CMPS + MESH_UV_OFST_U] = u;
-        uvData[index * MESH_UV_NUM_CMPS + MESH_UV_OFST_V] = v;
+        uvData[getUVOffset(index) + MESH_UV_OFST_U] = u;
+        uvData[getUVOffset(index) + MESH_UV_OFST_V] = v;
     }
 
     /////////////////////////////////////////////////////////////////

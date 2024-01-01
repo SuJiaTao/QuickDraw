@@ -29,6 +29,19 @@ public final class QMath extends QEncoding {
         return rvec;    
     }
 
+    public static void copy2(float[] trg, float[] src) {
+        copy2(0, trg, 0, src);
+    }
+
+    public static void copy2(
+        int     trgoffset,
+        float[] trg,
+        int     srcoffset,
+        float[] src
+    ) {
+        System.arraycopy(src, srcoffset, trg, trgoffset, 2);
+    }
+
     public static void copy3(float[] trg, float[] src) {
         copy3(0, trg, 0, src);
     }
@@ -39,7 +52,7 @@ public final class QMath extends QEncoding {
         int     srcoffset,
         float[] src
     ) {
-        System.arraycopy(src, srcoffset, trg, trgoffset, VCTR_NUM_CMPS);
+        System.arraycopy(src, srcoffset, trg, trgoffset, 3);
     }
 
     public static void copy4x4(float[] trg_4x4, float[] src_4x4) {

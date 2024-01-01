@@ -8,7 +8,7 @@ import java.util.Arrays;
 
 import QDraw.QException.PointOfError;
 
-public final class QViewer {
+public final class QViewer extends QEncoding {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
     public static final float  MIN_NEAR_CLIP       = -0.005f;
@@ -24,44 +24,123 @@ public final class QViewer {
     // PRIVATE MEMBERS
     private float         nearClip   = DEFAULT_NEAR_CLIP;
     private QColor        clearColor = DEFAULT_CLEAR_COLOR;
-    private QMatrix4x4    viewTransform       = new QMatrix4x4(QMatrix4x4.Identity());
+    private QMatrix4x4    viewTransform       = QMatrix4x4.Identity();
     private QRenderBuffer renderTarget        = null;
     private float         viewLeft, viewRight, viewBottom, viewTop;
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE CLASSES
-    private class Tri {
-        public QVector3 pos0 = new QVector3(), 
-                       pos1 = new QVector3(), 
-                       pos2 = new QVector3();
-        public QVector3 uv0  = new QVector3(), 
-                       uv1  = new QVector3(), 
-                       uv2  = new QVector3();
+    private class Tri extends QEncoding {
+        public float[] posDat;
+        public float[] uvDat;
 
-        public void set(
-            QVector3 _pos0, QVector3 _uv0, 
-            QVector3 _pos1, QVector3 _uv1,  
-            QVector3 _pos2, QVector3 _uv2
-        ) {
-
-            pos0.set(_pos0);
-            pos1.set(_pos1);
-            pos2.set(_pos2);
-            
-            // TODO: finish UV interpolation
-            // uv0.set(_uv0);
-            // uv1.set(_uv1);
-            // uv2.set(_uv2);
-
+        public Tri( ) {
+            posDat = new float[VTRI_POSDAT_NUM_CMPS];
+            uvDat  = new float[VTRI_UVDAT_NUM_UVS];
         }
 
-        public String toString( ) {
-            return String.format(
-                "<tri %s %s %s>",
-                pos0.toString(),
-                pos1.toString(),
-                pos2.toString()
-            );
+        public Tri(Tri toCopy) {
+            System.arraycopy(toCopy.posDat, 0, posDat, 0, VTRI_POSDAT_NUM_CMPS);
+            System.arraycopy(toCopy.uvDat, 0, uvDat, 0, VTRI_UVDAT_NUM_UVS);
+        }
+
+        public Tri(QMesh srcMesh, int tdiIndex) { 
+            setPosFromTri(srcMesh, tdiIndex, 0);
+            setPosFromTri(srcMesh, tdiIndex, 1);
+            setPosFromTri(srcMesh, tdiIndex,2);
+            setUVFromTri(srcMesh, tdiIndex, 0);
+            setUVFromTri(srcMesh, tdiIndex, 1);
+            setUVFromTri(srcMesh, tdiIndex,2);
+        }
+
+        public void swapVerts(int v1Num, int v2Num) {
+            float[] tempPos = new float[MESH_POSN_NUM_CMPS];
+            float[] tempUV  = new float[MESH_UV_NUM_CMPS];
+
+            // move v1 to temp
+            QMath.copy3(0, tempPos, getPosOffset(v1Num), posDat);
+            QMath.copy2(0, tempUV, getUVOffset(v1Num), uvDat);
+
+            // move v2 to v1
+            QMath.copy3(getPosOffset(v1Num), posDat, getPosOffset(v2Num), posDat);
+            QMath.copy2(getUVOffset(v1Num), uvDat, getUVOffset(v2Num), uvDat);
+
+            // move temp to v1
+            QMath.copy3(getPosOffset(v1Num), posDat, 0, tempPos);
+            QMath.copy2(getUVOffset(v1Num), uvDat, 0, tempUV);
+        }
+
+        public void setPosFromTri(
+            QMesh meshSrc,
+            int   tdiIndex,
+            int   posIndex
+        ) {
+            QMath.copy3(
+                getPosOffset(posIndex), 
+                posDat, 
+                meshSrc.getPosOffset(meshSrc.getTriPosIndex(tdiIndex, posIndex)),
+                meshSrc.getPosData()
+            );;
+        }
+
+        public void setUVFromTri(
+            QMesh meshSrc,
+            int   tdiIndex,
+            int   uvIndex
+        ) {
+            QMath.copy3(
+                getUVOffset(uvIndex), 
+                uvDat, 
+                meshSrc.getPosOffset(meshSrc.getTriUVIndex(tdiIndex, uvIndex)),
+                meshSrc.getUVData()
+            );;
+        }
+
+        public void setVert(
+            int vertNum,
+            int posOffsetIn,
+            float[] posIn,
+            int uvOffsetIn,
+            float[] uvIn
+        ) {
+            setPos(vertNum, posOffsetIn, posIn);
+            setUV(vertNum, uvOffsetIn, uvIn);
+        }
+
+        public void setPos(
+            int     posNum,
+            int     offsetIn,
+            float[] in
+        ) {
+            QMath.copy3(getPosOffset(posNum), posDat, offsetIn, in);
+        }
+
+        public void setUV(
+            int     uvNum,
+            int     offsetIn,
+            float[] in
+        ) {
+            QMath.copy3(getUVOffset(uvNum), uvDat, offsetIn, in);
+        }
+
+        public int getPosOffset(int posNum) {
+            return MESH_POSN_NUM_CMPS * posNum;
+        }
+
+        public float getPosX(int posNum) {
+            return posDat[getPosOffset(posNum) + VCTR_INDEX_X];
+        }
+
+        public float getPosY(int posNum) {
+            return posDat[getPosOffset(posNum) + VCTR_INDEX_Y];
+        }
+
+        public float getPosZ(int posNum) {
+            return posDat[getPosOffset(posNum) + VCTR_INDEX_Z];
+        }
+
+        public int getUVOffset(int uvNum) {
+            return MESH_UV_NUM_CMPS * uvNum;
         }
     }
 
@@ -104,28 +183,32 @@ public final class QViewer {
             );
         }
 
-        QMesh viewMesh = new QMesh(mesh);
+        // NOTE:
+        // - a copy of the mesh is created, but each vertex is transformed by
+        //   the provided transformation matrix
+        QMesh viewMesh         = new QMesh(mesh);
+        float[] viewMeshPosDat = viewMesh.getPosData( );
         for (int posIndex = 0; posIndex < viewMesh.getPosCount(); posIndex++) {
-            float[] posDat = viewMesh.getPosData( );
+            QMath.mul3_4x4(
+                viewMesh.getPosOffset(posIndex), 
+                viewMeshPosDat, 
+                0, 
+                meshTransform.getComponents()
+            );
         }
 
+        // NOTE:
+        // - a triangle is constructed from viewMesh's TDI, it is then clipped
+        //   and the clipping output is rendered
         for (int tdiIndex = 0; tdiIndex < viewMesh.getTriCount(); tdiIndex++) {
-            // TODO: cleanup this horrid mess
-            Tri viewTri = new Tri();
-            viewTri.set(
-                new QVector3(viewMesh.getTriPos(tdiIndex, 0)),
-                new QVector3(viewMesh.getTriUV(tdiIndex, 0)),
-                new QVector3(viewMesh.getTriPos(tdiIndex, 1)),
-                new QVector3(viewMesh.getTriUV(tdiIndex, 1)),
-                new QVector3(viewMesh.getTriPos(tdiIndex, 2)),
-                new QVector3(viewMesh.getTriUV(tdiIndex, 2))
-            );
 
+            Tri viewTri    = new Tri(viewMesh, tdiIndex);
             Tri[] clipTris = internalClipTri(viewTri);
 
             for (Tri tri : clipTris) {
                 internalViewTri(tri);
             }
+
         }
 
     }
@@ -137,17 +220,17 @@ public final class QViewer {
 
         ClipState clipState = new ClipState();
 
-        if (tri.pos0.getZ() > nearClip) {
+        if (tri.getPosZ(0) > nearClip) {
             clipState.vertBehindIndicies[clipState.numVertsBehind++] = 0;
             clipState.vertBehindState[0] = true;
         }
 
-        if (tri.pos1.getZ() > nearClip) {
+        if (tri.getPosZ(1) > nearClip) {
             clipState.vertBehindIndicies[clipState.numVertsBehind++] = 1;
             clipState.vertBehindState[1] = true;
         }
 
-        if (tri.pos2.getZ() > nearClip) {
+        if (tri.getPosZ(2) > nearClip) {
             clipState.vertBehindIndicies[clipState.numVertsBehind++] = 2;
             clipState.vertBehindState[2] = true;
         }
@@ -182,21 +265,42 @@ public final class QViewer {
         }
     }
 
-    private QVector3 internalFindClipIntersect(QVector3 pI, QVector3 pF) {
+    private void internalFindClipIntersect(
+        Tri srcTri,
+        int pI,
+        int pF,
+        int offsetOut,
+        float[] out
+    ) {
+        internalFindClipIntersect(
+            srcTri.getPosOffset(pI),
+            srcTri.posDat,
+            srcTri.getPosOffset(pF),
+            srcTri.posDat,
+            offsetOut,
+            out
+        );
+    }
+
+    private void internalFindClipIntersect(
+        int offsetPI,
+        float[] pI,
+        int offsetPF,
+        float[] pF,
+        int offsetOut,
+        float[] out
+    ) {
         // refer to
         // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_cliptri.c
 
-        float invDZ   = 1.0f / (pF.getZ() - pI.getZ());
-        float slopeXZ = (pF.getX() - pI.getX()) * invDZ;
-        float slopeYZ = (pF.getY() - pI.getY()) * invDZ;
-        float dClip   = (nearClip - pI.getZ());
+        float invDZ   = 1.0f / (pF[offsetPI + VCTR_INDEX_Z] - pI[offsetPI + VCTR_INDEX_Z]);
+        float slopeXZ = (pF[offsetPI + VCTR_INDEX_X] - pI[offsetPI + VCTR_INDEX_X]) * invDZ;
+        float slopeYZ = (pF[offsetPI + VCTR_INDEX_Y] - pI[offsetPI + VCTR_INDEX_Y]) * invDZ;
+        float dClip   = (nearClip - pI[offsetPI + VCTR_INDEX_Z]);
 
-        return new QVector3(
-            pI.getX() + slopeXZ * dClip,
-            pI.getY() + slopeYZ * dClip,
-            nearClip
-        );
-        
+        out[offsetOut + VCTR_INDEX_X] = pI[offsetPI + VCTR_INDEX_X] + slopeXZ * dClip;
+        out[offsetOut + VCTR_INDEX_Y] = pI[offsetPI + VCTR_INDEX_Y] + slopeYZ * dClip;
+        out[offsetOut + VCTR_INDEX_Z] = nearClip;
     }
 
     private Tri[] internalClipTriCase1(Tri tri, ClipState clipState) {
@@ -207,7 +311,6 @@ public final class QViewer {
         // - all faces must be constructed in CLOCKWISE winding order.
         // - when 1 vertex is clipped, generated face is a quad
         // - triangle will be re-shuffled so that it remains CLOCKWISE where pos2 is clipped
-        // - quad generated will be 0/2, 0, 1, 1/2 (where a/b is clipped interpolation)
         // - (this is slightly different from Casesium where pos0 is clipped)
 
         Tri shuffledTri = new Tri();
@@ -217,43 +320,20 @@ public final class QViewer {
             // SHUFFLE (0, 1, 2) -> (1, 2, 0)
             case 0:
 
-                shuffledTri.set(
-                    tri.pos1, 
-                    tri.uv1, 
-                    tri.pos2, 
-                    tri.uv2, 
-                    tri.pos0, 
-                    tri.uv0
-                );
-
+                shuffledTri.swapVerts(0, 1); // (0 1 2) -> (1 0 2)
+                shuffledTri.swapVerts(1, 2); // (1 0 2) -> (1 2 0)
                 break;
 
             // SHUFFLE (0, 1, 2) -> (2, 0, 1)
             case 1:
 
-                shuffledTri.set(
-                    tri.pos2, 
-                    tri.uv2, 
-                    tri.pos0, 
-                    tri.uv0, 
-                    tri.pos1, 
-                    tri.uv1
-                );
-
+                shuffledTri.swapVerts(0, 2); // (0 1 2) -> (2 1 0)
+                shuffledTri.swapVerts(1, 2); // (2 1 0) -> (2 0 1)
                 break;
 
             // SHUFFLE (0, 1, 2) -> (0, 1, 2)
+            // or rather, no shuffle
             case 2:
-
-                shuffledTri.set(
-                    tri.pos0, 
-                    tri.uv0, 
-                    tri.pos1, 
-                    tri.uv1, 
-                    tri.pos2, 
-                    tri.uv2
-                );
-
                 break;
         
             default:
@@ -263,15 +343,26 @@ public final class QViewer {
                 );
         }
 
-        QVector3 pos02 = internalFindClipIntersect(shuffledTri.pos0, shuffledTri.pos2);
-        QVector3 pos12 = internalFindClipIntersect(shuffledTri.pos1, shuffledTri.pos2);
+        float[] pos02 = new float[3];
+        float[] pos12 = new float[3];
+        internalFindClipIntersect(shuffledTri, 0, 2, 0, pos02);
+        internalFindClipIntersect(shuffledTri, 1, 2, 0, pos12);
 
         // TODO: complete UV interpolation logic
-        Tri quadTri0 = new Tri();
-        quadTri0.set(pos02, null, shuffledTri.pos0, null, shuffledTri.pos1, null);
 
-        Tri quadTri1 = new Tri();
-        quadTri1.set(pos02, null, shuffledTri.pos1, null, pos12, null);
+        // NOTE:
+        // - when 1 vertex is clipped, the resulting mesh is a quad
+        // - our quad is 0/2, 0, 1, 1/2 (where a/b is clipped interpolation),
+        //   which will be tesselated as (0/2, 0, 1), (0/2, 1, 1/2)
+
+        Tri quadTri0 = new Tri(shuffledTri);
+        quadTri0.swapVerts(0, 1); // (0 1 2) -> (1 0 2)
+        quadTri0.swapVerts(1, 2); // (1 0 2) -> (2 0 1)
+        quadTri0.setPos(0, 0, pos02); // (2 0 1) -> (0/2 0 2)
+        
+        Tri quadTri1 = new Tri(shuffledTri); // (0 1 2)
+        quadTri0.setPos(0, 0, pos02); // (0 1 2)   -> (0/2 1 2)
+        quadTri0.setPos(2, 0, pos12); // (0/2 1 2) -> (0/2 1 1/2)
 
         return new Tri[] { quadTri0, quadTri1 };
 

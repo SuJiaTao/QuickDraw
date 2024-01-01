@@ -20,6 +20,7 @@ public class QEncoding {
     // TDI  -> triDataIndicies
     // VCTR -> vector
     // VERT -> vertex
+    // VTRI -> QViewer's internal Tri class
 
     /////////////////////////////////////////////////////////////////
     // DATA COMMENT INTERPRETATIONS:
@@ -106,5 +107,10 @@ public class QEncoding {
     protected static final int MESH_TDI_OFST_UV0  = 1;
     protected static final int MESH_TDI_OFST_UV1  = 3;
     protected static final int MESH_TDI_OFST_UV2  = 5;
+
+    /////////////////////////////////////////////////////////////////
+    // QVIWERER.TRI ENCODINGS
+    protected static final int VTRI_POSDAT_NUM_CMPS = MESH_POSN_NUM_CMPS * MESH_VERTS_PER_TRI;
+    protected static final int VTRI_UVDAT_NUM_UVS   = MESH_UV_NUM_CMPS * MESH_VERTS_PER_TRI;
 
 }
