@@ -179,26 +179,103 @@ public final class QViewer {
         
         // refer to
         // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_cliptri.c
-        return null;
+
+        // NOTE:
+        // - all faces must be constructed in CLOCKWISE winding order.
+        // - when 1 vertex is clipped, generated face is a quad
+        // - triangle will be re-shuffled so that it remains CLOCKWISE where pos2 is clipped
+        // - quad generated will be 0/2, 0, 1, 1/2 (where a/b is clipped interpolation)
+        // - (this is slightly different from Casesium where pos0 is clipped)
+
+        Tri shuffledTri = new Tri();
+
+        // SHUFFLE TRIANGLE
+        switch (clipState.vertBehindIndicies[0]) {
+            // SHUFFLE (0, 1, 2) -> (1, 2, 0)
+            case 0:
+
+                shuffledTri.set(
+                    tri.pos1, 
+                    tri.uv1, 
+                    tri.pos2, 
+                    tri.uv2, 
+                    tri.pos0, 
+                    tri.uv0
+                );
+
+                break;
+
+            // SHUFFLE (0, 1, 2) -> (2, 0, 1)
+            case 1:
+
+                shuffledTri.set(
+                    tri.pos2, 
+                    tri.uv2, 
+                    tri.pos0, 
+                    tri.uv0, 
+                    tri.pos1, 
+                    tri.uv1
+                );
+
+                break;
+
+            // SHUFFLE (0, 1, 2) -> (0, 1, 2)
+            case 2:
+
+                shuffledTri.set(
+                    tri.pos0, 
+                    tri.uv0, 
+                    tri.pos1, 
+                    tri.uv1, 
+                    tri.pos2, 
+                    tri.uv2
+                );
+
+                break;
+        
+            default:
+                throw new QException(
+                    PointOfError.BadState,
+                    "bad clip state: " + clipState.toString()
+                );
+        }
+
+        QVector pos02 = internalFindClipIntersect(shuffledTri.pos0, shuffledTri.pos2);
+        QVector pos12 = internalFindClipIntersect(shuffledTri.pos1, shuffledTri.pos2);
+
+        // TODO: complete UV interpolation logic
+        Tri quadTri0 = new Tri();
+        quadTri0.set(pos02, null, shuffledTri.pos0, null, shuffledTri.pos1, null);
+
+        Tri quadTri1 = new Tri();
+        quadTri0.set(shuffledTri.pos1, null, pos12, null, pos02, null);
+
+        return new Tri[] { quadTri0, quadTri1 };
+
     }
 
     private Tri[] internalClipTriCase2(Tri tri, ClipState clipState) {
 
         // refer to
         // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_cliptri.c
+
+        // TESSELATE TRIANGLE BASED ON 2 CLIPPED VERTICIES
         switch (clipState.vertBehindIndicies[0] + clipState.vertBehindIndicies[1]) {
+            // VERTS 1 & 2 ARE CLIPPED
             case (1 + 2):
                 
                 tri.pos1 = internalFindClipIntersect(tri.pos0, tri.pos1);
                 tri.pos2 = internalFindClipIntersect(tri.pos0, tri.pos2);
                 return new Tri[] { tri };
 
+            // VERTS 0 & 2 ARE CLIPPED
             case (0 + 2):
 
                 tri.pos0 = internalFindClipIntersect(tri.pos1, tri.pos0);
                 tri.pos2 = internalFindClipIntersect(tri.pos1, tri.pos2);
                 return new Tri[] { tri };
 
+            // VERTS 0 & 1 ARE CLIPPED
             case (0 + 1):
 
                 tri.pos0 = internalFindClipIntersect(tri.pos2, tri.pos0);
