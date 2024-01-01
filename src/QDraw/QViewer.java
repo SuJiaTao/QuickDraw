@@ -81,6 +81,13 @@ public final class QViewer {
         QMatrix4x4 meshTransform
     ) {
         
+        if (renderTarget == null) {
+            throw new QException(
+                PointOfError.BadState, 
+                "render target unassigned"
+            );
+        }
+
         QMesh viewMesh = new QMesh(mesh);
         for (int posIndex = 0; posIndex < viewMesh.getPosCount(); posIndex++) {
             QVector vert = new QVector(viewMesh.getPos(posIndex));
@@ -293,7 +300,23 @@ public final class QViewer {
     }
 
     private void internalViewTri(Tri tri) {
-        // TODO: complete
+        
+        // NOTE:
+        // - from this point forward, all z values will be inverted
+        tri.pos0.setZ(1.0f / tri.pos0.getZ());
+        tri.pos1.setZ(1.0f / tri.pos1.getZ());
+        tri.pos2.setZ(1.0f / tri.pos2.getZ());
+
+        // PROJECT TRI
+        tri.pos0.setX(tri.pos0.getX() * tri.pos0.getZ());
+        tri.pos0.setY(tri.pos0.getY() * tri.pos0.getZ());
+        tri.pos1.setX(tri.pos1.getX() * tri.pos1.getZ());
+        tri.pos1.setY(tri.pos1.getY() * tri.pos1.getZ());
+        tri.pos2.setX(tri.pos2.getX() * tri.pos2.getZ());
+        tri.pos2.setY(tri.pos2.getY() * tri.pos2.getZ());
+
+        //
+
     }
 
     /////////////////////////////////////////////////////////////////
