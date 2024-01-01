@@ -456,8 +456,8 @@ public final class Expect {
 
             rot += 0.05f;
             QMatrix4x4 meshMatr = QMatrix4x4.TRS(
-                new QVector3(0.0f, 0.0f, -1.25f), 
-                new QVector3(rot, rot, rot), 
+                new QVector3(0.0f, 0.0f, -5.25f), 
+                QVector3.Zero(), 
                 QVector3.One()
             );
 
@@ -467,6 +467,8 @@ public final class Expect {
             );
 
             window.updateFrame();
+
+            System.out.println("frame updated");
 
         }
     }

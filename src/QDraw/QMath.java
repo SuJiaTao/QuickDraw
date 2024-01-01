@@ -4,8 +4,6 @@
 
 package QDraw;
 
-import java.util.Arrays;
-
 public final class QMath extends QEncoding {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS

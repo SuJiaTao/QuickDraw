@@ -4,10 +4,6 @@
 
 package QDraw;
 
-import java.util.Arrays;
-
-import QDraw.QException.PointOfError;
-
 public final class QMatrix4x4 extends QEncoding {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS

@@ -106,12 +106,7 @@ public final class QViewer {
 
         QMesh viewMesh = new QMesh(mesh);
         for (int posIndex = 0; posIndex < viewMesh.getPosCount(); posIndex++) {
-            QVector3 vert = new QVector3(viewMesh.getPos(posIndex));
-            
-            vert = QMatrix4x4.multiply(meshTransform, vert);
-            vert = QMatrix4x4.multiply(viewTransform, vert);
-            
-            viewMesh.setPos(posIndex, vert.getX(), vert.getY(), vert.getZ());
+            float[] posDat = viewMesh.getPosData( );
         }
 
         for (int tdiIndex = 0; tdiIndex < viewMesh.getTriCount(); tdiIndex++) {
