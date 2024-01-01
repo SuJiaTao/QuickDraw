@@ -4,6 +4,10 @@
 
 package QDraw;
 
+import java.util.Arrays;
+
+import QDraw.QException.PointOfError;
+
 public final class QViewer {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
@@ -26,11 +30,11 @@ public final class QViewer {
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE CLASSES
-    private class QTri {
-        QVector pos0, pos1, pos2;
-        QVector uv0, uv1, uv2;
+    private class Tri {
+        public QVector pos0 = null, pos1 = null, pos2 = null;
+        public QVector uv0  = null, uv1  = null, uv2  = null;
 
-        public QTri(
+        public void set(
             QVector _pos0, QVector _pos1, QVector _pos2,
             QVector _uv0,  QVector _uv1,  QVector _uv2
         ) {
@@ -42,6 +46,21 @@ public final class QViewer {
             uv1 = _uv1;
             uv2 = _uv2;
 
+        }
+    }
+
+    private class ClipState {
+        public int       numVertsBehind     = 0;
+        public boolean[] vertBehindState    = new boolean[3];
+        public int[]     vertBehindIndicies = new int[3];
+
+        public String toString( ) {
+            return String.format(
+                        "<numVBehind: %d, vStates: %s vIndicies: %s>",
+                        numVertsBehind,
+                        Arrays.toString(vertBehindState),
+                        Arrays.toString(vertBehindIndicies)
+                    );
         }
     }
 
@@ -73,7 +92,8 @@ public final class QViewer {
 
         for (int tdiIndex = 0; tdiIndex < viewMesh.getTriCount(); tdiIndex++) {
             // TODO: cleanup this horrid mess
-            QTri viewTri = new QTri(
+            Tri viewTri = new Tri();
+            viewTri.set(
                 new QVector(viewMesh.getTriPos(tdiIndex, 0)),
                 new QVector(viewMesh.getTriPos(tdiIndex, 1)),
                 new QVector(viewMesh.getTriPos(tdiIndex, 2)),
@@ -82,21 +102,120 @@ public final class QViewer {
                 new QVector(viewMesh.getTriUV(tdiIndex, 2))
             );
 
-            QTri[] clipTris = internalClipTri(viewTri);
+            Tri[] clipTris = internalClipTri(viewTri);
 
-            for (QTri tri : clipTris) {
+            for (Tri tri : clipTris) {
                 internalViewTri(tri);
             }
         }
 
     }
 
-    private QTri[] internalClipTri(QTri tri) {
+    private Tri[] internalClipTri(Tri tri) {
         // TODO: complete
+        // refer to
+        // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_cliptri.c
+
+        ClipState clipState = new ClipState();
+
+        if (tri.pos0.getZ() > nearClip) {
+            clipState.vertBehindIndicies[clipState.numVertsBehind++] = 0;
+            clipState.vertBehindState[0] = true;
+        }
+
+        if (tri.pos1.getZ() > nearClip) {
+            clipState.vertBehindIndicies[clipState.numVertsBehind++] = 1;
+            clipState.vertBehindState[1] = true;
+        }
+
+        if (tri.pos2.getZ() > nearClip) {
+            clipState.vertBehindIndicies[clipState.numVertsBehind++] = 2;
+            clipState.vertBehindState[2] = true;
+        }
+
+        switch (clipState.numVertsBehind) {
+            // ALL VERTS BEFORE
+            // triangle is not clipped
+            case 0:
+                return new Tri[] { tri };
+            
+            // ALL VERTS BEHIND
+            // triangle should be culled
+            case 3:
+                return new Tri[0];
+
+            // 2 VERTS BEHIND
+            // triangle is turned into smaller triangle
+            case 2:
+                return internalClipTriCase2(tri, clipState);
+
+            // 1 VERTS BEHIND
+            // triangle is clipped into 2 smaller triangles
+            case 1:
+                return internalClipTriCase1(tri, clipState);
+        
+            // BAD STATE
+            default:
+                throw new QException(
+                    PointOfError.BadState, 
+                    "reached bad clipping state: " + clipState.toString()
+                );
+        }
+    }
+
+    private QVector internalFindClipIntersect(QVector pI, QVector pF) {
+        float invDZ   = 1.0f / (pF.getZ() - pI.getZ());
+        float slopeXZ = (pF.getX() - pI.getX()) * invDZ;
+        float slopeYZ = (pF.getY() - pI.getY()) * invDZ;
+        float dClip   = (nearClip - pI.getZ());
+        return new QVector(
+            pI.getX() + slopeXZ * dClip,
+            pI.getY() + slopeYZ * dClip,
+            nearClip
+        );
+    }
+
+    private Tri[] internalClipTriCase1(Tri tri, ClipState clipState) {
+        
+        // refer to
+        // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_cliptri.c
         return null;
     }
 
-    private void internalViewTri(QTri tri) {
+    private Tri[] internalClipTriCase2(Tri tri, ClipState clipState) {
+
+        // refer to
+        // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_cliptri.c
+        switch (clipState.vertBehindIndicies[0] + clipState.vertBehindIndicies[1]) {
+            case (1 + 2):
+                
+                tri.pos1 = internalFindClipIntersect(tri.pos0, tri.pos1);
+                tri.pos2 = internalFindClipIntersect(tri.pos0, tri.pos2);
+                return new Tri[] { tri };
+
+            case (0 + 2):
+
+                tri.pos0 = internalFindClipIntersect(tri.pos1, tri.pos0);
+                tri.pos2 = internalFindClipIntersect(tri.pos1, tri.pos2);
+                return new Tri[] { tri };
+
+            case (0 + 1):
+
+                tri.pos0 = internalFindClipIntersect(tri.pos2, tri.pos0);
+                tri.pos1 = internalFindClipIntersect(tri.pos2, tri.pos1);
+                return new Tri[] { tri };
+        
+            // BAD STATE
+            default:
+                throw new QException(
+                    PointOfError.BadState, 
+                    "bad clip state:" + clipState.toString()
+                );
+        }
+
+    }
+
+    private void internalViewTri(Tri tri) {
         // TODO: complete
     }
 
