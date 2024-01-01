@@ -35,16 +35,17 @@ public final class QViewer {
         public QVector uv0  = null, uv1  = null, uv2  = null;
 
         public void set(
-            QVector _pos0, QVector _pos1, QVector _pos2,
-            QVector _uv0,  QVector _uv1,  QVector _uv2
+            QVector _pos0, QVector _uv0, 
+            QVector _pos1, QVector _uv1,  
+            QVector _pos2, QVector _uv2
         ) {
 
             pos0 = _pos0;
             pos1 = _pos1;
             pos2 = _pos2;
-            uv0 = _uv0;
-            uv1 = _uv1;
-            uv2 = _uv2;
+            uv0  = _uv0;
+            uv1  = _uv1;
+            uv2  = _uv2;
 
         }
     }
@@ -102,10 +103,10 @@ public final class QViewer {
             Tri viewTri = new Tri();
             viewTri.set(
                 new QVector(viewMesh.getTriPos(tdiIndex, 0)),
-                new QVector(viewMesh.getTriPos(tdiIndex, 1)),
-                new QVector(viewMesh.getTriPos(tdiIndex, 2)),
                 new QVector(viewMesh.getTriUV(tdiIndex, 0)),
+                new QVector(viewMesh.getTriPos(tdiIndex, 1)),
                 new QVector(viewMesh.getTriUV(tdiIndex, 1)),
+                new QVector(viewMesh.getTriPos(tdiIndex, 2)),
                 new QVector(viewMesh.getTriUV(tdiIndex, 2))
             );
 
