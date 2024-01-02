@@ -73,6 +73,34 @@ public final class Visual {
         }
     }
 
+    public static void Uncle( ) {
+        long t0 = System.currentTimeMillis();
+
+        eyes.setNearClip(1.0f);
+        eyes.setRenderType(RenderType.Textured);
+
+        QMesh uncle = new QMesh(System.getProperty("user.dir") + "\\Resources\\Uncle.obj");
+        QRenderBuffer texture = QRenderBuffer.CheckerBoard(30, QColor.White(), QColor.Black());
+
+        eyes.setRenderTexture(texture);
+
+        float time = 0.0f;
+        while ((System.currentTimeMillis() - t0) < VISTEST_RUNTIME_MS) {
+            eyes.blink( );
+
+            time += 0.5f;
+            QMatrix4x4 m0 = QMatrix4x4.TRS(
+                new QVector3(0.0f, 0.0f, -5.0f), 
+                new QVector3(0.0f, time, 0.0f), 
+                QVector3.One().multiply3(0.125f)
+            );
+
+            eyes.viewMesh(uncle, m0);
+
+            window.updateFrame( );
+        }
+    }
+
     public static void main(String[] args) {
         window      = new QWindow("Visual Test", VISTEST_WINDOW_WIDTH, VISTEST_WINDOW_HEIGHT);
         frameBuffer = new QRenderBuffer(VISTEST_FB_WIDTH, VISTEST_FB_HEIGHT);
@@ -80,6 +108,6 @@ public final class Visual {
         eyes        = new QViewer(frameBuffer);
         eyes.setViewBounds(-VISTEST_FB_ASPECT, VISTEST_FB_ASPECT, -1.0f, 1.0f);
 
-        PlaneDance( );
+        Uncle( );
     }
 }

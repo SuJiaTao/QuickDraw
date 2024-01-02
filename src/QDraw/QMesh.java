@@ -501,13 +501,14 @@ public final class QMesh extends QEncoding {
             // https://stackoverflow.com/questions/960431/how-can-i-convert-listinteger-to-int-in-java
             if (line.substring(0, 2).equals("f ")) {
                 String[] faceVals = line.substring(2).split(" ");
-                ArrayList<Integer> buffer = new ArrayList<>(MESH_TDI_NUM_CMPS);
+                ArrayList<Integer> iBuffer = new ArrayList<>(MESH_TDI_NUM_CMPS);
                 for (String val : faceVals) {
                     String[] indicies = val.split("/");
-                    buffer.add(Integer.parseInt(indicies[0]));
-                    buffer.add(Integer.parseInt(indicies[1]));
+                    // NOTE: obj files are NOT 0 indexed
+                    iBuffer.add(Integer.parseInt(indicies[0]) - 1);
+                    iBuffer.add(Integer.parseInt(indicies[1]) - 1);
                 }
-                faceDatBuffer.add(buffer.stream().mapToInt(i -> i).toArray());
+                faceDatBuffer.add(iBuffer.stream().mapToInt(i -> i).toArray());
                 continue;
             }
         }
