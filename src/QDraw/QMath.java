@@ -75,7 +75,7 @@ public final class QMath extends QEncoding {
     }
 
     public static void add3(float[] v1_3, float[] v2_3) {
-        QMath.add3(0, v1_3, 0, v2_3);
+        add3(0, v1_3, 0, v2_3);
     }
 
     public static void add3(
@@ -87,6 +87,21 @@ public final class QMath extends QEncoding {
         v1_3[v1offset + VCTR_INDEX_X] += v2_3[v2offset + VCTR_INDEX_X];
         v1_3[v1offset + VCTR_INDEX_Y] += v2_3[v2offset + VCTR_INDEX_Y];
         v1_3[v1offset + VCTR_INDEX_Z] += v2_3[v2offset + VCTR_INDEX_Z];
+    }
+
+    public static void sub3(float[] v1_3, float[] v2_3) {
+        sub3(0, v1_3, 0, v2_3);
+    }
+
+    public static void sub3(
+        int     v1offset,
+        float[] v1_3,
+        int     v2offset,
+        float[] v2_3
+    ) {
+        v1_3[v1offset + VCTR_INDEX_X] -= v2_3[v2offset + VCTR_INDEX_X];
+        v1_3[v1offset + VCTR_INDEX_Y] -= v2_3[v2offset + VCTR_INDEX_Y];
+        v1_3[v1offset + VCTR_INDEX_Z] -= v2_3[v2offset + VCTR_INDEX_Z];
     }
 
     public static void mult2(float[] v_2, float fac) {

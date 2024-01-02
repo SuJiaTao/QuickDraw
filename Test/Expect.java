@@ -464,7 +464,7 @@ public final class Expect {
         rb.getColorData()[rb.coordToDataIndex(5, 5)] = QColor.Red().toInt();
 
         QViewer eyes = new QViewer(rb, -2.0f, 2.0f, -2.0f, 2.0f);
-        eyes.setNearClip(0.0f);
+        eyes.setNearClip(-1.0f);
 
         window.setRenderBuffer(rb);
         
@@ -474,12 +474,12 @@ public final class Expect {
             eyes.blink( );
 
             QMatrix4x4 meshMatr = QMatrix4x4.TRS(
-                new QVector3(0.0f, 0.0f, -2.0f),
-                new QVector3(rot, rot, rot), 
+                new QVector3(0.0f, 0.0f, -1.5f),
+                new QVector3(0, rot, 0), 
                 QVector3.One()
             );
 
-            rot += 0.05f;
+            rot += 0.01f;
 
             eyes.viewMesh(
                 QMesh.UnitPlane(),
