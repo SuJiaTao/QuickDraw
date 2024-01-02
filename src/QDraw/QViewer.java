@@ -239,7 +239,6 @@ public final class QViewer extends QEncoding {
     }
 
     private Tri[] internalClipTri(Tri tri) {
-        // TODO: complete
         // refer to
         // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_cliptri.c
 
@@ -397,7 +396,6 @@ public final class QViewer extends QEncoding {
         quadTri0.swapVerts(0, 2); // (0 1 0/2) -> (0/2 1 0)
         quadTri0.swapVerts(1, 2); // (0/2 1 0) -> (0/2 0 1)
         
-        
         Tri quadTri1 = new Tri(shuffledTri); // (0 1 2)
         quadTri1.setPos(0, 0, pos02); // (0 1 2)   -> (0/2 1 2)
         quadTri1.setPos(2, 0, pos12); // (0/2 1 2) -> (0/2 1 1/2)
@@ -493,7 +491,7 @@ public final class QViewer extends QEncoding {
         float[] midPoint = new float[] {
             sortedTri.getPosX(2) + (invSlope20 * dY21),
             sortedTri.getPosY(1),
-            0.0f // TODO: interpolate Z
+            0.0f // Z value can be ignored as interpolation uses unsplit tri
         };
 
         // flatTopTri is (1, mid, 2)
@@ -562,8 +560,7 @@ public final class QViewer extends QEncoding {
             );
 
             for (int drawX = X_START; drawX <= X_END; drawX++) {
-                renderTarget.getColorData()[renderTarget.coordToDataIndex(drawX, drawY)] = 
-                    QColor.White.toInt();
+                internalDrawFragment(drawX, drawY, sortedTri);
             }
 
         }
@@ -604,11 +601,55 @@ public final class QViewer extends QEncoding {
             );
 
             for (int drawX = X_START; drawX <= X_END; drawX++) {
-                renderTarget.setColor(drawX, drawY, QColor.White.toInt());
+                internalDrawFragment(drawX, drawY, sortedTri);
             }
 
         }
 
+    }
+
+    private void internalFindBaryWeights(
+        int     drawX,
+        int     drawY,
+        Tri     tri,
+        float[] out
+    ) {
+        // refer to 
+        // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_rasterizetri.c
+
+        float invDenom = 
+            1.0f / 
+            ((tri.getPosY(1) - tri.getPosY(2)) *
+             (tri.getPosX(0) - tri.getPosX(2))) +
+            ((tri.getPosX(2) - tri.getPosX(1)) * 
+             (tri.getPosY(0) - tri.getPosY(2)));
+        float d3x = (float)drawX - tri.getPosX(2);
+        float d3y = (float)drawY - tri.getPosY(2);
+        
+        out[0] = ((tri.getPosY(1) - tri.getPosY(2)) * (d3x) + 
+                 (tri.getPosX(2) - tri.getPosX(1)) * (d3y)) * 
+                 invDenom;
+        out[1] = ((tri.getPosY(2) - tri.getPosY(0)) * (d3x) + 
+                 (tri.getPosX(0) - tri.getPosX(2)) * (d3y)) * 
+                 invDenom;
+        out[2] = 1.0f - out[1] - out[0];
+    }
+
+    private void internalDrawFragment(
+        int drawX, 
+        int drawY,
+        Tri triangle
+    ) {
+        // TODO: finish
+        float[] weights = new float[3];
+        internalFindBaryWeights(drawX, drawY, triangle, weights);
+        //System.out.println(Arrays.toString(weights));
+        QColor color = new QColor(
+            (int)(weights[0] * 255.0f), 
+            (int)(weights[1] * 255.0f), 
+            (int)(weights[2] * 255.0f)
+        );
+        renderTarget.setColor(drawX, drawY, color.toInt());
     }
 
     /////////////////////////////////////////////////////////////////
