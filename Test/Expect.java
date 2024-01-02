@@ -448,17 +448,6 @@ public final class Expect {
             cube.getPos(5), 
             new float[] { -1.000000f, -1.000000f, -1.000000f }
         );
-
-        /*
-         *  f 1/1 5/5 7/9 3/3
-            f 4/4 3/3 7/10 8/12
-            f 8/13 7/11 5/6 6/8
-            f 6/7 2/2 4/4 8/14
-            f 2/2 1/1 3/3 4/4
-            f 6/8 5/6 1/1 2/2
-         */
-
-        System.out.println(Arrays.toString(cube.getTriDataIndicies()));
         
     }
 

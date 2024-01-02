@@ -80,17 +80,18 @@ public final class Visual {
         eyes.setRenderType(RenderType.Textured);
 
         QMesh uncle = new QMesh(System.getProperty("user.dir") + "\\Resources\\Uncle.obj");
-        QRenderBuffer texture = QRenderBuffer.CheckerBoard(30, QColor.White(), QColor.Black());
+        QRenderBuffer texture = 
+            new QRenderBuffer(System.getProperty("user.dir") + "\\Resources\\Uncle_Texture.jpg");
 
         eyes.setRenderTexture(texture);
 
         float time = 0.0f;
-        while ((System.currentTimeMillis() - t0) < VISTEST_RUNTIME_MS) {
+        while ((System.currentTimeMillis() - t0) < VISTEST_RUNTIME_MS * 20) {
             eyes.blink( );
 
             time += 0.5f;
             QMatrix4x4 m0 = QMatrix4x4.TRS(
-                new QVector3(0.0f, 0.0f, -5.0f), 
+                new QVector3(0.0f, 0.0f, -2.0f), 
                 new QVector3(0.0f, time, 0.0f), 
                 QVector3.One().multiply3(0.125f)
             );
