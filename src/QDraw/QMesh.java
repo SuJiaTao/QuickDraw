@@ -4,11 +4,19 @@
 
 package QDraw;
 
+import java.io.*;
+import java.util.*;
 import QDraw.QException.PointOfError;
 
 public final class QMesh extends QEncoding {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
+    private static final int OBJLOAD_POSN_BUFFER_INITIAL_SIZE = 
+        MESH_POSN_NUM_CMPS * MESH_VERTS_PER_TRI * 20;
+    private static final int OBJLOAD_UV_BUFFER_INITIAL_SIZE = 
+        MESH_UV_NUM_CMPS * MESH_VERTS_PER_TRI * 20;
+    private static final int OBJLOAD_FACEDAT_BUFFER_INITIAL_SIZE = 20;
+    
     private static final float[] UNIT_PLANE_POSN_DATA = {
         -1.0f, -1.0f, 0.0f,
         -1.0f,  1.0f, 0.0f,
@@ -53,6 +61,68 @@ public final class QMesh extends QEncoding {
             RIGHT_TRI_UV_DATA,
             RIGHT_TRI_FACE_DATA
         );
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // PRIVATE CLASSES
+    private class FloatReadBuffer {
+        private float[] buffer;
+        private int     head;
+
+        private void grow( ) {
+            float[] newBuffer = new float[buffer.length * 2];
+            System.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
+            buffer = newBuffer;
+        }
+
+        public FloatReadBuffer(int capacity) {
+            buffer = new float[capacity];
+            head   = 0;
+        }
+
+        public void add(float val) {
+            buffer[head] = val;
+            head++;
+            if (head >= buffer.length) {
+                grow( );
+            }
+        }
+
+        public float[] toArray( ) {
+            float[] retArray = new float[head];
+            System.arraycopy(buffer, 0, retArray, 0, head);
+            return retArray;
+        }
+    }
+
+    private class IndicieReadBuffer {
+        private int[][] buffer;
+        private int     head;
+
+        private void grow( ) {
+            int[][] newBuffer = new int[buffer.length * 2][];
+            System.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
+            buffer = newBuffer;
+        }
+
+        public IndicieReadBuffer(int capacity) {
+            buffer = new int[capacity][];
+            head   = 0;
+        }
+
+        public void add(int[] val) {
+            buffer[head] = val;
+            head++;
+            if (head >= buffer.length) {
+                grow( );
+            }
+        }
+
+        public int[][] toArray( ) {
+            int[][] retArray = new int[head][];
+            System.arraycopy(buffer, 0, retArray, 0, head);
+            return retArray;
+        }
     }
 
     /////////////////////////////////////////////////////////////////
@@ -389,6 +459,65 @@ public final class QMesh extends QEncoding {
             triDataIndicies, 
             0, 
             triDataIndicies.length
+        );
+    }
+
+    public QMesh(String objFilePath) {
+        Scanner scanner = null;
+        try {
+            scanner = new Scanner(new File(objFilePath));
+        } catch (Exception e) {
+            throw new QException(
+                PointOfError.InvalidParameter, 
+                "unable to read file " + objFilePath
+            );
+        }
+
+        FloatReadBuffer posBuffer       = new FloatReadBuffer(OBJLOAD_POSN_BUFFER_INITIAL_SIZE);
+        FloatReadBuffer uvBuffer        = new FloatReadBuffer(OBJLOAD_UV_BUFFER_INITIAL_SIZE);
+        IndicieReadBuffer faceDatBuffer = new IndicieReadBuffer(OBJLOAD_FACEDAT_BUFFER_INITIAL_SIZE);
+        while (scanner.hasNextLine( )) {
+            String line = scanner.nextLine( );
+
+            // PARSE POSITION
+            if (line.substring(0, 2).equals("v ")) {
+                String[] posVals = line.substring(2).split(" ");
+                posBuffer.add(Float.parseFloat(posVals[0]));
+                posBuffer.add(Float.parseFloat(posVals[1]));
+                posBuffer.add(Float.parseFloat(posVals[2]));
+                continue;
+            }
+
+            // PARSE UV
+            if (line.substring(0, 3).equals("vt ")) {
+                String[] uvVals = line.substring(3).split(" ");
+                uvBuffer.add(Float.parseFloat(uvVals[0]));
+                uvBuffer.add(Float.parseFloat(uvVals[1]));
+                continue;
+            }
+
+            // PARSE FACEDATA
+            // refer to
+            // https://stackoverflow.com/questions/960431/how-can-i-convert-listinteger-to-int-in-java
+            if (line.substring(0, 2).equals("f ")) {
+                String[] faceVals = line.substring(2).split(" ");
+                ArrayList<Integer> buffer = new ArrayList<>(MESH_TDI_NUM_CMPS);
+                for (String val : faceVals) {
+                    String[] indicies = val.split("/");
+                    buffer.add(Integer.parseInt(indicies[0]));
+                    buffer.add(Integer.parseInt(indicies[1]));
+                }
+                faceDatBuffer.add(buffer.stream().mapToInt(i -> i).toArray());
+                continue;
+            }
+        }
+
+        scanner.close();
+
+        initMesh(
+            posBuffer.toArray(), 
+            uvBuffer.toArray(), 
+            faceDatBuffer.toArray()
         );
     }
 
