@@ -64,9 +64,9 @@ public final class QViewer extends QEncoding {
             QMath.copy3(getPosOffset(v1Num), posDat, getPosOffset(v2Num), posDat);
             QMath.copy2(getUVOffset(v1Num), uvDat, getUVOffset(v2Num), uvDat);
 
-            // move temp to v1
-            QMath.copy3(getPosOffset(v1Num), posDat, 0, tempPos);
-            QMath.copy2(getUVOffset(v1Num), uvDat, 0, tempUV);
+            // move temp to v2
+            QMath.copy3(getPosOffset(v2Num), posDat, 0, tempPos);
+            QMath.copy2(getUVOffset(v2Num), uvDat, 0, tempUV);
         }
 
         public void setPosFromTri(
@@ -214,20 +214,11 @@ public final class QViewer extends QEncoding {
         QMesh viewMesh         = new QMesh(mesh);
         float[] viewMeshPosDat = viewMesh.getPosData( );
         for (int posIndex = 0; posIndex < viewMesh.getPosCount(); posIndex++) {
-            System.out.println(
-                "pre:  " + QMath.toString3(viewMesh.getPosOffset(posIndex), viewMeshPosDat)
-            );
             QMath.mul3_4x4(
                 viewMesh.getPosOffset(posIndex), 
                 viewMeshPosDat, 
                 0, 
                 meshTransform.getComponents()
-            );
-            System.out.println(
-                "post: " + QMath.toString3(viewMesh.getPosOffset(posIndex), viewMeshPosDat)
-            );
-            System.out.println(
-                "total: " + Arrays.toString(viewMeshPosDat)
             );
         }
 
@@ -239,10 +230,9 @@ public final class QViewer extends QEncoding {
             Tri viewTri    = new Tri(viewMesh, tdiIndex);
             Tri[] clipTris = internalClipTri(viewTri);
 
-            System.out.println("clipTriCount: " + clipTris.length);
-
+            System.out.println("clipcount: " + clipTris.length);
+            
             for (Tri tri : clipTris) {
-                System.out.println("tri: " + tri.toString());
                 internalViewTri(tri);
             }
 
@@ -341,9 +331,9 @@ public final class QViewer extends QEncoding {
         // refer to
         // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_cliptri.c
 
-        float invDZ   = 1.0f / (pF[offsetPI + VCTR_INDEX_Z] - pI[offsetPI + VCTR_INDEX_Z]);
-        float slopeXZ = (pF[offsetPI + VCTR_INDEX_X] - pI[offsetPI + VCTR_INDEX_X]) * invDZ;
-        float slopeYZ = (pF[offsetPI + VCTR_INDEX_Y] - pI[offsetPI + VCTR_INDEX_Y]) * invDZ;
+        float invDZ   = 1.0f / (pF[offsetPF + VCTR_INDEX_Z] - pI[offsetPI + VCTR_INDEX_Z]);
+        float slopeXZ = (pF[offsetPF + VCTR_INDEX_X] - pI[offsetPI + VCTR_INDEX_X]) * invDZ;
+        float slopeYZ = (pF[offsetPF + VCTR_INDEX_Y] - pI[offsetPI + VCTR_INDEX_Y]) * invDZ;
         float dClip   = (nearClip - pI[offsetPI + VCTR_INDEX_Z]);
 
         out[offsetOut + VCTR_INDEX_X] = pI[offsetPI + VCTR_INDEX_X] + slopeXZ * dClip;
@@ -361,7 +351,7 @@ public final class QViewer extends QEncoding {
         // - triangle will be re-shuffled so that it remains CLOCKWISE where pos2 is clipped
         // - (this is slightly different from Casesium where pos0 is clipped)
 
-        Tri shuffledTri = new Tri();
+        Tri shuffledTri = new Tri(tri);
 
         // SHUFFLE TRIANGLE
         switch (clipState.vertBehindIndicies[0]) {
@@ -409,10 +399,10 @@ public final class QViewer extends QEncoding {
         quadTri0.setPos(0, 0, pos02); // (2 0 1) -> (0/2 0 2)
         
         Tri quadTri1 = new Tri(shuffledTri); // (0 1 2)
-        quadTri0.setPos(0, 0, pos02); // (0 1 2)   -> (0/2 1 2)
-        quadTri0.setPos(2, 0, pos12); // (0/2 1 2) -> (0/2 1 1/2)
+        quadTri1.setPos(0, 0, pos02); // (0 1 2)   -> (0/2 1 2)
+        quadTri1.setPos(2, 0, pos12); // (0/2 1 2) -> (0/2 1 1/2)
 
-        return new Tri[] { quadTri0, quadTri1 };
+        return new Tri[] { quadTri0 };
 
     }
 
@@ -517,21 +507,42 @@ public final class QViewer extends QEncoding {
         flatBottomTri.swapVerts(1, 2); // (1 0 2) -> (1 2 0)
         flatBottomTri.setPos(1, 0, midPoint); // (1 2 0) -> (1 mid 0)
 
-        internalDrawFlatTopTri(flatTopTri, sortedTri);
-        internalDrawFlatBottomTri(flatBottomTri, sortedTri);
+        renderTarget.setColor(
+            (int)midPoint[VCTR_INDEX_X],
+            (int)midPoint[VCTR_INDEX_Y],
+            QColor.Red.toInt()
+        );
+        renderTarget.setColor(
+            (int)sortedTri.getPosX(0),
+            (int)sortedTri.getPosY(0),
+            QColor.Red.toInt()
+        );
+        renderTarget.setColor(
+            (int)sortedTri.getPosX(1),
+            (int)sortedTri.getPosY(1),
+            QColor.Green.toInt()
+        );
+        renderTarget.setColor(
+            (int)sortedTri.getPosX(2),
+            (int)sortedTri.getPosY(2),
+            QColor.Blue.toInt()
+        );
+
+        // internalDrawFlatTopTri(flatTopTri, sortedTri);
+        // internalDrawFlatBottomTri(flatBottomTri, sortedTri);
 
     }
 
     private Tri internalSortTriVertsByHeight(Tri tri) { 
 
+        if (tri.getPosY(2) > tri.getPosY(1)) {
+            tri.swapVerts(2, 1);
+        }
         if (tri.getPosY(1) > tri.getPosY(0)) {
-            tri.swapVerts(0, 1);
+            tri.swapVerts(1, 0);
         }
         if (tri.getPosY(2) > tri.getPosY(1)) {
-            tri.swapVerts(1, 2);
-        }
-        if (tri.getPosY(1) > tri.getPosY(0)) {
-            tri.swapVerts(0, 1);
+            tri.swapVerts(2, 1);
         }
 
         return tri;

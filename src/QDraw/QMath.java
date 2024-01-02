@@ -213,10 +213,9 @@ public final class QMath extends QEncoding {
         for (int i = 0; i < MTR_NUM_ROWS; i++) {
             for (int j = 0; j < MTR_NUM_COLUMNS; j++) {
                 for (int k = 0; k < MTR_NUM_ROWS; k++) {
-                    float val = 
-                        get4x4(m1offset, m1_4x4, i, k) + 
-                        get4x4(m2offset, m2_4x4, k, j);
-                    set4x4(0, r4x4, i, j, val);
+                    int index = index4x4(i, j);
+                    r4x4[index] += get4x4(m1offset, m1_4x4, i, k) *
+                                   get4x4(m2offset, m2_4x4, k, j);
                 }
             }
         }

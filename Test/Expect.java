@@ -433,12 +433,31 @@ public final class Expect {
             });
     }
 
+    public static void MathTest( ) {
+        QMatrix4x4 mat0 = QMatrix4x4.translationMatrix(1.0f, 2.0f, 3.0f);
+
+        float[] temp0 = { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f };
+        QMath.mul3_4x4(temp0, mat0.getComponents());
+        Expect(
+            temp0, 
+            new float[] { 2.0f, 4.0f, 6.0f, 4.0f, 5.0f, 6.0f }
+        );
+
+        float[] temp1 = { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f };
+        QMath.mul3_4x4(3, temp1, 0, mat0.getComponents());
+        Expect(
+            temp1, 
+            new float[] { 1.0f, 2.0f, 3.0f, 5.0f, 7.0f, 9.0f }
+        );
+    }
+
     public static void main(String[] args) {
         ColorTest( );
         RenderBufferTest( );
         VectorTest( );
         MatrixTest( );
         MeshTest( );
+        MathTest( );
 
         QRenderBuffer rb = new QRenderBuffer(125, 125);
         QWindow window   = new QWindow("testwin", 500, 500);
@@ -454,21 +473,22 @@ public final class Expect {
             
             eyes.blink( );
 
-            rot += 0.05f;
             QMatrix4x4 meshMatr = QMatrix4x4.TRS(
-                new QVector3(0.0f, 0.0f, -5.25f), 
-                QVector3.Zero(), 
+                new QVector3(0.0f, 0.0f, -1.2f),
+                new QVector3(rot, 0.0f, 0.0f), 
                 QVector3.One()
             );
 
+            rot += 0.01f;
+
             eyes.viewMesh(
-                QMesh.UnitPlane,
+                QMesh.RightTriangle,
                 meshMatr
             );
 
             window.updateFrame();
 
-            System.out.println("frame updated");
+            // System.out.println("frame updated");
 
         }
     }
