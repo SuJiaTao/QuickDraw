@@ -159,6 +159,14 @@ public final class QViewer extends QEncoding {
         public int getUVOffset(int uvNum) {
             return MESH_UV_NUM_CMPS * uvNum;
         }
+
+        public String toString( ) {
+            return String.format(
+                "<(%f %f %f) (%f %f %f) (%f %f %f)>", 
+                posDat[0], posDat[1], posDat[2],
+                posDat[3], posDat[4], posDat[5],
+                posDat[6], posDat[7], posDat[8]);
+        }
     }
 
     private class ClipState {
@@ -206,11 +214,20 @@ public final class QViewer extends QEncoding {
         QMesh viewMesh         = new QMesh(mesh);
         float[] viewMeshPosDat = viewMesh.getPosData( );
         for (int posIndex = 0; posIndex < viewMesh.getPosCount(); posIndex++) {
+            System.out.println(
+                "pre:  " + QMath.toString3(viewMesh.getPosOffset(posIndex), viewMeshPosDat)
+            );
             QMath.mul3_4x4(
                 viewMesh.getPosOffset(posIndex), 
                 viewMeshPosDat, 
                 0, 
                 meshTransform.getComponents()
+            );
+            System.out.println(
+                "post: " + QMath.toString3(viewMesh.getPosOffset(posIndex), viewMeshPosDat)
+            );
+            System.out.println(
+                "total: " + Arrays.toString(viewMeshPosDat)
             );
         }
 
@@ -222,7 +239,10 @@ public final class QViewer extends QEncoding {
             Tri viewTri    = new Tri(viewMesh, tdiIndex);
             Tri[] clipTris = internalClipTri(viewTri);
 
+            System.out.println("clipTriCount: " + clipTris.length);
+
             for (Tri tri : clipTris) {
+                System.out.println("tri: " + tri.toString());
                 internalViewTri(tri);
             }
 

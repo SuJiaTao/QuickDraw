@@ -52,13 +52,13 @@ public final class QMath extends QEncoding {
         int     srcoffset,
         float[] src
     ) {
-        // System.arraycopy(src, srcoffset, trg, trgoffset, 3);
+        System.arraycopy(src, srcoffset, trg, trgoffset, 3);
 
         // TODO: this is for DEBUG only. remove
-        for (int i = 0; i < 3; i++) {
+        /*for (int i = 0; i < 3; i++) {
             trg[trgoffset + i] = 
             src[srcoffset + i];
-        }
+        }*/
     }
 
     public static void copy4x4(float[] trg_4x4, float[] src_4x4) {
@@ -229,5 +229,13 @@ public final class QMath extends QEncoding {
 
     public static float sinf(float degrees) {
         return (float)Math.sin(degrees * MATH_TO_RADIANS);
+    }
+
+    public static String toString3(int offset, float[] v_3) {
+        return String.format("(%f %f %f)", 
+            v_3[offset + VCTR_INDEX_X],
+            v_3[offset + VCTR_INDEX_Y],
+            v_3[offset + VCTR_INDEX_Z]
+        );
     }
 }
