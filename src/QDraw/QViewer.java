@@ -370,8 +370,8 @@ public final class QViewer extends QEncoding {
         QMath.sub3(0, temp, tri.getPosOffset(vnumI), tri.posDat);
         float magTotal = QMath.mag3(temp);
 
-        float factorI = magIntersect / magTotal;
-        float factorF = 1.0f - factorI;
+        float factorF = magIntersect / magTotal;
+        float factorI = 1.0f - factorF;
 
         uvOut[MESH_UV_OFST_U] = tri.getUV_U(vnumI) * factorI + tri.getUV_U(vnumF) * factorF;
         uvOut[MESH_UV_OFST_V] = tri.getUV_V(vnumI) * factorI + tri.getUV_V(vnumF) * factorF;
@@ -458,55 +458,55 @@ public final class QViewer extends QEncoding {
         switch (clipState.vertBehindIndicies[0] + clipState.vertBehindIndicies[1]) {
             // VERTS 1 & 2 ARE CLIPPED
             case (1 + 2):
-                
-                float[] pos01 = new float[MESH_POSN_NUM_CMPS];
-                float[] pos02 = new float[MESH_POSN_NUM_CMPS];
-                internalFindClipIntersect(tri, 0, 1, 0, pos01);
-                internalFindClipIntersect(tri, 0, 2, 0, pos02);
 
-                float[] uv01 = new float[MESH_UV_NUM_CMPS];
-                float[] uv02 = new float[MESH_UV_NUM_CMPS];
-                internalFindIntersectUV(tri, 0, 1, pos01, 0, uv01);
-                internalFindIntersectUV(tri, 0, 1, pos01, 0, uv02);
+                float[] pos10 = new float[MESH_POSN_NUM_CMPS];
+                float[] pos20 = new float[MESH_POSN_NUM_CMPS];
+                internalFindClipIntersect(tri, 1, 0, 0, pos10);
+                internalFindClipIntersect(tri, 2, 0, 0, pos20);
+
+                float[] uv10 = new float[MESH_UV_NUM_CMPS];
+                float[] uv20 = new float[MESH_UV_NUM_CMPS];
+                internalFindIntersectUV(tri, 1, 0, pos10, 0, uv10);
+                internalFindIntersectUV(tri, 2, 0, pos20, 0, uv20);
                 
-                tri.setVert(1, 0, pos01, 0, uv01);
-                tri.setVert(2, 0, pos02, 0, uv02);
+                tri.setVert(1, 0, pos10, 0, uv10);
+                tri.setVert(2, 0, pos20, 0, uv20);
 
                 return new Tri[] { tri };
 
             // VERTS 0 & 2 ARE CLIPPED
             case (0 + 2):
 
-                float[] pos10 = new float[MESH_POSN_NUM_CMPS];
-                float[] pos12 = new float[MESH_POSN_NUM_CMPS];
-                internalFindClipIntersect(tri, 1, 0, 0, pos10);
-                internalFindClipIntersect(tri, 1, 2, 0, pos12);
+                float[] pos01 = new float[MESH_POSN_NUM_CMPS];
+                float[] pos21 = new float[MESH_POSN_NUM_CMPS];
+                internalFindClipIntersect(tri, 0, 1, 0, pos01);
+                internalFindClipIntersect(tri, 2, 1, 0, pos21);
 
-                float[] uv10 = new float[MESH_UV_NUM_CMPS];
-                float[] uv12 = new float[MESH_UV_NUM_CMPS];
-                internalFindIntersectUV(tri, 1, 0, pos10, 0, uv10);
-                internalFindIntersectUV(tri, 1, 2, pos12, 0, uv12);
+                float[] uv01 = new float[MESH_UV_NUM_CMPS];
+                float[] uv21 = new float[MESH_UV_NUM_CMPS];
+                internalFindIntersectUV(tri, 0, 1, pos01, 0, uv01);
+                internalFindIntersectUV(tri, 2, 1, pos21, 0, uv21);
 
-                tri.setVert(0, 0, pos10, 0, uv10);
-                tri.setVert(2, 0, pos12, 0, uv12);
+                tri.setVert(0, 0, pos01, 0, uv01);
+                tri.setVert(2, 0, pos21, 0, uv21);
 
                 return new Tri[] { tri };
 
             // VERTS 0 & 1 ARE CLIPPED
             case (0 + 1):
 
-                float[] pos20 = new float[MESH_POSN_NUM_CMPS];
-                float[] pos21 = new float[MESH_POSN_NUM_CMPS];
-                internalFindClipIntersect(tri, 2, 0, 0, pos20);
-                internalFindClipIntersect(tri, 2, 1, 0, pos21);
+                float[] pos02 = new float[MESH_POSN_NUM_CMPS];
+                float[] pos12 = new float[MESH_POSN_NUM_CMPS];
+                internalFindClipIntersect(tri, 2, 0, 0, pos02);
+                internalFindClipIntersect(tri, 2, 1, 0, pos12);
 
-                float[] uv20 = new float[MESH_UV_NUM_CMPS];
-                float[] uv21 = new float[MESH_UV_NUM_CMPS];
-                internalFindIntersectUV(tri, 2, 0, pos20, 0, uv20);
-                internalFindIntersectUV(tri, 2, 1, pos21, 0, uv21);
+                float[] uv02 = new float[MESH_UV_NUM_CMPS];
+                float[] uv12 = new float[MESH_UV_NUM_CMPS];
+                internalFindIntersectUV(tri, 0, 2, pos02, 0, uv02);
+                internalFindIntersectUV(tri, 1, 2, pos12, 0, uv12);
 
-                tri.setVert(0, 0, pos20, 0, uv20);
-                tri.setVert(1, 0, pos21, 0, uv21);
+                tri.setVert(0, 0, pos02, 0, uv02);
+                tri.setVert(1, 0, pos12, 0, uv12);
 
                 return new Tri[] { tri };
         
