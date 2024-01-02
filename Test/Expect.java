@@ -475,14 +475,14 @@ public final class Expect {
 
             QMatrix4x4 meshMatr = QMatrix4x4.TRS(
                 new QVector3(0.0f, 0.0f, -2.0f),
-                new QVector3(0.0f, rot, 0.0f), 
+                new QVector3(0.0f, 0.0f, 0.0f), 
                 QVector3.One()
             );
 
             rot += 0.05f;
 
             eyes.viewMesh(
-                QMesh.RightTriangle,
+                QMesh.UnitPlane,
                 meshMatr
             );
 

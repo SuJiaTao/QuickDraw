@@ -160,6 +160,14 @@ public final class QViewer extends QEncoding {
             return MESH_UV_NUM_CMPS * uvNum;
         }
 
+        public float getUV_U(int uvNum) {
+            return uvDat[getUVOffset(uvNum) + MESH_UV_OFST_U];
+        }
+
+        public float getUV_V(int uvNum) {
+            return uvDat[getUVOffset(uvNum) + MESH_UV_OFST_V];
+        }
+
         public String toString( ) {
             return String.format(
                 "<(%f %f %f) (%f %f %f) (%f %f %f)>", 
@@ -619,10 +627,10 @@ public final class QViewer extends QEncoding {
 
         float invDenom = 
             1.0f / 
-            ((tri.getPosY(1) - tri.getPosY(2)) *
+            (((tri.getPosY(1) - tri.getPosY(2)) *
              (tri.getPosX(0) - tri.getPosX(2))) +
             ((tri.getPosX(2) - tri.getPosX(1)) * 
-             (tri.getPosY(0) - tri.getPosY(2)));
+             (tri.getPosY(0) - tri.getPosY(2))));
         float d3x = (float)drawX - tri.getPosX(2);
         float d3y = (float)drawY - tri.getPosY(2);
         
@@ -644,10 +652,20 @@ public final class QViewer extends QEncoding {
         float[] weights = new float[3];
         internalFindBaryWeights(drawX, drawY, triangle, weights);
         //System.out.println(Arrays.toString(weights));
+        float weightU = 
+            weights[0] * triangle.getUV_U(0) +
+            weights[1] * triangle.getUV_U(1) +
+            weights[2] * triangle.getUV_U(2);
+
+        float weightV = 
+            weights[0] * triangle.getUV_V(0) +
+            weights[1] * triangle.getUV_V(1) +
+            weights[2] * triangle.getUV_V(2);
+
         QColor color = new QColor(
-            (int)(weights[0] * 255.0f), 
-            (int)(weights[1] * 255.0f), 
-            (int)(weights[2] * 255.0f)
+            0,
+            (int)(weightU * 255.0f), 
+            (int)(weightV * 255.0f)
         );
         renderTarget.setColor(drawX, drawY, color.toInt());
     }
