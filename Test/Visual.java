@@ -11,8 +11,8 @@ public final class Visual {
     public static final float VISTEST_FB_ASPECT   = (float)VISTEST_FB_WIDTH / (float)VISTEST_FB_HEIGHT;
     public static final int VISTEST_WINDOW_WIDTH  = 1200;
     public static final int VISTEST_WINDOW_HEIGHT = 960; 
-    public static final int VISTEST_RUNTIME_SEC = 5;
-    public static final int VISTEST_RUNTIME_MS  = 1000 * VISTEST_RUNTIME_SEC;
+    public static final int VISTEST_RUNTIME_SEC   = 5;
+    public static final int VISTEST_RUNTIME_MS    = 1000 * VISTEST_RUNTIME_SEC;
     public static QWindow       window;
     public static QRenderBuffer frameBuffer;
     public static QViewer       eyes;
@@ -76,7 +76,7 @@ public final class Visual {
     public static void Uncle( ) {
         long t0 = System.currentTimeMillis();
 
-        eyes.setNearClip(-1.0f);
+        eyes.setNearClip(-0.0f);
         eyes.setRenderType(RenderType.Textured);
 
         QMesh uncle = new QMesh(System.getProperty("user.dir") + "\\Resources\\Uncle.obj");
@@ -86,13 +86,14 @@ public final class Visual {
         eyes.setRenderTexture(texture);
 
         float time = 0.0f;
-        while ((System.currentTimeMillis() - t0) < VISTEST_RUNTIME_MS * 20) {
+        while ((System.currentTimeMillis() - t0) < VISTEST_RUNTIME_MS) {
             eyes.blink( );
 
-            time += 0.5f;
+            time += 0.25f;
+
             QMatrix4x4 m0 = QMatrix4x4.TRS(
-                new QVector3(0.0f, 0.0f, -2.5f), 
-                new QVector3(time, time, time), 
+                new QVector3(0.0f, 0.0f, -2.0f), 
+                new QVector3(0, time, 0), 
                 QVector3.One().multiply3(0.125f)
             );
 
@@ -102,13 +103,63 @@ public final class Visual {
         }
     }
 
+    public static void TechUncle( ) {
+        long t0 = System.currentTimeMillis();
+
+        eyes.setNearClip(-0.0f);
+        eyes.setRenderType(RenderType.Textured);
+
+        QMesh uncle = 
+            new QMesh(System.getProperty("user.dir") + "\\Resources\\Uncle.obj");
+        QRenderBuffer texture = 
+            new QRenderBuffer(System.getProperty("user.dir") + "\\Resources\\Matrix.jpg");
+
+        eyes.setRenderTexture(texture);
+
+        float time = 0.0f;
+        float osc0 = 0.0f;
+        float osc1 = 0.0f;
+        while (true) {
+            eyes.blink( );
+
+            time = time + 1.5f;
+            osc0 = QMath.sinf(time);
+            osc1 = QMath.cosf(time);
+
+            for (int i = -6; i < 6; i++) {
+                for (int j = -6; j < 6; j++) {
+
+                    float x = (1.0f + osc0) * 2.0f * i;
+                    float y = (osc1 * i) + (osc0 * j);
+                    float z = -5.0f + (osc1 * 2.0f * j);
+                    QMatrix4x4 m0 = QMatrix4x4.TRS(
+                        new QVector3(
+                            x,
+                            y, 
+                            z
+                        ), 
+                        new QVector3(time * i, time, time * j), 
+                        QVector3.One().multiply3(0.125f)
+                    );
+
+                    eyes.viewMesh(uncle, m0);
+
+                }
+            }
+
+            window.updateFrame( );
+        }
+    }
+
     public static void main(String[] args) {
+        
         window      = new QWindow("Visual Test", VISTEST_WINDOW_WIDTH, VISTEST_WINDOW_HEIGHT);
         frameBuffer = new QRenderBuffer(VISTEST_FB_WIDTH, VISTEST_FB_HEIGHT);
         window.setRenderBuffer(frameBuffer);
         eyes        = new QViewer(frameBuffer);
         eyes.setViewBounds(-VISTEST_FB_ASPECT, VISTEST_FB_ASPECT, -1.0f, 1.0f);
 
-        Uncle( );
+        TechUncle( );
+
     }
 }
