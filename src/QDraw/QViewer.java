@@ -11,32 +11,108 @@ import QDraw.QException.PointOfError;
 public final class QViewer extends QEncoding {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
-    public static final float  MIN_NEAR_CLIP       = -0.005f;
-    public static final QColor DEFAULT_CLEAR_COLOR = QColor.Black();
-    public static final float  DEFAULT_NEAR_CLIP   = MIN_NEAR_CLIP;
+    public static final float MIN_NEAR_CLIP     = -0.005f;
+    public static final float DEFAULT_NEAR_CLIP = MIN_NEAR_CLIP;
+    public static final int DEFAULT_FILL_COLOR  = QColor.White().toInt();
+    public static final int NO_TEXTURE_COLOR    = new QColor(0xFF, 0x00, 0xFF).toInt();
+    public static final int NO_SAMPLE_COLOR     = new QColor(0x00, 0x00, 0x00, 0x00).toInt();; 
 
     public static final float DEFAULT_VIEWBOUND_LEFT   = -1.0f;
     public static final float DEFAULT_VIEWBOUND_RIGHT  = 1.0f;
     public static final float DEFAULT_VIEWBOUND_BOTTOM = -1.0f;
     public static final float DEFAULT_VIEWBOUND_TOP    = 1.0f;
 
+    public static final RenderType DEFAULT_RENDERTYPE = RenderType.Textured;
+    public static final SampleType DEFAULT_SAMPLETYPE = SampleType.Repeat;
+
+    /////////////////////////////////////////////////////////////////
+    // PUBLIC ENUMS
+    public enum RenderType {
+        FlatColor,
+        Textured
+    };
+
+    public enum SampleType {
+        Cutoff,
+        Clamp,
+        Repeat
+    };
+
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
     private float         nearClip   = DEFAULT_NEAR_CLIP;
-    private QColor        clearColor = DEFAULT_CLEAR_COLOR;
-    private QMatrix4x4    viewTransform       = QMatrix4x4.Identity();
-    private QRenderBuffer renderTarget        = null;
     private float         viewLeft, viewRight, viewBottom, viewTop;
+
+    private QMatrix4x4    viewTransform  = QMatrix4x4.Identity();
+    private QRenderBuffer renderTarget   = null;
+    private QRenderBuffer texture        = null;
+    private int           fillColor      = DEFAULT_FILL_COLOR;
+    private RenderType    renderType     = DEFAULT_RENDERTYPE;
+    private SampleType    sampleType     = DEFAULT_SAMPLETYPE;
+
+    /////////////////////////////////////////////////////////////////
+    // PUBLIC METHODS
+    public void setNearClip(float val) {
+        nearClip = Math.min(MIN_NEAR_CLIP, val);
+    }
+
+    public void setViewBounds(float left, float right, float bottom, float top) {
+        viewLeft   = left;
+        viewRight  = right;
+        viewBottom = bottom;
+        viewTop    = top;
+    }
+
+    public void setCameraView(
+        QVector3 position,
+        QVector3 rotation,
+        QVector3 scale
+    ) {
+        // TODO: this may be totally wrong
+        viewTransform = QMatrix4x4.TRS(
+            position.multiply3(-1.0f), 
+            rotation.multiply3(-1.0f), 
+            new QVector3(
+                1.0f / scale.getX(),
+                1.0f / scale.getY(),
+                1.0f / scale.getZ()
+            )
+        );
+    }
+
+    public void setRenderType(RenderType rType) {
+        renderType = rType;
+    }
+
+    public void setSampleType(SampleType sType) {
+        sampleType = sType;
+    }
+
+    public void setFillColor(QColor color) {
+        fillColor = color.toInt( );
+    }
+
+    public void setRenderTexture(QRenderBuffer _texture) {
+        texture = _texture;
+    }
+
+    public void blink( ) {
+        renderTarget.clearColorBuffer();
+        renderTarget.clearDepthBuffer();
+    }
+
+    public void viewMesh(
+        QMesh mesh,
+        QMatrix4x4 meshTransform
+    ) {
+        internalViewMesh(mesh, meshTransform);
+    }
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE CLASSES
     private class Tri extends QEncoding {
         public float[] posDat = new float[VTRI_POSDAT_NUM_CMPS];
         public float[] uvDat  = new float[VTRI_UVDAT_NUM_CMPS];
-
-        public Tri( ) {
-
-        }
 
         public Tri(Tri toCopy) {
             System.arraycopy(toCopy.posDat, 0, posDat, 0, VTRI_POSDAT_NUM_CMPS);
@@ -218,15 +294,19 @@ public final class QViewer extends QEncoding {
 
         // NOTE:
         // - a copy of the mesh is created, but each vertex is transformed by
-        //   the provided transformation matrix
+        //   the provided transformation matrix and then the view matrix
         QMesh viewMesh         = new QMesh(mesh);
         float[] viewMeshPosDat = viewMesh.getPosData( );
+        float[] totalMatrix    = QMath.mul4x4(
+            meshTransform.getComponents(), 
+            viewTransform.getComponents()
+        );
         for (int posIndex = 0; posIndex < viewMesh.getPosCount(); posIndex++) {
             QMath.mul3_4x4(
                 viewMesh.getPosOffset(posIndex), 
                 viewMeshPosDat, 
                 0, 
-                meshTransform.getComponents()
+                totalMatrix
             );
         }
 
@@ -295,17 +375,6 @@ public final class QViewer extends QEncoding {
                     "reached bad clipping state: " + clipState.toString()
                 );
         }
-    }
-
-    private void internalFindClipIntersect(
-        Tri srcTri,
-        int pI,
-        int pF,
-        int tReplace
-    ) {
-        internalFindClipIntersect(
-            srcTri, pI, pF, srcTri.getPosOffset(tReplace), srcTri.posDat
-        );
     }
 
     private void internalFindClipIntersect(
@@ -748,18 +817,73 @@ public final class QViewer extends QEncoding {
         int drawY,
         Tri triangle
     ) {
-        // TODO: finish
+
         float[] weights = new float[MESH_VERTS_PER_TRI];
         float[] uvs     = new float[MESH_UV_NUM_CMPS];
         internalFindBaryWeights(drawX, drawY, triangle, weights);
         internalFindScreenUV(weights, triangle, uvs);
 
-        QColor color = new QColor(
-            0,
-            (int)(uvs[0] * 255.0f), 
-            (int)(uvs[1] * 255.0f)
-        );
-        renderTarget.setColor(drawX, drawY, color.toInt());
+        switch (renderType) {
+            case FlatColor:
+                renderTarget.setColor(drawX, drawY, fillColor);
+                break;
+
+            case Textured:
+                renderTarget.setColor(drawX, drawY, internalSampleTexture(uvs));
+                break;
+
+            default:
+                throw new QException(
+                    PointOfError.BadState, 
+                    "bad renderType: " + renderType.toString()
+                );
+        }
+    }
+
+    private int internalSampleTexture(float[] uv) {
+        // refer to
+        // https://github.com/SuJiaTao/Caesium/blob/master/csm_fragment.h
+
+        if (texture == null) {
+            return NO_TEXTURE_COLOR;
+        }
+        
+        switch (sampleType) {
+            case Cutoff:
+                if (uv[0] < 0.0f || uv[0] >= 1.0f || uv[1] < 0.0f || uv[1] >= 1.0f) {
+                    return NO_SAMPLE_COLOR;
+                }
+                break;
+
+            case Clamp:
+                uv[0] = Math.min(1.0f, Math.max(uv[0], 0.0f));
+                uv[1] = Math.min(1.0f, Math.max(uv[1], 0.0f));
+                break;
+
+            case Repeat:
+                uv[0] = uv[0] - (float)Math.floor((float)uv[0]);
+                uv[1] = uv[1] - (float)Math.floor((float)uv[1]);
+                if (uv[0] < 0.0f) {
+                    uv[0] = 1.0f + uv[0];
+                }
+                if (uv[1] > 1.0f) {
+                    uv[1] = 1.0f + uv[1];
+                }
+                break;
+        
+            default:
+                throw new QException(
+                    PointOfError.BadState, 
+                    "bad sample type: " + sampleType.toString()
+                );
+        }
+
+        int texCoordX = (int)((float)texture.getWidth() * uv[0]);
+        int texCoordY = (int)((float)texture.getHeight() * uv[1]);
+        texCoordX = Math.max(0, Math.min(texCoordX, texture.getWidth() - 1));
+        texCoordY = Math.max(0, Math.min(texCoordY, texture.getHeight() - 1));
+
+        return texture.getColor(texCoordX, texCoordY);
     }
 
     /////////////////////////////////////////////////////////////////
@@ -780,52 +904,6 @@ public final class QViewer extends QEncoding {
     ) {
         init(renderTarget);
         setViewBounds(viewLeft, viewRight, viewBottom, viewTop);
-    }
-
-    /////////////////////////////////////////////////////////////////
-    // PUBLIC METHODS
-    public void setNearClip(float val) {
-        nearClip = Math.min(MIN_NEAR_CLIP, val);
-    }
-
-    public void setClearColor(QColor color) {
-        clearColor.set(color);
-    }
-
-    public void setViewBounds(float left, float right, float bottom, float top) {
-        viewLeft   = left;
-        viewRight  = right;
-        viewBottom = bottom;
-        viewTop    = top;
-    }
-
-    public void setCamera(
-        QVector3 position,
-        QVector3 rotation,
-        QVector3 scale
-    ) {
-        // TODO: this may be totally wrong
-        viewTransform = QMatrix4x4.TRS(
-            position.multiply3(-1.0f), 
-            rotation.multiply3(-1.0f), 
-            new QVector3(
-                1.0f / scale.getX(),
-                1.0f / scale.getY(),
-                1.0f / scale.getZ()
-            )
-        );
-    }
-
-    public void blink( ) {
-        renderTarget.clearColorBuffer();
-        renderTarget.clearDepthBuffer();
-    }
-
-    public void viewMesh(
-        QMesh mesh,
-        QMatrix4x4 meshTransform
-    ) {
-        internalViewMesh(mesh, meshTransform);
     }
 
 }

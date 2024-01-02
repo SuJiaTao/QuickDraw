@@ -14,6 +14,24 @@ public final class QRenderBuffer {
     private static final int   CLEAR_COLOR   = new QColor(0x00, 0x00, 0x00, 0x00).toInt();
     private static final float CLEAR_DEPTH   = Float.POSITIVE_INFINITY;
 
+    public static QRenderBuffer CheckerBoard(int size) {
+        return CheckerBoard(size, QColor.Black(), QColor.White());
+    }
+    
+    public static QRenderBuffer CheckerBoard(int size, QColor col1, QColor col2) {
+        QRenderBuffer board = new QRenderBuffer(size, size);
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                if (((i + j) & 1) == 0) {
+                    board.setColor(i, j, col1.toInt());
+                } else {
+                    board.setColor(i, j, col2.toInt());
+                }
+            }
+        }
+        return board;
+    }
+
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
     private BufferedImage buffer;

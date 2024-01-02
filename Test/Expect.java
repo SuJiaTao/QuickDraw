@@ -459,12 +459,13 @@ public final class Expect {
         MeshTest( );
         MathTest( );
 
-        QRenderBuffer rb = new QRenderBuffer(125, 125);
+        QRenderBuffer rb = new QRenderBuffer(500, 500);
         QWindow window   = new QWindow("testwin", 500, 500);
         rb.getColorData()[rb.coordToDataIndex(5, 5)] = QColor.Red().toInt();
 
         QViewer eyes = new QViewer(rb, -2.0f, 2.0f, -2.0f, 2.0f);
         eyes.setNearClip(-1.0f);
+        eyes.setRenderTexture(QRenderBuffer.CheckerBoard(5));
 
         window.setRenderBuffer(rb);
         
@@ -475,11 +476,11 @@ public final class Expect {
 
             QMatrix4x4 meshMatr = QMatrix4x4.TRS(
                 new QVector3(0.0f, 0.0f, -1.5f),
-                new QVector3(0, rot, 0), 
+                new QVector3(rot, rot, rot), 
                 QVector3.One()
             );
 
-            rot += 0.01f;
+            rot += 0.02f;
 
             eyes.viewMesh(
                 QMesh.UnitPlane(),
