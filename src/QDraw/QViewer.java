@@ -186,7 +186,7 @@ public final class QViewer extends QEncoding {
         private void projectPos(int vertNum) {
             float invZ = 1.0f / getPosZ(vertNum);
             setPosZ(vertNum, invZ);
-            QMath.mult2(getPosOffset(vertNum), posDat, invZ);
+            QMath.mult2(getPosOffset(vertNum), posDat, -invZ);
         }
 
         public int getPosOffset(int posNum) {
