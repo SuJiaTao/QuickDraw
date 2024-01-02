@@ -280,122 +280,122 @@ public final class Expect {
 
     public static void MeshTest( ) {
         Expect(
-            QMesh.UnitPlane.getTriDataIndicies( ),
+            QMesh.UnitPlane().getTriDataIndicies( ),
             new int[] { 0, 0, 1, 1, 2, 2, 0, 0, 2, 2, 3, 3 } 
         );
 
         Expect(
-            QMesh.UnitPlane.getPos(0), 
+            QMesh.UnitPlane().getPos(0), 
             new float[] { -1.0f, -1.0f, 0.0f }
         );
 
         Expect(
-            QMesh.UnitPlane.getPos(1), 
+            QMesh.UnitPlane().getPos(1), 
             new float[] { -1.0f, 1.0f, 0.0f }
         );
 
         Expect(
-            QMesh.UnitPlane.getUV(0), 
+            QMesh.UnitPlane().getUV(0), 
             new float[] { 0.0f, 0.0f }
         );
 
         Expect(
-            QMesh.UnitPlane.getUV(1), 
+            QMesh.UnitPlane().getUV(1), 
             new float[] { 0.0f, 1.0f }
         );
 
         Expect(
-            QMesh.UnitPlane.getPosCount(), 
+            QMesh.UnitPlane().getPosCount(), 
             4
         );
 
         Expect(
-            QMesh.UnitPlane.getUVCount(), 
+            QMesh.UnitPlane().getUVCount(), 
             4
         );
 
         Expect(
-            QMesh.UnitPlane.getTriCount(), 
+            QMesh.UnitPlane().getTriCount(), 
             2
         );
 
         Expect(
-            new QMesh(QMesh.UnitPlane).getTriDataIndicies( ),
+            QMesh.UnitPlane().getTriDataIndicies( ),
             new int[] { 0, 0, 1, 1, 2, 2, 0, 0, 2, 2, 3, 3 } 
         );
 
         Expect(
-            new QMesh(QMesh.UnitPlane).getPos(0), 
+            QMesh.UnitPlane().getPos(0), 
             new float[] { -1.0f, -1.0f, 0.0f }
         );
 
         Expect(
-            new QMesh(QMesh.UnitPlane).getPos(1), 
+            QMesh.UnitPlane().getPos(1), 
             new float[] { -1.0f, 1.0f, 0.0f }
         );
 
         Expect(
-            new QMesh(QMesh.UnitPlane).getUV(0), 
+            QMesh.UnitPlane().getUV(0), 
             new float[] { 0.0f, 0.0f }
         );
 
         Expect(
-            new QMesh(QMesh.UnitPlane).getUV(1), 
+            QMesh.UnitPlane().getUV(1), 
             new float[] { 0.0f, 1.0f }
         );
 
         Expect(
-            new QMesh(QMesh.UnitPlane).getPosCount(), 
+            QMesh.UnitPlane().getPosCount(), 
             4
         );
 
         Expect(
-            new QMesh(QMesh.UnitPlane).getUVCount(), 
+            QMesh.UnitPlane().getUVCount(), 
             4
         );
 
         Expect(
-            new QMesh(QMesh.UnitPlane).getTriCount(), 
+            QMesh.UnitPlane().getTriCount(), 
             2
         );
 
         Expect(
-            QMesh.UnitPlane.getTriPos(0, 0), 
+            QMesh.UnitPlane().getTriPos(0, 0), 
             new float[] { -1.0f, -1.0f, 0.0f }
         );
 
         Expect(
-            QMesh.UnitPlane.getTriUV(0, 0), 
+            QMesh.UnitPlane().getTriUV(0, 0), 
             new float[] { 0.0f, 0.0f}
         );
 
         Expect(
-            QMesh.UnitPlane.getTriPos(0, 1), 
+            QMesh.UnitPlane().getTriPos(0, 1), 
             new float[] { -1.0f, 1.0f, 0.0f }
         );
 
         Expect(
-            QMesh.UnitPlane.getTriUV(0, 1), 
+            QMesh.UnitPlane().getTriUV(0, 1), 
             new float[] { 0.0f, 1.0f}
         );
 
         Expect(
-            QMesh.UnitPlane.getTriPos(1, 0), 
+            QMesh.UnitPlane().getTriPos(1, 0), 
             new float[] { -1.0f, -1.0f, 0.0f }
         );
 
         Expect(
-            QMesh.UnitPlane.getTriUV(1, 0), 
+            QMesh.UnitPlane().getTriUV(1, 0), 
             new float[] { 0.0f, 0.0f}
         );
 
         Expect(
-            QMesh.UnitPlane.getTriPos(1, 1), 
+            QMesh.UnitPlane().getTriPos(1, 1), 
             new float[] { 1.0f, 1.0f, 0.0f }
         );
 
         Expect(
-            QMesh.UnitPlane.getTriUV(1, 1), 
+            QMesh.UnitPlane().getTriUV(1, 1), 
             new float[] { 1.0f, 1.0f}
         );
 
@@ -461,7 +461,7 @@ public final class Expect {
 
         QRenderBuffer rb = new QRenderBuffer(125, 125);
         QWindow window   = new QWindow("testwin", 500, 500);
-        rb.getColorData()[rb.coordToDataIndex(5, 5)] = QColor.Red.toInt();
+        rb.getColorData()[rb.coordToDataIndex(5, 5)] = QColor.Red().toInt();
 
         QViewer eyes = new QViewer(rb, -2.0f, 2.0f, -2.0f, 2.0f);
         eyes.setNearClip(0.0f);
@@ -475,14 +475,14 @@ public final class Expect {
 
             QMatrix4x4 meshMatr = QMatrix4x4.TRS(
                 new QVector3(0.0f, 0.0f, -2.0f),
-                new QVector3(0.0f, 0.0f, 0.0f), 
+                new QVector3(rot, rot, rot), 
                 QVector3.One()
             );
 
             rot += 0.05f;
 
             eyes.viewMesh(
-                QMesh.UnitPlane,
+                QMesh.UnitPlane(),
                 meshMatr
             );
 

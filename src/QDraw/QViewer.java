@@ -12,7 +12,7 @@ public final class QViewer extends QEncoding {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
     public static final float  MIN_NEAR_CLIP       = -0.005f;
-    public static final QColor DEFAULT_CLEAR_COLOR = QColor.Black;
+    public static final QColor DEFAULT_CLEAR_COLOR = QColor.Black();
     public static final float  DEFAULT_NEAR_CLIP   = MIN_NEAR_CLIP;
 
     public static final float DEFAULT_VIEWBOUND_LEFT   = -1.0f;
@@ -643,29 +643,50 @@ public final class QViewer extends QEncoding {
         out[2] = 1.0f - out[1] - out[0];
     }
 
+    private void internalFindScreenUV(
+        float[] weights,
+        Tri tri,
+        float[] outUV
+    ) {
+
+        // refer to
+        // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_rasterizetri.c
+
+        float w0      = tri.getPosZ(0) * weights[0];
+        float w1      = tri.getPosZ(1) * weights[1];
+        float w2      = tri.getPosZ(2) * weights[2];
+        float invSumW = 1.0f / (w0 + w1 + w2);
+
+        float interpU = 
+            ((w0 * tri.getUV_U(0)) +
+             (w1 * tri.getUV_U(1)) +
+             (w2 * tri.getUV_U(2))) * invSumW;
+
+        float interpV = 
+            ((w0 * tri.getUV_V(0)) +
+             (w1 * tri.getUV_V(1)) +
+             (w2 * tri.getUV_V(2))) * invSumW;
+
+        outUV[MESH_UV_OFST_U] = interpU;
+        outUV[MESH_UV_OFST_V] = interpV;
+
+    }
+
     private void internalDrawFragment(
         int drawX, 
         int drawY,
         Tri triangle
     ) {
         // TODO: finish
-        float[] weights = new float[3];
+        float[] weights = new float[MESH_VERTS_PER_TRI];
+        float[] uvs     = new float[MESH_UV_NUM_CMPS];
         internalFindBaryWeights(drawX, drawY, triangle, weights);
-        //System.out.println(Arrays.toString(weights));
-        float weightU = 
-            weights[0] * triangle.getUV_U(0) +
-            weights[1] * triangle.getUV_U(1) +
-            weights[2] * triangle.getUV_U(2);
-
-        float weightV = 
-            weights[0] * triangle.getUV_V(0) +
-            weights[1] * triangle.getUV_V(1) +
-            weights[2] * triangle.getUV_V(2);
+        internalFindScreenUV(weights, triangle, uvs);
 
         QColor color = new QColor(
             0,
-            (int)(weightU * 255.0f), 
-            (int)(weightV * 255.0f)
+            (int)(uvs[0] * 255.0f), 
+            (int)(uvs[1] * 255.0f)
         );
         renderTarget.setColor(drawX, drawY, color.toInt());
     }

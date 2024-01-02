@@ -19,17 +19,19 @@ public final class QMesh extends QEncoding {
         0.0f, 0.0f,
         0.0f, 1.0f,
         1.0f, 1.0f,
-        0.0f, 1.0f
+        1.0f, 0.0f
     };
     private static final int[][] UNIT_PLANE_FACE_DATA = {
         { 0, 0, 1, 1, 2, 2, 3, 3 }
     };
 
-    public static final QMesh UnitPlane = new QMesh(
-        UNIT_PLANE_POSN_DATA, 
-        UNIT_PLANE_UV_DATA, 
-        UNIT_PLANE_FACE_DATA
-    );
+    public static QMesh UnitPlane() {
+        return new QMesh(
+            UNIT_PLANE_POSN_DATA, 
+            UNIT_PLANE_UV_DATA, 
+            UNIT_PLANE_FACE_DATA
+        ); 
+    }
 
     private static final float[] RIGHT_TRIANGLE_POSN_DATA = {
         -1.0f, -1.0f, 0.0f,
@@ -45,11 +47,13 @@ public final class QMesh extends QEncoding {
         { 0, 0, 1, 1, 2, 2 }
     };
 
-    public static final QMesh RightTriangle = new QMesh(
-        RIGHT_TRIANGLE_POSN_DATA,
-        RIGHT_TRI_UV_DATA,
-        RIGHT_TRI_FACE_DATA
-    );
+    public static QMesh RightTriangle() {
+        return new QMesh(
+            RIGHT_TRIANGLE_POSN_DATA,
+            RIGHT_TRI_UV_DATA,
+            RIGHT_TRI_FACE_DATA
+        );
+    }
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS

@@ -9,11 +9,11 @@ import QDraw.QException.PointOfError;
 public final class QColor extends QEncoding {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
-    public static final QColor Black = new QColor(0x00, 0x00, 0x00);
-    public static final QColor White = new QColor(0xFF, 0xFF, 0xFF);
-    public static final QColor Red   = new QColor(0xFF, 0x00, 0x00);
-    public static final QColor Green = new QColor(0x00, 0xFF, 0x00);
-    public static final QColor Blue  = new QColor(0x00, 0x00, 0xFF);
+    public static QColor Black() { return new QColor(0x00, 0x00, 0x00); }
+    public static QColor White() { return new QColor(0xFF, 0xFF, 0xFF); }
+    public static QColor Red()   { return new QColor(0xFF, 0x00, 0x00); }
+    public static QColor Green() { return new QColor(0x00, 0xFF, 0x00); }
+    public static QColor Blue()  { return new QColor(0x00, 0x00, 0xFF); }
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
