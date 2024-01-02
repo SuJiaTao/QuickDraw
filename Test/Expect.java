@@ -466,13 +466,13 @@ public final class Expect {
 
         QMesh plane = QMesh.UnitPlane();
         QRenderBuffer checkBoard0 = 
-            QRenderBuffer.CheckerBoard(5);
+            QRenderBuffer.CheckerBoard(2);
         QRenderBuffer checkBoard1 = 
-            QRenderBuffer.CheckerBoard(2, QColor.Red(), new QColor(0, 0, 0, 0));
+            QRenderBuffer.CheckerBoard(1, QColor.Red(), new QColor(0, 0, 0, 0));
 
         QViewer eyes = new QViewer(rb, -2.0f, 2.0f, -2.0f, 2.0f);
         eyes.setNearClip(-1.0f);
-        eyes.setRenderType(RenderType.Depth);
+        eyes.setRenderType(RenderType.Textured);
 
         window.setRenderBuffer(rb);
         
@@ -480,17 +480,17 @@ public final class Expect {
         while(true) {
             
             eyes.blink( );
-            rot += 0.02f;
+            rot += 0.2f;
 
             QMatrix4x4 matr0 = QMatrix4x4.TRS(
-                new QVector3(0.0f, 0.0f, -1.5f),
-                new QVector3(rot, rot, rot), 
-                QVector3.One()
+                new QVector3(0.0f, 0.0f, -5f),
+                new QVector3(0, 0, 0), 
+                QVector3.One().multiply3(1.75f)
             );
 
             QMatrix4x4 matr1 = QMatrix4x4.TRS(
-                new QVector3(0.0f, 0.0f, -1.75f),
-                new QVector3(0.0f, rot, 0.0f), 
+                new QVector3(0.0f, 0.0f, -5f),
+                new QVector3(rot, rot, rot), 
                 QVector3.One()
             );
 

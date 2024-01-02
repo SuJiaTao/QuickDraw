@@ -14,6 +14,7 @@ public final class QColor extends QEncoding {
     public static QColor Red()   { return new QColor(0xFF, 0x00, 0x00); }
     public static QColor Green() { return new QColor(0x00, 0xFF, 0x00); }
     public static QColor Blue()  { return new QColor(0x00, 0x00, 0xFF); }
+    public static QColor Alpha() { return new QColor(0x00, 0x00, 0x00, 0x00); }
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS

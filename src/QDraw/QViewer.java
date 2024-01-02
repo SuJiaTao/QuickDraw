@@ -826,33 +826,25 @@ public final class QViewer extends QEncoding {
 
         float invDepth = 
             triangle.getPosZ(0) * weights[0] + 
-            triangle.getPosZ(1) * weights[2] +
-            triangle.getPosZ(1) * weights[2];
+            triangle.getPosZ(1) * weights[1] +
+            triangle.getPosZ(2) * weights[2];
 
-        // TODO: fix this depth mess
-        if (invDepth < renderTarget.getDepth(drawX, drawY)) {
-            return;
-        }
-
-        renderTarget.setDepth(drawX, drawY, invDepth);
-
+        int fragColor;
         switch (renderType) {
             case FlatColor:
-                renderTarget.setColor(drawX, drawY, fillColor);
+                fragColor = fillColor;
                 break;
 
             case Textured:
-                renderTarget.setColor(drawX, drawY, internalSampleTexture(uvs));
+                fragColor =  internalSampleTexture(uvs);
                 break;
 
             case Depth:
-                float depth = (1.0f / invDepth);
-                int depthColor = new QColor(
-                    (int)depth, 
-                    (int)depth, 
-                    (int)depth
+                fragColor = new QColor(
+                    -(int)invDepth,
+                    -(int)invDepth,
+                    -(int)invDepth
                 ).toInt();
-                renderTarget.setColor(drawX, drawY, depthColor);
                 break;
 
             default:
@@ -861,6 +853,23 @@ public final class QViewer extends QEncoding {
                     "bad renderType: " + renderType.toString()
                 );
         }
+
+        // don't draw on transparent
+        if ((fragColor >> COL_LSHIFT_OFST_A) == 0) {
+            return;
+        }
+
+        // NOTE:
+        // since all depths are negative and inverted, the further value
+        // will be a smaller negative and hence greater. therefore the failing
+        // depth test will be less than the previous depth
+        if (invDepth < renderTarget.getDepth(drawX, drawY)) {
+            return;
+        }
+
+        renderTarget.setDepth(drawX, drawY, invDepth);
+        renderTarget.setColor(drawX, drawY, fragColor);
+
     }
 
     private int internalSampleTexture(float[] uv) {

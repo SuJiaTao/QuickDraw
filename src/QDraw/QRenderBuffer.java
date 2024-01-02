@@ -15,7 +15,7 @@ public final class QRenderBuffer {
     private static final float CLEAR_DEPTH   = Float.NEGATIVE_INFINITY;
 
     public static QRenderBuffer CheckerBoard(int size) {
-        return CheckerBoard(size, QColor.Black(), QColor.White());
+        return CheckerBoard(size, QColor.Alpha(), QColor.White());
     }
 
     public static QRenderBuffer CheckerBoard(int size, QColor col1, QColor col2) {
