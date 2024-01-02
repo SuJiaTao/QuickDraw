@@ -111,6 +111,6 @@ public class QEncoding {
     /////////////////////////////////////////////////////////////////
     // QVIWERER.TRI ENCODINGS
     protected static final int VTRI_POSDAT_NUM_CMPS = MESH_POSN_NUM_CMPS * MESH_VERTS_PER_TRI;
-    protected static final int VTRI_UVDAT_NUM_UVS   = MESH_UV_NUM_CMPS * MESH_VERTS_PER_TRI;
+    protected static final int VTRI_UVDAT_NUM_CMPS   = MESH_UV_NUM_CMPS * MESH_VERTS_PER_TRI;
 
 }
