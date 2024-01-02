@@ -472,7 +472,7 @@ public final class Expect {
 
         QViewer eyes = new QViewer(rb, -2.0f, 2.0f, -2.0f, 2.0f);
         eyes.setNearClip(-1.0f);
-        eyes.setRenderType(RenderType.Textured);
+        eyes.setRenderType(RenderType.Depth);
 
         window.setRenderBuffer(rb);
         
