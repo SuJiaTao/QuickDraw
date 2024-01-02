@@ -46,7 +46,6 @@ public final class QViewer extends QEncoding {
     private float         nearClip   = DEFAULT_NEAR_CLIP;
     private float         viewLeft, viewRight, viewBottom, viewTop;
 
-    private QMatrix4x4    viewTransform  = QMatrix4x4.Identity();
     private QRenderBuffer renderTarget   = null;
     private QRenderBuffer texture        = null;
     private int           fillColor      = DEFAULT_FILL_COLOR;
@@ -64,23 +63,6 @@ public final class QViewer extends QEncoding {
         viewRight  = right;
         viewBottom = bottom;
         viewTop    = top;
-    }
-
-    public void setCameraView(
-        QVector3 position,
-        QVector3 rotation,
-        QVector3 scale
-    ) {
-        // TODO: this may be totally wrong
-        viewTransform = QMatrix4x4.TRS(
-            position.multiply3(-1.0f), 
-            rotation.multiply3(-1.0f), 
-            new QVector3(
-                1.0f / scale.getX(),
-                1.0f / scale.getY(),
-                1.0f / scale.getZ()
-            )
-        );
     }
 
     public void setRenderType(RenderType rType) {
@@ -300,16 +282,12 @@ public final class QViewer extends QEncoding {
         //   the provided transformation matrix and then the view matrix
         QMesh viewMesh         = new QMesh(mesh);
         float[] viewMeshPosDat = viewMesh.getPosData( );
-        float[] totalMatrix    = QMath.mul4x4(
-            meshTransform.getComponents(), 
-            viewTransform.getComponents()
-        );
         for (int posIndex = 0; posIndex < viewMesh.getPosCount(); posIndex++) {
             QMath.mul3_4x4(
                 viewMesh.getPosOffset(posIndex), 
                 viewMeshPosDat, 
                 0, 
-                totalMatrix
+                meshTransform.getComponents()
             );
         }
 
@@ -868,8 +846,8 @@ public final class QViewer extends QEncoding {
         // NOTE:
         // since all depths are negative and inverted, the further value
         // will be a smaller negative and hence greater. therefore the failing
-        // depth test will be less than the previous depth
-        if (invDepth < renderTarget.getDepth(drawX, drawY)) {
+        // depth test will be greater than the previous depth
+        if (invDepth > renderTarget.getDepth(drawX, drawY)) {
             return;
         }
 

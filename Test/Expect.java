@@ -483,9 +483,9 @@ public final class Expect {
             rot += 0.2f;
 
             QMatrix4x4 matr0 = QMatrix4x4.TRS(
-                new QVector3(0.0f, 0.0f, -5f),
-                new QVector3(0, 0, 0), 
-                QVector3.One().multiply3(1.75f)
+                new QVector3(1.0f, 0.0f, -3f),
+                new QVector3(0, 0, rot), 
+                QVector3.One().multiply3(2.75f)
             );
 
             QMatrix4x4 matr1 = QMatrix4x4.TRS(

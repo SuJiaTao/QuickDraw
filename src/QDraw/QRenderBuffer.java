@@ -12,7 +12,7 @@ public final class QRenderBuffer {
     // CONSTANTS
     private static final int   COLOR_PACKING = BufferedImage.TYPE_INT_ARGB;
     private static final int   CLEAR_COLOR   = new QColor(0x00, 0x00, 0x00, 0x00).toInt();
-    private static final float CLEAR_DEPTH   = Float.NEGATIVE_INFINITY;
+    private static final float CLEAR_DEPTH   = 0.0f;
 
     public static QRenderBuffer CheckerBoard(int size) {
         return CheckerBoard(size, QColor.Alpha(), QColor.White());
