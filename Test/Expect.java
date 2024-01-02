@@ -6,6 +6,7 @@ import QDraw.*;
 import java.util.Arrays;
 import QDraw.QColor.Channel;
 import QDraw.QException.PointOfError;
+import QDraw.QViewer.RenderType;
 
 public final class Expect {
 
@@ -460,12 +461,18 @@ public final class Expect {
         MathTest( );
 
         QRenderBuffer rb = new QRenderBuffer(500, 500);
-        QWindow window   = new QWindow("testwin", 500, 500);
+        QWindow window   = new QWindow("testwin", 800, 800);
         rb.getColorData()[rb.coordToDataIndex(5, 5)] = QColor.Red().toInt();
+
+        QMesh plane = QMesh.UnitPlane();
+        QRenderBuffer checkBoard0 = 
+            QRenderBuffer.CheckerBoard(5);
+        QRenderBuffer checkBoard1 = 
+            QRenderBuffer.CheckerBoard(2, QColor.Red(), new QColor(0, 0, 0, 0));
 
         QViewer eyes = new QViewer(rb, -2.0f, 2.0f, -2.0f, 2.0f);
         eyes.setNearClip(-1.0f);
-        eyes.setRenderTexture(QRenderBuffer.CheckerBoard(5));
+        eyes.setRenderType(RenderType.Depth);
 
         window.setRenderBuffer(rb);
         
@@ -473,19 +480,41 @@ public final class Expect {
         while(true) {
             
             eyes.blink( );
+            rot += 0.02f;
 
-            QMatrix4x4 meshMatr = QMatrix4x4.TRS(
+            QMatrix4x4 matr0 = QMatrix4x4.TRS(
                 new QVector3(0.0f, 0.0f, -1.5f),
                 new QVector3(rot, rot, rot), 
                 QVector3.One()
             );
 
-            rot += 0.02f;
-
-            eyes.viewMesh(
-                QMesh.UnitPlane(),
-                meshMatr
+            QMatrix4x4 matr1 = QMatrix4x4.TRS(
+                new QVector3(0.0f, 0.0f, -1.75f),
+                new QVector3(0.0f, rot, 0.0f), 
+                QVector3.One()
             );
+
+            long t0 = System.currentTimeMillis();
+            
+            eyes.setRenderTexture(checkBoard0);
+            eyes.viewMesh(
+                plane,
+                matr0
+            );
+
+            eyes.setRenderTexture(checkBoard1);
+            eyes.viewMesh(
+                plane,
+                matr1
+            );
+            
+
+            
+            
+
+            long t1 = System.currentTimeMillis();
+
+            System.out.println("dt: " + (t1 - t0) + "ms");
 
             window.updateFrame();
 

@@ -29,7 +29,8 @@ public final class QViewer extends QEncoding {
     // PUBLIC ENUMS
     public enum RenderType {
         FlatColor,
-        Textured
+        Textured,
+        Depth
     };
 
     public enum SampleType {
@@ -823,6 +824,18 @@ public final class QViewer extends QEncoding {
         internalFindBaryWeights(drawX, drawY, triangle, weights);
         internalFindScreenUV(weights, triangle, uvs);
 
+        float invDepth = 
+            triangle.getPosZ(0) * weights[0] + 
+            triangle.getPosZ(1) * weights[2] +
+            triangle.getPosZ(1) * weights[2];
+
+        // TODO: fix this depth mess
+        if (invDepth < renderTarget.getDepth(drawX, drawY)) {
+            return;
+        }
+
+        renderTarget.setDepth(drawX, drawY, invDepth);
+
         switch (renderType) {
             case FlatColor:
                 renderTarget.setColor(drawX, drawY, fillColor);
@@ -830,6 +843,16 @@ public final class QViewer extends QEncoding {
 
             case Textured:
                 renderTarget.setColor(drawX, drawY, internalSampleTexture(uvs));
+                break;
+
+            case Depth:
+                float depth = (1.0f / invDepth);
+                int depthColor = new QColor(
+                    (int)depth, 
+                    (int)depth, 
+                    (int)depth
+                ).toInt();
+                renderTarget.setColor(drawX, drawY, depthColor);
                 break;
 
             default:
