@@ -76,7 +76,7 @@ public final class Visual {
     public static void Uncle( ) {
         long t0 = System.currentTimeMillis();
 
-        eyes.setNearClip(1.0f);
+        eyes.setNearClip(-1.0f);
         eyes.setRenderType(RenderType.Textured);
 
         QMesh uncle = new QMesh(System.getProperty("user.dir") + "\\Resources\\Uncle.obj");
@@ -91,8 +91,8 @@ public final class Visual {
 
             time += 0.5f;
             QMatrix4x4 m0 = QMatrix4x4.TRS(
-                new QVector3(0.0f, 0.0f, -2.0f), 
-                new QVector3(0.0f, time, 0.0f), 
+                new QVector3(0.0f, 0.0f, -2.5f), 
+                new QVector3(time, time, time), 
                 QVector3.One().multiply3(0.125f)
             );
 

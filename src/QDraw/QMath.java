@@ -74,6 +74,47 @@ public final class QMath extends QEncoding {
         System.arraycopy(src_4x4, srcoffset, trg_4x4, trgoffset, MTR_NUM_CMPS);
     }
 
+    public static float[] cross3(
+        float[] l_3, float[] r_3
+    ) {
+        return cross3(0, l_3, 0, r_3);
+    }
+
+    public static float[] cross3(
+        int lOffset,
+        float[] l_3,
+        int rOffset,
+        float[] r_3
+    ) {
+        float x = 
+            l_3[lOffset + VCTR_INDEX_Y] * r_3[rOffset + VCTR_INDEX_Z] -
+            l_3[lOffset + VCTR_INDEX_Z] * r_3[rOffset + VCTR_INDEX_Y];
+        float y =
+            l_3[lOffset + VCTR_INDEX_Z] * r_3[rOffset + VCTR_INDEX_X] -
+            l_3[lOffset + VCTR_INDEX_X] * r_3[rOffset + VCTR_INDEX_Z];
+        float z =
+            l_3[lOffset + VCTR_INDEX_X] * r_3[rOffset + VCTR_INDEX_Y] -
+            l_3[lOffset + VCTR_INDEX_Y] * r_3[rOffset + VCTR_INDEX_X];
+        
+        return new float[] { x, y, z };
+    }
+
+    public static float dot3(float[] v1_3, float[] v2_3) {
+        return dot3(0, v1_3, 0, v2_3);
+    }
+
+    public static float dot3(
+        int v1offset,
+        float[] v1_3,
+        int v2offset,
+        float[] v2_3
+    ) {
+        return
+            (v1_3[v1offset + VCTR_INDEX_X] * v2_3[v2offset + VCTR_INDEX_X]) +
+            (v1_3[v1offset + VCTR_INDEX_Y] * v2_3[v2offset + VCTR_INDEX_Y]) +
+            (v1_3[v1offset + VCTR_INDEX_Z] * v2_3[v2offset + VCTR_INDEX_Z]);
+    }
+
     public static void add3(float[] v1_3, float[] v2_3) {
         add3(0, v1_3, 0, v2_3);
     }

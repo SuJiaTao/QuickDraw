@@ -27,6 +27,8 @@ public final class QViewer extends QEncoding {
     public static final RenderType DEFAULT_RENDERTYPE = RenderType.Textured;
     public static final SampleType DEFAULT_SAMPLETYPE = SampleType.Repeat;
 
+    private static final float BACKFACE_CULL_MIN_DOT  = 0.5f;
+
     /////////////////////////////////////////////////////////////////
     // PUBLIC ENUMS
     public enum RenderType {
@@ -292,11 +294,15 @@ public final class QViewer extends QEncoding {
         }
 
         // NOTE:
-        // - a triangle is constructed from viewMesh's TDI, it is then clipped
-        //   and the clipping output is rendered
+        // - a triangle is constructed from viewMesh's TDI, if it is facing away from the camera
+        //   it is culled, otherwise it is then clipped and the clipping output is rendered
         for (int tdiIndex = 0; tdiIndex < viewMesh.getTriCount(); tdiIndex++) {
 
             Tri viewTri    = new Tri(viewMesh, tdiIndex);
+            if (internalCheckBackfacing(viewTri)) {
+                continue;
+            }
+
             Tri[] clipTris = internalClipTri(viewTri);
 
             for (Tri tri : clipTris) {
@@ -305,6 +311,22 @@ public final class QViewer extends QEncoding {
 
         }
 
+    }
+
+    private boolean internalCheckBackfacing(Tri tri) {
+        float[] d01 = new float[MESH_POSN_NUM_CMPS];
+        QMath.copy3(0, d01, tri.getPosOffset(1), tri.posDat);
+        QMath.sub3(0, d01, tri.getPosOffset(0), tri.posDat);
+
+        float[] d02 = new float[MESH_POSN_NUM_CMPS];
+        QMath.copy3(0, d02, tri.getPosOffset(2), tri.posDat);
+        QMath.sub3(0, d02, tri.getPosOffset(0), tri.posDat);
+
+        float[] normal = QMath.cross3(d01, d02);
+        QMath.mult3(normal, 1.0f / QMath.mag3(normal));
+
+        float[] awayAxis = { 0.0f, 0.0f, -1.0f };
+        return (QMath.dot3(normal, awayAxis) > BACKFACE_CULL_MIN_DOT);
     }
 
     private Tri[] internalClipTri(Tri tri) {
