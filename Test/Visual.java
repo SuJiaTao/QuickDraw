@@ -11,7 +11,7 @@ public final class Visual {
     public static final int VISTEST_FB_WIDTH      = VISTEST_WINDOW_WIDTH  >> 1;
     public static final int VISTEST_FB_HEIGHT     = VISTEST_WINDOW_HEIGHT >> 1;
     public static final float VISTEST_FB_ASPECT   = (float)VISTEST_FB_WIDTH / (float)VISTEST_FB_HEIGHT;
-    public static final int VISTEST_RUNTIME_SEC   = 10;
+    public static final int VISTEST_RUNTIME_SEC   = 20;
     public static final int VISTEST_RUNTIME_MS    = 1000 * VISTEST_RUNTIME_SEC;
     public static QWindow       window;
     public static QRenderBuffer frameBuffer;
@@ -186,8 +186,6 @@ public final class Visual {
         eyes        = new QViewer(frameBuffer);
         eyes.setViewBounds(-VISTEST_FB_ASPECT, VISTEST_FB_ASPECT, -1.0f, 1.0f);
 
-        // Uncle( );
-        CustomWobblyUncle( );
-
+        Uncle( );
     }
 }
