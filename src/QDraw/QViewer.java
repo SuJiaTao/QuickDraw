@@ -306,7 +306,7 @@ public final class QViewer extends QEncoding {
                 vec = customShader.vertexShader(
                     posIndex, 
                     vec, 
-                    meshTransform, 
+                    new QMatrix4x4(meshTransform),
                     shaderInput
                 );
                 QMath.copy3(
