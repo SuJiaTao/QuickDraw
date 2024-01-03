@@ -4,12 +4,13 @@
 
 package QDraw;
 
+// TODO: make internal packing FASTER than RB
 public class QTexture extends QSampleable {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
     // note: CHUNK_WIDTH/HEIGHT must be power of 4
-    private static final int CHUNK_WIDTH  = 4;
-    private static final int CHUNK_HEIGHT = 4;
+    private static final int CHUNK_WIDTH  = 32;
+    private static final int CHUNK_HEIGHT = 32;
     private static final int CHUNK_WIDTH_REMAINDER_MASK  = CHUNK_WIDTH  - 1;
     private static final int CHUNK_HEIGHT_REMAINDER_MASK = CHUNK_HEIGHT - 1;
     private static final int CHUNK_WIDTH_DIV_SHIFT  = 31 - Integer.numberOfLeadingZeros(CHUNK_WIDTH);
@@ -60,6 +61,7 @@ public class QTexture extends QSampleable {
         //   (x mod 4^n, y mod 4^n)
         // - this requires that we occasionally allocate more memory to a texture than needed
         //   at times but the overhead is minimal.
+
         int chunkX = x >> CHUNK_WIDTH_DIV_SHIFT;
         int chunkY = y >> CHUNK_HEIGHT_DIV_SHIFT;
 

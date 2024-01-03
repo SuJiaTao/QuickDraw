@@ -65,7 +65,7 @@ public final class Profile {
         return (long)sum;
     }
 
-    public static void ProfileTextureVSRenderBuffer( ) {
+    public static void ProfileTextureVSRenderBuffer(int iterations) {
         viewer.setRenderType(RenderType.Textured);
 
         String texPath = System.getProperty("user.dir") + "\\resources\\Large_Texture.jpg";
@@ -80,57 +80,61 @@ public final class Profile {
         long  SAMPLE_FRAME_COUNT = 1000;
         float time;
 
-        System.gc();
+        for (int iter = 0; iter < iterations; iter++) {
 
-        // PROFILE RENDERBUFFER
-        reset( );
-        time = 0.0f;
-        viewer.setTexture(rbTex); // <- SET TO RB
-        for (int frame = 0; frame < SAMPLE_FRAME_COUNT; frame++) {
-            viewer.clearFrame( );
+            // PROFILE TEXTURE
+            reset( );
+            time = 0.0f;
+            viewer.setTexture(tTex); // <- SET TO TEX
+            for (int frame = 0; frame < SAMPLE_FRAME_COUNT; frame++) {
+                viewer.clearFrame( );
 
-            tMatrix = QMatrix4x4.TRS(
-                new QVector3(0, 0, -15.0f), 
-                new QVector3(time * 0.1f, time, 0.0f), 
-                QVector3.One()
-            );
+                tMatrix = QMatrix4x4.TRS(
+                    new QVector3(0, 0, -15.0f), 
+                    new QVector3(time * 0.1f, time, 0.0f), 
+                    QVector3.One()
+                );
 
-            beginTime( );
-            viewer.drawMesh(cubeMesh, tMatrix);
-            endTime( );
+                beginTime( );
+                viewer.drawMesh(cubeMesh, tMatrix);
+                endTime( );
 
-            time += 2.0f;
+                time += 2.0f;
 
-            window.updateFrame( );
+                window.updateFrame( );
+            }
+
+            System.out.println("TEX avg time: " + avgTime( ));
+            
+            System.gc();
+
+            // PROFILE RENDERBUFFER
+            reset( );
+            time = 0.0f;
+            viewer.setTexture(rbTex); // <- SET TO RB
+            for (int frame = 0; frame < SAMPLE_FRAME_COUNT; frame++) {
+                viewer.clearFrame( );
+
+                tMatrix = QMatrix4x4.TRS(
+                    new QVector3(0, 0, -15.0f), 
+                    new QVector3(time * 0.1f, time, 0.0f), 
+                    QVector3.One()
+                );
+
+                beginTime( );
+                viewer.drawMesh(cubeMesh, tMatrix);
+                endTime( );
+
+                time += 2.0f;
+
+                window.updateFrame( );
+            }
+
+            System.gc();
+
+            System.out.println("RB avg time: " + avgTime( ));
+
         }
-
-        System.gc();
-
-        System.out.println("RB avg time: " + avgTime( ));
-
-        // PROFILE TEXTURE
-        reset( );
-        time = 0.0f;
-        viewer.setTexture(tTex); // <- SET TO TEX
-        for (int frame = 0; frame < SAMPLE_FRAME_COUNT; frame++) {
-            viewer.clearFrame( );
-
-            tMatrix = QMatrix4x4.TRS(
-                new QVector3(0, 0, -15.0f), 
-                new QVector3(time * 0.1f, time, 0.0f), 
-                QVector3.One()
-            );
-
-            beginTime( );
-            viewer.drawMesh(cubeMesh, tMatrix);
-            endTime( );
-
-            time += 2.0f;
-
-            window.updateFrame( );
-        }
-
-        System.out.println("TEX avg time: " + avgTime( ));
     }
 
     public static void main(String[] args) {
@@ -140,8 +144,6 @@ public final class Profile {
         viewer      = new QViewer(frameBuffer);
         viewer.setViewBounds(-FB_ASPECT, FB_ASPECT, -1.0f, 1.0f);
 
-        for (int i = 0; i < 3; i++) {
-            ProfileTextureVSRenderBuffer( );
-        }
+        ProfileTextureVSRenderBuffer(5);
     }
 }
