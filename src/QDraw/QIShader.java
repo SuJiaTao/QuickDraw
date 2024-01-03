@@ -5,17 +5,17 @@
 package QDraw;
 
 public interface QIShader {
-    public void vertexShader(
+    public QVector3 vertexShader(
         int        vertexNum,
-        QVector3   inOutVertex,
+        QVector3   inVertex,
         QMatrix4x4 transform,
         Object     userIn
     );
     public QColor fragmentShader(
         int    screenX,
         int    screenY,
-        int    belowColorInt,
-        int    textureSampleInt,
+        QColor belowColor,
+        QColor textureSample,
         Object userIn
     );
 }

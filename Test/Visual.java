@@ -124,28 +124,23 @@ public final class Visual {
         eyes.setRenderType(RenderType.CustomShader);
         eyes.setCustomShader(
             new QIShader() {
-                public void vertexShader(
+                public QVector3 vertexShader(
                     int        vertexNum,
                     QVector3   inOutVertex,
                     QMatrix4x4 transform,
                     Object     userIn
                 ) {
-                    inOutVertex.set(QMatrix4x4.multiply(transform, inOutVertex));
-                    inOutVertex.set(
-                        QMath.sinf(inOutVertex.getX()),
-                        QMath.sinf(inOutVertex.getY()),
-                        QMath.sinf(inOutVertex.getZ())
-                    );
+                    return QMatrix4x4.multiply(transform, inOutVertex);
                 }
 
                 public QColor fragmentShader(
                     int    screenX,
                     int    screenY,
-                    int    belowColorInt,
-                    int    textureSampleInt,
+                    QColor belowColor,
+                    QColor textureSample,
                     Object userIn
                 ) {
-                    return new QColor(textureSampleInt);
+                    return textureSample;
                 }
             }
         );

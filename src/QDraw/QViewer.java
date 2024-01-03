@@ -305,7 +305,7 @@ public final class QViewer extends QEncoding {
         for (int posIndex = 0; posIndex < viewMesh.getPosCount(); posIndex++) {
             if (renderType == RenderType.CustomShader) {
                 QVector3 vec = new QVector3(viewMesh.getPos(posIndex));
-                customShader.vertexShader(
+                vec = customShader.vertexShader(
                     posIndex, 
                     vec, 
                     meshTransform, 
@@ -886,8 +886,8 @@ public final class QViewer extends QEncoding {
                 fragColor    = customShader.fragmentShader(
                     drawX, 
                     drawY, 
-                    renderTarget.getColor(drawX, drawY),
-                    texColor,
+                    new QColor(renderTarget.getColor(drawX, drawY)),
+                    new QColor(texColor),
                     shaderInput
                 ).toInt();
                 break;
