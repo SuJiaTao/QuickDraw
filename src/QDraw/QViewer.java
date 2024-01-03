@@ -25,7 +25,7 @@ public final class QViewer extends QEncoding {
     public static final RenderType DEFAULT_RENDERTYPE = RenderType.Textured;
     public static final SampleType DEFAULT_SAMPLETYPE = SampleType.Repeat;
 
-    private static final float BACKFACE_CULL_MIN_DOT  = 0.5f;
+    private static final float BACKFACE_CULL_MIN_DOT  = 0.0f;
     private static final float DEPTH_TEST_EPSILON     = 0.002f;
 
     /////////////////////////////////////////////////////////////////

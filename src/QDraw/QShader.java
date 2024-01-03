@@ -11,16 +11,20 @@ public abstract class QShader {
     // CONSTANTS
     public static final QColor NO_TEXTURE_COLOR = new QColor(0xFF, 0x00, 0xFF);
     public static final QColor NO_SAMPLE_COLOR  = new QColor(0x00, 0x00, 0x00, 0x00); 
+    public static final float  RCP_255 = 0.003921568627f;
 
     /////////////////////////////////////////////////////////////////
     // BUILT IN SHADER METHODS
     public static QColor blendColor(QColor bottom, QColor top) {
-        int tFac = top.getA();
-        int bFac = 0xFF - tFac;
+        float tFac    = (float)top.getA() * RCP_255;
+        float bFac    = 1.0f - tFac;
+        float fBlendR = (float)top.getR() * tFac + (float)bottom.getR() * bFac;
+        float fBlendG = (float)top.getG() * tFac + (float)bottom.getG() * bFac;
+        float fBlendB = (float)top.getB() * tFac + (float)bottom.getB() * bFac;
         return new QColor(
-            ((top.getR() * tFac) + (bottom.getR() * bFac)) >> 9,
-            ((top.getG() * tFac) + (bottom.getG() * bFac)) >> 9,
-            ((top.getB() * tFac) + (bottom.getB() * bFac)) >> 9
+            (int)fBlendR,
+            (int)fBlendG,
+            (int)fBlendB
         );
     }
 
