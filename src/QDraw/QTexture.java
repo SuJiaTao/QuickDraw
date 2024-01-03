@@ -12,10 +12,10 @@ public class QTexture extends QSampleable {
     private static final int CHUNK_HEIGHT = 16;
     private static final int CHUNK_WIDTH_REMAINDER_MASK  = CHUNK_WIDTH  - 1;
     private static final int CHUNK_HEIGHT_REMAINDER_MASK = CHUNK_HEIGHT - 1;
-    private static final int CHUNK_WIDTH_DIV_SHIFT  = 31 - Integer.numberOfLeadingZeros(CHUNK_WIDTH);
-    private static final int CHUNK_HEIGHT_DIV_SHIFT = 31 - Integer.numberOfLeadingZeros(CHUNK_HEIGHT);
-    private static final int CHUNK_AREA = CHUNK_WIDTH * CHUNK_HEIGHT;
-    private static final int CHUNK_AREA_MUL_SHIFT    = 31 - Integer.numberOfLeadingZeros(CHUNK_AREA);
+    private static final int CHUNK_WIDTH_FAC_SHIFT  = 31 - Integer.numberOfLeadingZeros(CHUNK_WIDTH);
+    private static final int CHUNK_HEIGHT_FAC_SHIFT = 31 - Integer.numberOfLeadingZeros(CHUNK_HEIGHT);
+    private static final int CHUNK_AREA             = CHUNK_WIDTH * CHUNK_HEIGHT;
+    private static final int CHUNK_AREA_FAC_SHIFT   = 31 - Integer.numberOfLeadingZeros(CHUNK_AREA);
 
     public static QTexture CheckerBoard(int size) {
         return CheckerBoard(size, QColor.White(), QColor.Black());
@@ -50,12 +50,12 @@ public class QTexture extends QSampleable {
         width  = targetWidth;
         height = targetHeight;
 
-        xChunks        = targetWidth >> CHUNK_WIDTH_DIV_SHIFT;
+        xChunks        = targetWidth >> CHUNK_WIDTH_FAC_SHIFT;
         int xRemainder = targetWidth & CHUNK_WIDTH_REMAINDER_MASK;
         if (xRemainder > 0) { xChunks++; }
 
-        yChunks        = targetHeight >> CHUNK_HEIGHT_DIV_SHIFT;
-        int yRemainder = targetWidth & CHUNK_HEIGHT_REMAINDER_MASK;
+        yChunks        = targetHeight >> CHUNK_HEIGHT_FAC_SHIFT;
+        int yRemainder = targetHeight & CHUNK_HEIGHT_REMAINDER_MASK;
         if (yRemainder > 0) { yChunks++; }
 
         colorBuffer = new int[CHUNK_AREA * xChunks * yChunks];
@@ -79,14 +79,14 @@ public class QTexture extends QSampleable {
         // - this requires that we occasionally allocate more memory to a texture than needed
         //   at times but the overhead is minimal.
 
-        int chunkX = x >> CHUNK_WIDTH_DIV_SHIFT;
-        int chunkY = y >> CHUNK_HEIGHT_DIV_SHIFT;
+        int chunkX = x >> CHUNK_WIDTH_FAC_SHIFT;
+        int chunkY = y >> CHUNK_HEIGHT_FAC_SHIFT;
 
         int chunkSubX = x & CHUNK_WIDTH_REMAINDER_MASK;
         int chunkSubY = y & CHUNK_HEIGHT_REMAINDER_MASK;
 
-        int offsetMajor = (chunkX + (xChunks * chunkY)) << CHUNK_AREA_MUL_SHIFT;
-        int offsetMinor = chunkSubX + (CHUNK_WIDTH * chunkSubY);
+        int offsetMajor = (chunkX + (xChunks * chunkY)) << CHUNK_AREA_FAC_SHIFT;
+        int offsetMinor = chunkSubX + (chunkSubY << CHUNK_WIDTH_FAC_SHIFT);
 
         return offsetMajor + offsetMinor;
     }

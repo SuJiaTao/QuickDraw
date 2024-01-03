@@ -25,7 +25,7 @@ COMMIT SUMMARY:
     - REMOVED
       (when I've removed a feature)
     - CHANGED
-      (when I've changed a feature's behavior)
+      (when I've changed a feature)
     - <feature-name> is fucked
       (when I get really really frustrated)
 
