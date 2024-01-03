@@ -1,0 +1,55 @@
+Bailey JT Brown
+2024
+commit_semantics.txt
+
+Okay, so the past bunch of commit descriptions have been just completely
+and uterlly useless and erratic, so I'm going to attempt to establish a standard
+so that it is actually clear what is going on when I push a new commit.
+
+COMMIT SUMMARY:
+- should ideally a brief, all capitals general class of "thing" that ideally
+  I usually am doing or have done when I decide to push a commit
+- will be ONE or a CONCATENATION (with /) of:
+    - WORKING ON
+      (when I'm working on a NEW feature and want to make a quick backup)
+    - COMPLETED
+      (when I've been working on something for a while and it's now done)
+    - TESTING
+      (when I've been playing around with testing my program and am making a backup)
+    - DEBUGGING
+      (when I've completed a feature and now I'm searching/fixing bugs within it)
+    - FIXED BUG
+      (when I'm DEBUGGING and I've found and eliminated a bug)
+    - ADDED
+      (when I've added a feature)
+    - REMOVED
+      (when I've removed a feature)
+    - CHANGED
+      (when I've changed a feature's behavior)
+    - <feature-name> is fucked
+      (when I get really really frustrated)
+
+COMMIT DESCRIPTION
+- should contain "> points" of each major thing pretaining to the COMMIT SUMMARY
+- after each "> point" a short written remark about how it's going/what I've decided
+  to do/what I have planned for later
+
+COMMIT EXAMPLES:
+    summary     : WORKING ON
+    description : > reworking renderBuffer internal packing
+                    changing the internal packing scheme to be more spacially compact
+                  > reworking how shaders working
+                    changing shader interface to have more features
+
+    summary     : FIXED BUG
+    description : > finally eliminated that ridiculous matrix bug
+
+    summary     : ADDED
+    description : > ability to shuffle components in QVector3
+                    this is important for <feature-name> that I'm working on
+
+    summary     : ADDED/CHANGED
+    description : > added commit_semantics.txt to finally resolve commit styles
+                    it was about time
+                  > changed some folder names to be more consistent
+

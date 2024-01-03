@@ -23,9 +23,9 @@ public final class Uncle {
         eyes.setNearClip(-0.0f);
         eyes.setRenderType(RenderType.Textured);
 
-        QMesh uncle = new QMesh(System.getProperty("user.dir") + "\\Resources\\Uncle.obj");
+        QMesh uncle = new QMesh(System.getProperty("user.dir") + "\\resources\\Uncle.obj");
         QRenderBuffer texture = 
-            new QRenderBuffer(System.getProperty("user.dir") + "\\Resources\\Uncle_Texture.jpg");
+            new QRenderBuffer(System.getProperty("user.dir") + "\\resources\\Uncle_Texture.jpg");
 
         eyes.setTexture(texture);
 
@@ -54,9 +54,9 @@ public final class Uncle {
         eyes.setRenderType(RenderType.Textured);
 
         QMesh uncle = 
-            new QMesh(System.getProperty("user.dir") + "\\Resources\\Uncle.obj");
+            new QMesh(System.getProperty("user.dir") + "\\resources\\Uncle.obj");
         QRenderBuffer texture = 
-            new QRenderBuffer(System.getProperty("user.dir") + "\\Resources\\Matrix.jpg");
+            new QRenderBuffer(System.getProperty("user.dir") + "\\resources\\Matrix.jpg");
 
         eyes.setTexture(texture);
 
@@ -132,9 +132,9 @@ public final class Uncle {
             }
         );
 
-        QMesh uncle = new QMesh(System.getProperty("user.dir") + "\\Resources\\Uncle.obj");
+        QMesh uncle = new QMesh(System.getProperty("user.dir") + "\\resources\\Uncle.obj");
         QRenderBuffer texture = 
-            new QRenderBuffer(System.getProperty("user.dir") + "\\Resources\\Uncle_Texture.jpg");
+            new QRenderBuffer(System.getProperty("user.dir") + "\\resources\\Uncle_Texture.jpg");
         eyes.setTexture(texture);
 
         float time = 0.0f;
