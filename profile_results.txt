@@ -1,0 +1,106 @@
+
+ProfileTextureVSRenderBuffer / 2024-01-03 / 4:15PM
+QTEXTURE CHUNKS: 32x32
+PROFILE HUGE
+        TEXAVG: 5464
+        RBAVG:  5939
+        RATIO:  0.9200202
+        TEXAVG: 5034
+        RBAVG:  5505
+        RATIO:  0.9144414
+PROFILE LARGE
+        TEXAVG: 4634
+        RBAVG:  4747
+        RATIO:  0.9761955
+        TEXAVG: 4502
+        RBAVG:  4615
+        RATIO:  0.97551465
+PROFILE MEDIUM
+        TEXAVG: 4439
+        RBAVG:  4347
+        RATIO:  1.0211641
+        TEXAVG: 4362
+        RBAVG:  4279
+        RATIO:  1.019397
+PROFILE SMALL
+        TEXAVG: 3653
+        RBAVG:  3570
+        RATIO:  1.0232493
+        TEXAVG: 3269
+        RBAVG:  3196
+        RATIO:  1.0228411
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+ProfileTextureVSRenderBuffer / 2024-01-03 / 4:19PM
+QTEXTURE CHUNKS: 16x16
+PROFILE HUGE
+        TEXAVG: 4181
+        RBAVG:  4688
+        RATIO:  0.89185154
+        TEXAVG: 3883
+        RBAVG:  4382
+        RATIO:  0.886125
+PROFILE LARGE
+        TEXAVG: 3151
+        RBAVG:  3308
+        RATIO:  0.9525393
+        TEXAVG: 3197
+        RBAVG:  3345
+        RATIO:  0.9557549
+PROFILE MEDIUM
+        TEXAVG: 3161
+        RBAVG:  3112
+        RATIO:  1.0157455
+        TEXAVG: 3155
+        RBAVG:  3137
+        RATIO:  1.005738
+PROFILE SMALL
+        TEXAVG: 3152
+        RBAVG:  3079
+        RATIO:  1.0237089
+        TEXAVG: 3172
+        RBAVG:  3111
+        RATIO:  1.0196079
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+ProfileTextureVSRenderBuffer / 2024-01-03 / 4:20PM
+QTEXTURE CHUNKS: 4x4
+
+PROFILE HUGE
+        TEXAVG: 3671
+        RBAVG:  4165
+        RATIO:  0.88139254
+        TEXAVG: 4030
+        RBAVG:  4484
+        RATIO:  0.89875114
+PROFILE LARGE
+        TEXAVG: 3938
+        RBAVG:  4058
+        RATIO:  0.97042876
+        TEXAVG: 3915
+        RBAVG:  4038
+        RATIO:  0.9695394
+PROFILE MEDIUM
+        TEXAVG: 3820
+        RBAVG:  3755
+        RATIO:  1.0173103
+        TEXAVG: 3832
+        RBAVG:  3771
+        RATIO:  1.0161761
+PROFILE SMALL
+        TEXAVG: 3746
+        RBAVG:  3653
+        RATIO:  1.0254586
+        TEXAVG: 3830
+        RBAVG:  3734
+        RATIO:  1.0257097
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+/ 2024-01-03 / 4:21PM
+It is decided..... 16x16 works the best!
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

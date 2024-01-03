@@ -21,119 +21,95 @@ public final class Profile {
     public static QRenderBuffer frameBuffer;
     public static QViewer       viewer;
 
-    // NOTE: all timings are in microseconds
-    private static long   lastTime;
-    private static long   minTime;
-    private static long   maxTime;
-    private static int    testCount;
-    private static final int SAVE_TIME_BUFFER_SIZE = 10000;
-    private static long[]    dtBuffer = new long[SAVE_TIME_BUFFER_SIZE];
-
-    public static void reset( ) {
-        testCount = 0;
-        minTime   = 0;
-        maxTime   = 0;
-    }
-
-    public static long getTimeMicroseconds( ) {
-        return System.nanoTime( ) >> 10; // div 1024, rough conversion
-    }
-
-    public static void beginTime( ) {
-        lastTime = getTimeMicroseconds( );
-    }
-
-    public static void endTime( ) {
-        long dt = getTimeMicroseconds( ) - lastTime;
-        if (testCount == 0) {
-            minTime = dt;
-            maxTime = dt;
-        }
-        minTime = Math.min(dt, minTime);
-        maxTime = Math.max(dt, maxTime);
-        dtBuffer[testCount % SAVE_TIME_BUFFER_SIZE] = dt;
-        testCount++;
-    }
-
-    public static long avgTime( ) {
-        float sum = 0;
-        int sumCount = Math.min(SAVE_TIME_BUFFER_SIZE, testCount);
-        for (int i = 0; i < sumCount; i++) {
-            sum += (float)dtBuffer[i];
-        } 
-        sum /= (float)sumCount;
-        return (long)sum;
-    }
-
-    public static void ProfileTextureVSRenderBuffer(int iterations) {
+    public static void ProfileTextureVSRenderBuffer(
+            int iterations, 
+            String texPath,
+            String meshPath
+        ) {
         viewer.setRenderType(RenderType.Textured);
 
-        String texPath = System.getProperty("user.dir") + "\\resources\\Large_Texture.jpg";
         QRenderBuffer rbTex = new QRenderBuffer(texPath);
         QTexture      tTex  = new QTexture(texPath);
+        QMesh         mesh  = new QMesh(meshPath);
 
-        String cubePath = System.getProperty("user.dir") + "\\resources\\Uncle.obj";
-        QMesh  cubeMesh = new QMesh(cubePath);
+        TimerInstance rbTimer  = new TimerInstance();
+        TimerInstance texTimer = new TimerInstance();
 
         QMatrix4x4 tMatrix;
 
-        long  SAMPLE_FRAME_COUNT = 1000;
-        float time;
 
         for (int iter = 0; iter < iterations; iter++) {
 
-            // PROFILE TEXTURE
-            reset( );
-            time = 0.0f;
-            viewer.setTexture(tTex); // <- SET TO TEX
-            for (int frame = 0; frame < SAMPLE_FRAME_COUNT; frame++) {
-                viewer.clearFrame( );
+            System.gc();
 
-                tMatrix = QMatrix4x4.TRS(
-                    new QVector3(0, 0, -15.0f), 
-                    new QVector3(time * 0.1f, time, 0.0f), 
-                    QVector3.One()
-                );
-
-                beginTime( );
-                viewer.drawMesh(cubeMesh, tMatrix);
-                endTime( );
-
-                time += 2.0f;
-
-                window.updateFrame( );
-            }
-
-            System.out.println("TEX avg time: " + avgTime( ));
+            rbTimer.reset( );
+            texTimer.reset( );
             
-            System.gc();
+            long  SAMPLE_FRAME_COUNT = 500;
+            float time = 0.0f;
 
-            // PROFILE RENDERBUFFER
-            reset( );
-            time = 0.0f;
-            viewer.setTexture(rbTex); // <- SET TO RB
             for (int frame = 0; frame < SAMPLE_FRAME_COUNT; frame++) {
-                viewer.clearFrame( );
-
+                
                 tMatrix = QMatrix4x4.TRS(
                     new QVector3(0, 0, -15.0f), 
                     new QVector3(time * 0.1f, time, 0.0f), 
                     QVector3.One()
                 );
 
-                beginTime( );
-                viewer.drawMesh(cubeMesh, tMatrix);
-                endTime( );
+                // alternate between using tex vs rb on each frame
+                if ((frame & 1) == 0) {
 
-                time += 2.0f;
+                    // PROFILE TEX
+                    viewer.clearFrame( );
+                    viewer.setTexture(tTex);
 
-                window.updateFrame( );
+                    texTimer.beginTime();
+                    viewer.drawMesh(mesh, tMatrix);
+                    texTimer.endTime();
+
+                    window.updateFrame( );
+
+                    // PROFILE RB
+                    viewer.clearFrame( );
+                    viewer.setTexture(rbTex);
+
+                    rbTimer.beginTime();
+                    viewer.drawMesh(mesh, tMatrix);
+                    rbTimer.endTime();
+
+                    window.updateFrame( );
+
+                } else {
+
+                    // PROFILE RB
+                    viewer.clearFrame( );
+                    viewer.setTexture(rbTex);
+
+                    rbTimer.beginTime();
+                    viewer.drawMesh(mesh, tMatrix);
+                    rbTimer.endTime();
+
+                    window.updateFrame( );
+
+                    // PROFILE TEX
+                    viewer.clearFrame( );
+                    viewer.setTexture(tTex);
+
+                    texTimer.beginTime();
+                    viewer.drawMesh(mesh, tMatrix);
+                    texTimer.endTime();
+
+                    window.updateFrame( );
+
+                }
+
+                time += 6.0f;
             }
 
-            System.gc();
-
-            System.out.println("RB avg time: " + avgTime( ));
-
+            System.out.println("\tTEXAVG: " + texTimer.avgTime());
+            System.out.println("\tRBAVG:  " + rbTimer.avgTime());
+            System.out.println("\tRATIO:  " + 
+                (float)texTimer.avgTime() / (float)rbTimer.avgTime());
         }
     }
 
@@ -144,6 +120,19 @@ public final class Profile {
         viewer      = new QViewer(frameBuffer);
         viewer.setViewBounds(-FB_ASPECT, FB_ASPECT, -1.0f, 1.0f);
 
-        ProfileTextureVSRenderBuffer(5);
+        String basePath = System.getProperty("user.dir") + "\\resources\\";
+        String meshPath = basePath + "Uncle.obj";
+        String hugeTexPath = basePath + "Texture_Huge.jpg";
+        String largeTexPath = basePath + "Texture_Large.jpg";
+        String medTexPath = basePath + "Texture_Medium.jpg";
+        String smallTexPath = basePath + "Texture_Small.jpg";
+        System.out.println("PROFILE HUGE");
+        ProfileTextureVSRenderBuffer(2, hugeTexPath, meshPath);
+        System.out.println("PROFILE LARGE");
+        ProfileTextureVSRenderBuffer(2, largeTexPath, meshPath);
+        System.out.println("PROFILE MEDIUM");
+        ProfileTextureVSRenderBuffer(2, medTexPath, meshPath);
+        System.out.println("PROFILE SMALL");
+        ProfileTextureVSRenderBuffer(2, smallTexPath, meshPath);
     }
 }

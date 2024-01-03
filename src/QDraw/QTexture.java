@@ -4,19 +4,36 @@
 
 package QDraw;
 
-// TODO: make internal packing FASTER than RB
 public class QTexture extends QSampleable {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
     // note: CHUNK_WIDTH/HEIGHT must be power of 4
-    private static final int CHUNK_WIDTH  = 32;
-    private static final int CHUNK_HEIGHT = 32;
+    private static final int CHUNK_WIDTH  = 16;
+    private static final int CHUNK_HEIGHT = 16;
     private static final int CHUNK_WIDTH_REMAINDER_MASK  = CHUNK_WIDTH  - 1;
     private static final int CHUNK_HEIGHT_REMAINDER_MASK = CHUNK_HEIGHT - 1;
     private static final int CHUNK_WIDTH_DIV_SHIFT  = 31 - Integer.numberOfLeadingZeros(CHUNK_WIDTH);
     private static final int CHUNK_HEIGHT_DIV_SHIFT = 31 - Integer.numberOfLeadingZeros(CHUNK_HEIGHT);
     private static final int CHUNK_AREA = CHUNK_WIDTH * CHUNK_HEIGHT;
     private static final int CHUNK_AREA_MUL_SHIFT    = 31 - Integer.numberOfLeadingZeros(CHUNK_AREA);
+
+    public static QTexture CheckerBoard(int size) {
+        return CheckerBoard(size, QColor.White(), QColor.Black());
+    }
+
+    public static QTexture CheckerBoard(int size, QColor col1, QColor col2) {
+        QTexture board = new QTexture(size, size);
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                if (((i + j) & 1) == 0) {
+                    board.setColor(i, j, col1.toInt());
+                } else {
+                    board.setColor(i, j, col2.toInt());
+                }
+            }
+        }
+        return board;
+    }
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
