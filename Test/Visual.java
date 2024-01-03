@@ -130,9 +130,9 @@ public final class Visual {
                     QMatrix4x4 transform,
                     Object     userIn
                 ) {
-                    float randX = (float)Math.random() * 0.02f;
-                    float randY = (float)Math.random() * 0.02f;
-                    float randZ = (float)Math.random() * 0.02f;
+                    float randX = random() * 0.02f;
+                    float randY = random() * 0.02f;
+                    float randZ = random() * 0.02f;
                     transform.multiply(QMatrix4x4.translationMatrix(randX, randY, randZ));
                     return QMatrix4x4.multiply(transform, inOutVertex);
                 }
@@ -146,9 +146,9 @@ public final class Visual {
                     QColor belowColor,
                     Object userIn
                 ) {
-                    fragU += (float)Math.random() * 0.01f;
-                    fragV += (float)Math.random() * 0.01f;
-                    int randAlpha = (int)(128.0f + (float)Math.random() * 128.0f);
+                    fragU += random() * 0.01f;
+                    fragV += random() * 0.01f;
+                    int randAlpha = (int)(128.0f + random() * 128.0f);
                     QColor texCol = sampleTexture(fragU, fragV, texture, QViewer.SampleType.Repeat).setA(randAlpha);
                     return blendColor(belowColor, texCol);
                 }
@@ -186,7 +186,7 @@ public final class Visual {
         eyes        = new QViewer(frameBuffer);
         eyes.setViewBounds(-VISTEST_FB_ASPECT, VISTEST_FB_ASPECT, -1.0f, 1.0f);
 
-        Uncle( );
+        // Uncle( );
         CustomWobblyUncle( );
 
     }

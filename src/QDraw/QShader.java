@@ -11,12 +11,39 @@ public abstract class QShader {
     // CONSTANTS
     public static final QColor NO_TEXTURE_COLOR = new QColor(0xFF, 0x00, 0xFF);
     public static final QColor NO_SAMPLE_COLOR  = new QColor(0x00, 0x00, 0x00, 0x00); 
+    public static final float  RCP_65536        = 0.00001525878f;
 
     /////////////////////////////////////////////////////////////////
     // BUILT IN SHADER METHODS
+    public static float random( ) {
+        return seededRandom((int)System.nanoTime());
+    }
+
+    public static float seededRandom(float seed) {
+        return seededRandom(Float.floatToRawIntBits(seed));
+    }
+
+    public static float seededRandom(int seed) {
+        // simple XORSHIFT-32
+        seed ^= seed <<  13;
+        seed ^= seed >>> 17;
+        seed ^= seed <<  5;
+
+        // bound to 2^16 (65536)
+        seed &= 0xFFFF;
+
+        // convert to float, normalize to [0, 1) and return
+        float  fltSeed = (float)seed * RCP_65536;
+        return fltSeed;
+    }
+
     public static QColor blendColor(QColor bottom, QColor top) {
         int tFac = top.getA();
+        if (tFac == 0xFF) return top;
+
         int bFac = 0xFF - tFac;
+        if (bFac == 0xFF) return bottom;
+
         // NOTE: unsigned lshift 8 is equivalent to division by 255
         return new QColor(
             (top.getR() * tFac + bottom.getR() * bFac) >>> 8,
