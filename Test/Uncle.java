@@ -1,40 +1,23 @@
 // Bailey JT Brown
 // 2024
-// Visual.java
+// Uncle.java
 
 import QDraw.*;
 import QDraw.QViewer.RenderType;
 
-public final class Visual {
-    public static final int VISTEST_WINDOW_WIDTH  = 1200;
-    public static final int VISTEST_WINDOW_HEIGHT = 960; 
-    public static final int VISTEST_FB_WIDTH      = VISTEST_WINDOW_WIDTH  >> 1;
-    public static final int VISTEST_FB_HEIGHT     = VISTEST_WINDOW_HEIGHT >> 1;
-    public static final float VISTEST_FB_ASPECT   = (float)VISTEST_FB_WIDTH / (float)VISTEST_FB_HEIGHT;
-    public static final int VISTEST_RUNTIME_SEC   = 20;
-    public static final int VISTEST_RUNTIME_MS    = 1000 * VISTEST_RUNTIME_SEC;
+public final class Uncle {
+    public static final int WINDOW_WIDTH    = 1200;
+    public static final int WINDOW_HEIGHT   = 960; 
+    public static final int FB_WIDTH        = WINDOW_WIDTH  >> 1;
+    public static final int FB_HEIGHT       = WINDOW_HEIGHT >> 1;
+    public static final float FB_ASPECT     = (float)FB_WIDTH / (float)FB_HEIGHT;
+    public static final int CUT_RUNTIME_SEC = 10;
+    public static final int CUT_RUNTIME_MS  = 1000 * CUT_RUNTIME_SEC;
     public static QWindow       window;
     public static QRenderBuffer frameBuffer;
     public static QViewer       eyes;
 
-    /*
-    public static void TestTemplate( ) {
-        long t0 = System.currentTimeMillis();
-
-        eyes.setNearClip( val );
-        eyes.setRenderType( val );
-        eyes.setFillColor( val );
-
-        while ((System.currentTimeMillis() - t0) < VISTEST_RUNTIME_MS) {
-            eyes.clearFrame( );
-
-
-            window.updateFrame( );
-        }
-    }
-    */
-
-    public static void Uncle( ) {
+    public static void RegularUncle( ) {
         long t0 = System.currentTimeMillis();
 
         eyes.setNearClip(-0.0f);
@@ -47,10 +30,10 @@ public final class Visual {
         eyes.setTexture(texture);
 
         float time = 0.0f;
-        while ((System.currentTimeMillis() - t0) < VISTEST_RUNTIME_MS) {
+        while ((System.currentTimeMillis() - t0) < CUT_RUNTIME_MS) {
             eyes.clearFrame( );
 
-            time += 0.25f;
+            time += 0.4f;
 
             QMatrix4x4 m0 = QMatrix4x4.TRS(
                 new QVector3(0.0f, 0.0f, -2.0f), 
@@ -80,14 +63,12 @@ public final class Visual {
         float time = 0.0f;
         float osc0 = 0.0f;
         float osc1 = 0.0f;
-        while ((System.currentTimeMillis() - t0) < VISTEST_RUNTIME_MS) {
+        while ((System.currentTimeMillis() - t0) < CUT_RUNTIME_MS) {
             eyes.clearFrame( );
 
-            time = time + 1.5f;
+            time = time + 2.5f;
             osc0 = QMath.sinf(time);
             osc1 = QMath.cosf(time);
-
-            long rt0 = System.currentTimeMillis();
 
             for (int i = -6; i < 6; i++) {
                 for (int j = -6; j < 6; j++) {
@@ -110,10 +91,6 @@ public final class Visual {
                 }
             }
 
-            long rt1 = System.currentTimeMillis();
-
-            System.out.println("dt: " + (rt1 - rt0));
-
             window.updateFrame( );
         }
     }
@@ -126,15 +103,15 @@ public final class Visual {
             new QShader() {
                 public QVector3 vertexShader(
                     int        vertexNum,
-                    QVector3   inOutVertex,
+                    QVector3   inVertex,
                     QMatrix4x4 transform,
                     Object     userIn
                 ) {
-                    float randX = random() * 0.02f;
-                    float randY = random() * 0.02f;
-                    float randZ = random() * 0.02f;
-                    transform.multiply(QMatrix4x4.translationMatrix(randX, randY, randZ));
-                    return QMatrix4x4.multiply(transform, inOutVertex);
+                    float dt = (float)(System.currentTimeMillis() - t0) * 0.75f;
+                    float offsetX = 0.1f * QMath.cosf( dt + (inVertex.getY() * 35.0f) );
+                    float offsetZ = 0.1f * QMath.sinf( 90.0f + dt + (inVertex.getY() * 35.0f) );
+                    transform.multiply(QMatrix4x4.translationMatrix(offsetX, 0.0f, offsetZ));
+                    return QMatrix4x4.multiply(transform, inVertex);
                 }
 
                 public QColor fragmentShader(
@@ -161,14 +138,14 @@ public final class Visual {
         eyes.setTexture(texture);
 
         float time = 0.0f;
-        while ((System.currentTimeMillis() - t0) < VISTEST_RUNTIME_MS) {
+        while ((System.currentTimeMillis() - t0) < CUT_RUNTIME_MS) {
             eyes.clearFrame( );
 
-            time += 0.25f;
+            time += 2.0f;
 
             QMatrix4x4 m0 = QMatrix4x4.TRS(
                 new QVector3(0.0f, 0.0f, -2.0f), 
-                new QVector3(0, time, 0), 
+                new QVector3(time * 0.7f, time, time * 0.2f), 
                 QVector3.One().multiply3(0.125f)
             );
 
@@ -180,12 +157,17 @@ public final class Visual {
 
     public static void main(String[] args) {
         
-        window      = new QWindow("Visual Test", VISTEST_WINDOW_WIDTH, VISTEST_WINDOW_HEIGHT);
-        frameBuffer = new QRenderBuffer(VISTEST_FB_WIDTH, VISTEST_FB_HEIGHT);
+        window      = new QWindow("Visual Test", WINDOW_WIDTH, WINDOW_HEIGHT);
+        frameBuffer = new QRenderBuffer(FB_WIDTH, FB_HEIGHT);
         window.setRenderBuffer(frameBuffer);
         eyes        = new QViewer(frameBuffer);
-        eyes.setViewBounds(-VISTEST_FB_ASPECT, VISTEST_FB_ASPECT, -1.0f, 1.0f);
+        eyes.setViewBounds(-FB_ASPECT, FB_ASPECT, -1.0f, 1.0f);
 
-        Uncle( );
+        RegularUncle( );
+        TechUncle( );
+        CustomWobblyUncle( );
+
+        System.exit(0);
+
     }
 }
