@@ -56,7 +56,7 @@ public final class QColor extends QEncoding {
                 throw new QException(PointOfError.BadState, "bad switch state");
         }
 
-        return (colorData & channelMask) >> channelOffset;
+        return (colorData & channelMask) >>> channelOffset;
     }
 
     public int getR( ) { return getChannel(Channel.R); };

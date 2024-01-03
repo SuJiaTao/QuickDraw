@@ -142,7 +142,7 @@ public final class Visual {
                     QColor belowColor,
                     Object userIn
                 ) {
-                    QColor texCol = sampleTexture(fragU, fragV, texture, QViewer.SampleType.Repeat).setA(128);
+                    QColor texCol = sampleTexture(fragU, fragV, texture, QViewer.SampleType.Repeat).setA(200);
                     return blendColor(belowColor, texCol);
                 }
             }
