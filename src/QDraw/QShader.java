@@ -55,7 +55,7 @@ public abstract class QShader {
     public static QColor sampleTexture(
         float u,
         float v,
-        QRenderBuffer texture,
+        QSampleable texture,
         QViewer.SampleType sampleType
     ) {
         // refer to
@@ -117,7 +117,7 @@ public abstract class QShader {
         int    screenY,
         float  fragU,
         float  fragV,
-        QRenderBuffer texture,
+        QSampleable texture,
         QColor belowColor,
         Object userIn
     );

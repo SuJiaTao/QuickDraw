@@ -24,8 +24,8 @@ public final class Uncle {
         eyes.setRenderType(RenderType.Textured);
 
         QMesh uncle = new QMesh(System.getProperty("user.dir") + "\\resources\\Uncle.obj");
-        QRenderBuffer texture = 
-            new QRenderBuffer(System.getProperty("user.dir") + "\\resources\\Uncle_Texture.jpg");
+        QTexture texture = 
+            new QTexture(System.getProperty("user.dir") + "\\resources\\Uncle_Texture.jpg");
 
         eyes.setTexture(texture);
 
@@ -55,8 +55,8 @@ public final class Uncle {
 
         QMesh uncle = 
             new QMesh(System.getProperty("user.dir") + "\\resources\\Uncle.obj");
-        QRenderBuffer texture = 
-            new QRenderBuffer(System.getProperty("user.dir") + "\\resources\\Matrix.jpg");
+        QTexture texture = 
+            new QTexture(System.getProperty("user.dir") + "\\resources\\Matrix.jpg");
 
         eyes.setTexture(texture);
 
@@ -119,7 +119,7 @@ public final class Uncle {
                     int    screenY,
                     float  fragU,
                     float  fragV,
-                    QRenderBuffer texture,
+                    QSampleable texture,
                     QColor belowColor,
                     Object userIn
                 ) {
@@ -133,8 +133,8 @@ public final class Uncle {
         );
 
         QMesh uncle = new QMesh(System.getProperty("user.dir") + "\\resources\\Uncle.obj");
-        QRenderBuffer texture = 
-            new QRenderBuffer(System.getProperty("user.dir") + "\\resources\\Uncle_Texture.jpg");
+        QTexture texture = 
+            new QTexture(System.getProperty("user.dir") + "\\resources\\Uncle_Texture.jpg");
         eyes.setTexture(texture);
 
         float time = 0.0f;
@@ -164,8 +164,8 @@ public final class Uncle {
         eyes.setViewBounds(-FB_ASPECT, FB_ASPECT, -1.0f, 1.0f);
 
         RegularUncle( );
-        TechUncle( );
-        CustomWobblyUncle( );
+        // TechUncle( );
+        // CustomWobblyUncle( );
 
         System.exit(0);
 

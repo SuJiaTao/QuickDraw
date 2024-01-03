@@ -48,7 +48,7 @@ public final class QViewer extends QEncoding {
     private float         nearClip   = DEFAULT_NEAR_CLIP;
     private float         viewLeft, viewRight, viewBottom, viewTop;
     private QRenderBuffer renderTarget   = null;
-    private QRenderBuffer texture        = null;
+    private QSampleable   texture        = null;
     private int           fillColor      = DEFAULT_FILL_COLOR;
     private RenderType    renderType     = DEFAULT_RENDERTYPE;
     private SampleType    sampleType     = DEFAULT_SAMPLETYPE;
@@ -80,7 +80,7 @@ public final class QViewer extends QEncoding {
         fillColor = color.toInt( );
     }
 
-    public void setTexture(QRenderBuffer _texture) {
+    public void setTexture(QSampleable _texture) {
         texture = _texture;
     }
 
