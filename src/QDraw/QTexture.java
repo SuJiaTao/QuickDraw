@@ -8,13 +8,14 @@ public class QTexture extends QSampleable {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
     // note: CHUNK_WIDTH/HEIGHT must be power of 4
-    private static final int CHUNK_WIDTH  = 16;
-    private static final int CHUNK_HEIGHT = 16;
+    private static final int CHUNK_WIDTH  = 4;
+    private static final int CHUNK_HEIGHT = 4;
     private static final int CHUNK_WIDTH_REMAINDER_MASK  = CHUNK_WIDTH  - 1;
     private static final int CHUNK_HEIGHT_REMAINDER_MASK = CHUNK_HEIGHT - 1;
     private static final int CHUNK_WIDTH_DIV_SHIFT  = 31 - Integer.numberOfLeadingZeros(CHUNK_WIDTH);
     private static final int CHUNK_HEIGHT_DIV_SHIFT = 31 - Integer.numberOfLeadingZeros(CHUNK_HEIGHT);
     private static final int CHUNK_AREA = CHUNK_WIDTH * CHUNK_HEIGHT;
+    private static final int CHUNK_AREA_MUL_SHIFT    = 31 - Integer.numberOfLeadingZeros(CHUNK_AREA);
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
@@ -65,7 +66,7 @@ public class QTexture extends QSampleable {
         int chunkSubX = x & CHUNK_WIDTH_REMAINDER_MASK;
         int chunkSubY = y & CHUNK_HEIGHT_REMAINDER_MASK;
 
-        int offsetMajor = CHUNK_AREA * (chunkX + (xChunks * chunkY));
+        int offsetMajor = (chunkX + (xChunks * chunkY)) << CHUNK_AREA_MUL_SHIFT;
         int offsetMinor = chunkSubX + (CHUNK_WIDTH * chunkSubY);
 
         return offsetMajor + offsetMinor;
