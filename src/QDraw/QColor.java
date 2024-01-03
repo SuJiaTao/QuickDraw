@@ -113,6 +113,10 @@ public final class QColor extends QEncoding {
         colorData = 0;
     }
 
+    public QColor(int argb) {
+        colorData = argb;
+    };
+
     public QColor(int r, int g, int b) {
         colorData = 0;
         set(r, g, b);

@@ -6,12 +6,12 @@ import QDraw.*;
 import QDraw.QViewer.RenderType;
 
 public final class Visual {
-    public static final int VISTEST_FB_WIDTH      = 600;
-    public static final int VISTEST_FB_HEIGHT     = 480;
-    public static final float VISTEST_FB_ASPECT   = (float)VISTEST_FB_WIDTH / (float)VISTEST_FB_HEIGHT;
     public static final int VISTEST_WINDOW_WIDTH  = 1200;
     public static final int VISTEST_WINDOW_HEIGHT = 960; 
-    public static final int VISTEST_RUNTIME_SEC   = 5;
+    public static final int VISTEST_FB_WIDTH      = VISTEST_WINDOW_WIDTH  >> 1;
+    public static final int VISTEST_FB_HEIGHT     = VISTEST_WINDOW_HEIGHT >> 1;
+    public static final float VISTEST_FB_ASPECT   = (float)VISTEST_FB_WIDTH / (float)VISTEST_FB_HEIGHT;
+    public static final int VISTEST_RUNTIME_SEC   = 10;
     public static final int VISTEST_RUNTIME_MS    = 1000 * VISTEST_RUNTIME_SEC;
     public static QWindow       window;
     public static QRenderBuffer frameBuffer;
@@ -26,52 +26,13 @@ public final class Visual {
         eyes.setFillColor( val );
 
         while ((System.currentTimeMillis() - t0) < VISTEST_RUNTIME_MS) {
-            eyes.blink( );
+            eyes.clearFrame( );
 
 
             window.updateFrame( );
         }
     }
     */
-
-    public static void PlaneDance( ) {
-        long t0 = System.currentTimeMillis();
-
-        eyes.setNearClip(-1.0f);
-        eyes.setRenderType(RenderType.FlatColor);
-
-        float time = 0.0f;
-        float osc0 = 0.0f;
-        float osc1 = 0.0f;
-        while ((System.currentTimeMillis() - t0) < VISTEST_RUNTIME_MS) {
-            time = time + 0.5f;
-            osc0 = QMath.cosf(time);
-            osc1 = QMath.sinf(time);
-
-            QMatrix4x4 m0 = QMatrix4x4.TRS(
-                new QVector3(osc0, osc1, -2.0f), 
-                new QVector3(time, time * 0.5f, time), 
-                QVector3.One().multiply3(osc0 * 2.0f)
-            );
-
-            QMatrix4x4 m1 = QMatrix4x4.TRS(
-                new QVector3(osc1, osc0, -5.0f),
-                new QVector3(0, 0, time),
-                QVector3.One().multiply3(osc1 * 0.25f + 1.0f)
-            );
-
-            eyes.blink();
-
-            eyes.setFillColor(new QColor(0xFF, 0x80, 0x20));
-            eyes.viewMesh(QMesh.UnitPlane(), m0);
-
-            eyes.setFillColor(new QColor(0x20, 0xFF, 0x80));
-            eyes.viewMesh(QMesh.UnitPlane(), m1);
-
-            window.updateFrame();
-            
-        }
-    }
 
     public static void Uncle( ) {
         long t0 = System.currentTimeMillis();
@@ -83,11 +44,11 @@ public final class Visual {
         QRenderBuffer texture = 
             new QRenderBuffer(System.getProperty("user.dir") + "\\Resources\\Uncle_Texture.jpg");
 
-        eyes.setRenderTexture(texture);
+        eyes.setTexture(texture);
 
         float time = 0.0f;
         while ((System.currentTimeMillis() - t0) < VISTEST_RUNTIME_MS) {
-            eyes.blink( );
+            eyes.clearFrame( );
 
             time += 0.25f;
 
@@ -97,7 +58,7 @@ public final class Visual {
                 QVector3.One().multiply3(0.125f)
             );
 
-            eyes.viewMesh(uncle, m0);
+            eyes.drawMesh(uncle, m0);
 
             window.updateFrame( );
         }
@@ -114,17 +75,19 @@ public final class Visual {
         QRenderBuffer texture = 
             new QRenderBuffer(System.getProperty("user.dir") + "\\Resources\\Matrix.jpg");
 
-        eyes.setRenderTexture(texture);
+        eyes.setTexture(texture);
 
         float time = 0.0f;
         float osc0 = 0.0f;
         float osc1 = 0.0f;
-        while (true) {
-            eyes.blink( );
+        while ((System.currentTimeMillis() - t0) < VISTEST_RUNTIME_MS) {
+            eyes.clearFrame( );
 
             time = time + 1.5f;
             osc0 = QMath.sinf(time);
             osc1 = QMath.cosf(time);
+
+            long rt0 = System.currentTimeMillis();
 
             for (int i = -6; i < 6; i++) {
                 for (int j = -6; j < 6; j++) {
@@ -142,10 +105,69 @@ public final class Visual {
                         QVector3.One().multiply3(0.125f)
                     );
 
-                    eyes.viewMesh(uncle, m0);
+                    eyes.drawMesh(uncle, m0);
 
                 }
             }
+
+            long rt1 = System.currentTimeMillis();
+
+            System.out.println("dt: " + (rt1 - rt0));
+
+            window.updateFrame( );
+        }
+    }
+
+    public static void CustomUncle( ) {
+        long t0 = System.currentTimeMillis();
+
+        eyes.setRenderType(RenderType.CustomShader);
+        eyes.setCustomShader(
+            new QIShader() {
+                public void vertexShader(
+                    int        vertexNum,
+                    QVector3   inOutVertex,
+                    QMatrix4x4 transform,
+                    Object     userIn
+                ) {
+                    inOutVertex.set(QMatrix4x4.multiply(transform, inOutVertex));
+                    inOutVertex.set(
+                        QMath.sinf(inOutVertex.getX()),
+                        QMath.sinf(inOutVertex.getY()),
+                        QMath.sinf(inOutVertex.getZ())
+                    );
+                }
+
+                public QColor fragmentShader(
+                    int    screenX,
+                    int    screenY,
+                    int    belowColorInt,
+                    int    textureSampleInt,
+                    Object userIn
+                ) {
+                    return new QColor(textureSampleInt);
+                }
+            }
+        );
+
+        QMesh uncle = new QMesh(System.getProperty("user.dir") + "\\Resources\\Uncle.obj");
+        QRenderBuffer texture = 
+            new QRenderBuffer(System.getProperty("user.dir") + "\\Resources\\Uncle_Texture.jpg");
+        eyes.setTexture(texture);
+
+        float time = 0.0f;
+        while ((System.currentTimeMillis() - t0) < VISTEST_RUNTIME_MS) {
+            eyes.clearFrame( );
+
+            time += 0.25f;
+
+            QMatrix4x4 m0 = QMatrix4x4.TRS(
+                new QVector3(0.0f, 0.0f, -2.0f), 
+                new QVector3(0, time, 0), 
+                QVector3.One().multiply3(0.125f)
+            );
+
+            eyes.drawMesh(uncle, m0);
 
             window.updateFrame( );
         }
@@ -159,7 +181,7 @@ public final class Visual {
         eyes        = new QViewer(frameBuffer);
         eyes.setViewBounds(-VISTEST_FB_ASPECT, VISTEST_FB_ASPECT, -1.0f, 1.0f);
 
-        TechUncle( );
+        CustomUncle( );
 
     }
 }

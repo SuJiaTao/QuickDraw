@@ -34,6 +34,7 @@ public final class QViewer extends QEncoding {
     public enum RenderType {
         FlatColor,
         Textured,
+        CustomShader,
         Depth
     };
 
@@ -53,6 +54,8 @@ public final class QViewer extends QEncoding {
     private int           fillColor      = DEFAULT_FILL_COLOR;
     private RenderType    renderType     = DEFAULT_RENDERTYPE;
     private SampleType    sampleType     = DEFAULT_SAMPLETYPE;
+    private QIShader      customShader   = null;
+    private Object        shaderInput    = null;
 
     /////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
@@ -79,16 +82,24 @@ public final class QViewer extends QEncoding {
         fillColor = color.toInt( );
     }
 
-    public void setRenderTexture(QRenderBuffer _texture) {
+    public void setTexture(QRenderBuffer _texture) {
         texture = _texture;
     }
 
-    public void blink( ) {
+    public void setCustomShader(QIShader shader) {
+        customShader = shader;
+    }
+
+    public void setCustomShaderInput(Object input) {
+        shaderInput = input;
+    }
+
+    public void clearFrame( ) {
         renderTarget.clearColorBuffer();
         renderTarget.clearDepthBuffer();
     }
 
-    public void viewMesh(
+    public void drawMesh(
         QMesh mesh,
         QMatrix4x4 meshTransform
     ) {
@@ -279,18 +290,41 @@ public final class QViewer extends QEncoding {
             );
         }
 
+        if (renderType == RenderType.CustomShader && customShader == null) {
+            throw new QException(
+                PointOfError.BadState, 
+                "render type is CustomShader but no shader was assigned"
+            );
+        }
+
         // NOTE:
         // - a copy of the mesh is created, but each vertex is transformed by
-        //   the provided transformation matrix and then the view matrix
+        //   the provided transformation matrix or vertex shader
         QMesh viewMesh         = new QMesh(mesh);
         float[] viewMeshPosDat = viewMesh.getPosData( );
         for (int posIndex = 0; posIndex < viewMesh.getPosCount(); posIndex++) {
-            QMath.mul3_4x4(
-                viewMesh.getPosOffset(posIndex), 
-                viewMeshPosDat, 
-                0, 
-                meshTransform.getComponents()
-            );
+            if (renderType == RenderType.CustomShader) {
+                QVector3 vec = new QVector3(viewMesh.getPos(posIndex));
+                customShader.vertexShader(
+                    posIndex, 
+                    vec, 
+                    meshTransform, 
+                    shaderInput
+                );
+                QMath.copy3(
+                    viewMesh.getPosOffset(posIndex), 
+                    viewMeshPosDat, 
+                    0, 
+                    vec.getComponents()
+                );
+            } else {
+                QMath.mul3_4x4(
+                    viewMesh.getPosOffset(posIndex), 
+                    viewMeshPosDat, 
+                    0, 
+                    meshTransform.getComponents()
+                );
+            }
         }
 
         // NOTE:
@@ -768,20 +802,26 @@ public final class QViewer extends QEncoding {
         // refer to 
         // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_rasterizetri.c
 
+        float p0x = tri.getPosX(0);
+        float p0y = tri.getPosY(0);
+        float p1x = tri.getPosX(1);
+        float p1y = tri.getPosY(1);
+        float p2x = tri.getPosX(2);
+        float p2y = tri.getPosY(2);
         float invDenom = 
             1.0f / 
-            (((tri.getPosY(1) - tri.getPosY(2)) *
-             (tri.getPosX(0) - tri.getPosX(2))) +
-            ((tri.getPosX(2) - tri.getPosX(1)) * 
-             (tri.getPosY(0) - tri.getPosY(2))));
-        float d3x = (float)drawX - tri.getPosX(2);
-        float d3y = (float)drawY - tri.getPosY(2);
+            (((p1y - p2y) *
+             (p0x - p2x)) +
+            ((p2x - p1x) * 
+             (p0y - p2y)));
+        float d3x = (float)drawX - p2x;
+        float d3y = (float)drawY - p2y;
         
-        out[0] = ((tri.getPosY(1) - tri.getPosY(2)) * (d3x) + 
-                 (tri.getPosX(2) - tri.getPosX(1)) * (d3y)) * 
+        out[0] = ((p1y - p2y) * (d3x) + 
+                 (p2x - p1x) * (d3y)) * 
                  invDenom;
-        out[1] = ((tri.getPosY(2) - tri.getPosY(0)) * (d3x) + 
-                 (tri.getPosX(0) - tri.getPosX(2)) * (d3y)) * 
+        out[1] = ((p2y - p0y) * (d3x) + 
+                 (p0x - p2x) * (d3y)) * 
                  invDenom;
         out[2] = 1.0f - out[1] - out[0];
     }
@@ -839,6 +879,17 @@ public final class QViewer extends QEncoding {
 
             case Textured:
                 fragColor =  internalSampleTexture(uvs);
+                break;
+
+            case CustomShader:
+                int texColor = internalSampleTexture(uvs);
+                fragColor    = customShader.fragmentShader(
+                    drawX, 
+                    drawY, 
+                    renderTarget.getColor(drawX, drawY),
+                    texColor,
+                    shaderInput
+                ).toInt();
                 break;
 
             case Depth:
