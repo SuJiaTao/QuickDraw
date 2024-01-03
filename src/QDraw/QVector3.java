@@ -108,6 +108,17 @@ public final class QVector3 extends QEncoding {
         return new QVector3(QMath.cross3(v1.components, v2.components));
     }
 
+    public static QVector3 sub(QVector3 v1, QVector3 v2) {
+        QVector3 rvec = v1.copy();
+        rvec.sub(v2);
+        return rvec;
+    }
+
+    public QVector3 sub(QVector3 other) {
+        QMath.sub3(components, other.components);
+        return this;
+    }
+
     public static QVector3 add(QVector3 v1, QVector3 v2) {
         QVector3 rvec = v1.copy();
         rvec.add(v2);

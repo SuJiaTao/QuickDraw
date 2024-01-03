@@ -47,6 +47,45 @@ public final class Uncle {
         }
     }
 
+    public static void UncleAndHisBuddy( ) {
+        long t0 = System.currentTimeMillis();
+
+        eyes.setNearClip(-0.0f);
+
+        QMesh uncle = new QMesh(System.getProperty("user.dir") + "\\resources\\Uncle.obj");
+        QTexture texture = 
+            new QTexture(System.getProperty("user.dir") + "\\resources\\Uncle_Texture.jpg");
+
+        eyes.setTexture(texture);
+
+        float time = 0.0f;
+        while ((System.currentTimeMillis() - t0) < CUT_RUNTIME_MS) {
+            eyes.clearFrame( );
+
+            time += 0.4f;
+
+            QMatrix4x4 m0 = QMatrix4x4.TRS(
+                new QVector3(-1.3f, 0.0f, -2.3f), 
+                new QVector3(0, time, 0), 
+                QVector3.One().multiply3(0.125f)
+            );
+
+            eyes.setRenderType(RenderType.Textured);
+            eyes.drawMesh(uncle, m0);
+
+            QMatrix4x4 m1 = QMatrix4x4.TRS(
+                new QVector3(1.3f, 0.0f, -2.3f), 
+                new QVector3(0, time, 0), 
+                QVector3.One().multiply3(0.125f)
+            );
+
+            eyes.setRenderType(RenderType.Normal);
+            eyes.drawMesh(uncle, m1);
+
+            window.updateFrame( );
+        }
+    }
+
     public static void TechUncle( ) {
         long t0 = System.currentTimeMillis();
 
@@ -102,32 +141,28 @@ public final class Uncle {
         eyes.setCustomShader(
             new QShader() {
                 public QVector3 vertexShader(
-                    int        vertexNum,
-                    QVector3   inVertex,
-                    QMatrix4x4 transform,
-                    Object     userIn
+                    VertexDrawInfo vertInfo,
+                    Object         userIn
                 ) {
-                    float dt = (float)(System.currentTimeMillis() - t0) * 0.75f;
-                    float offsetX = 0.1f * QMath.cosf( dt + (inVertex.getY() * 35.0f) );
-                    float offsetZ = 0.1f * QMath.sinf( 90.0f + dt + (inVertex.getY() * 35.0f) );
-                    transform.multiply(QMatrix4x4.translationMatrix(offsetX, 0.0f, offsetZ));
-                    return QMatrix4x4.multiply(transform, inVertex);
+                    float dt = (float)(System.currentTimeMillis() - t0) * 0.6f;
+                    float offsetX = 0.1f * QMath.cosf( dt + (vertInfo.vertexPos.getY() * 35.0f) );
+                    float offsetY = 0.1f * QMath.sinf( (dt + vertInfo.vertexPos.getX() * 70.0f) * 0.5f );
+                    float offsetZ = 0.1f * QMath.sinf( 90.0f + dt + (vertInfo.vertexPos.getY() * 35.0f) );                    
+                    vertInfo.transform.multiply(QMatrix4x4.translationMatrix(offsetX, offsetY, offsetZ));
+                    return QMatrix4x4.multiply(vertInfo.transform, vertInfo.vertexPos);
                 }
 
                 public QColor fragmentShader(
-                    int    screenX,
-                    int    screenY,
-                    float  fragU,
-                    float  fragV,
-                    QSampleable texture,
-                    QColor belowColor,
-                    Object userIn
+                    FragmentDrawInfo fragInfo,
+                    Object           userIn
                 ) {
-                    fragU += random() * 0.01f;
-                    fragV += random() * 0.01f;
-                    int randAlpha = (int)(128.0f + random() * 128.0f);
-                    QColor texCol = sampleTexture(fragU, fragV, texture, QViewer.SampleType.Repeat).setA(randAlpha);
-                    return blendColor(belowColor, texCol);
+                    QColor texCol = sampleTexture(
+                        fragInfo.fragU, 
+                        fragInfo.fragV, 
+                        fragInfo.texture, 
+                        QViewer.SampleType.Repeat
+                    ).setA(200);
+                    return blendColor(fragInfo.belowColor, texCol);
                 }
             }
         );
@@ -141,11 +176,11 @@ public final class Uncle {
         while ((System.currentTimeMillis() - t0) < CUT_RUNTIME_MS) {
             eyes.clearFrame( );
 
-            time += 2.0f;
+            time += 1.0f;
 
             QMatrix4x4 m0 = QMatrix4x4.TRS(
                 new QVector3(0.0f, 0.0f, -2.0f), 
-                new QVector3(time * 0.7f, time, time * 0.2f), 
+                new QVector3(0.0f, time, 0.0f), 
                 QVector3.One().multiply3(0.125f)
             );
 
@@ -155,30 +190,61 @@ public final class Uncle {
         }
     }
 
-    public static void SpinnyCube( ) {
+    public static void ShadedUncle( ) {
         long t0 = System.currentTimeMillis();
 
         eyes.setNearClip(-0.0f);
-        eyes.setRenderType(RenderType.Textured);
+        eyes.setRenderType(RenderType.CustomShader);
+        eyes.setCustomShader(
+            new QShader() {
+                public QVector3 vertexShader(
+                    VertexDrawInfo vertInfo,
+                    Object         userIn
+                ) {
+                    return QMatrix4x4.multiply(vertInfo.transform, vertInfo.vertexPos);
+                }
 
-        QMesh cube = new QMesh(System.getProperty("user.dir") + "\\resources\\Cube.obj");
+                public QColor fragmentShader(
+                    FragmentDrawInfo fragInfo,
+                    Object           userIn
+                ) {
+                    fragInfo.fragU += random() * 0.005f;
+                    fragInfo.fragV += random() * 0.005f;
+
+                    QColor texCol = sampleTexture(fragInfo.fragU, fragInfo.fragV, fragInfo.texture, QViewer.SampleType.Repeat);
+                    QVector3 dFaceLightNormalized = QVector3.sub(
+                        new QVector3(-4.0f, 1.4f, 10.0f),
+                        fragInfo.faceCenterWorldSpace
+                    ).normalize();
+                    float brightnessFactor = QVector3.dot(
+                        fragInfo.faceNormal, 
+                        dFaceLightNormalized
+                    );
+                    texCol = multiplyColor(texCol, Math.max(0.0f, brightnessFactor));
+                    return blendColor(fragInfo.belowColor, texCol);
+                }
+            }
+        );
+
+        QMesh uncle = new QMesh(System.getProperty("user.dir") + "\\resources\\Uncle.obj");
         QTexture texture = 
-            new QTexture(System.getProperty("user.dir") + "\\resources\\Matrix.jpg");
+            new QTexture(System.getProperty("user.dir") + "\\resources\\Uncle_Texture.jpg");
+
         eyes.setTexture(texture);
 
         float time = 0.0f;
         while ((System.currentTimeMillis() - t0) < CUT_RUNTIME_MS) {
             eyes.clearFrame( );
 
-            time += 0.4f;
+            time += 1.4f;
 
             QMatrix4x4 m0 = QMatrix4x4.TRS(
-                new QVector3(0.0f, 0.0f, -5.0f), 
-                new QVector3(time, time, time), 
-                QVector3.One()
+                new QVector3(0.0f, 0.0f, -2.0f), 
+                new QVector3(0, time, 0), 
+                QVector3.One().multiply3(0.125f)
             );
 
-            eyes.drawMesh(cube, m0);
+            eyes.drawMesh(uncle, m0);
 
             window.updateFrame( );
         }
@@ -192,10 +258,11 @@ public final class Uncle {
         eyes        = new QViewer(frameBuffer);
         eyes.setViewBounds(-FB_ASPECT, FB_ASPECT, -1.0f, 1.0f);
 
-        SpinnyCube( );
         RegularUncle( );
+        UncleAndHisBuddy( );
         TechUncle( );
         CustomWobblyUncle( );
+        ShadedUncle( );
 
         System.exit(0);
 

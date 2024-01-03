@@ -34,6 +34,7 @@ public final class QViewer extends QEncoding {
         FlatColor,
         Textured,
         CustomShader,
+        Normal,
         Depth
     };
 
@@ -107,21 +108,49 @@ public final class QViewer extends QEncoding {
     /////////////////////////////////////////////////////////////////
     // PRIVATE CLASSES
     private class Tri extends QEncoding {
-        public float[] posDat = new float[VTRI_POSDAT_NUM_CMPS];
-        public float[] uvDat  = new float[VTRI_UVDAT_NUM_CMPS];
+        public float[] posDat    = new float[VTRI_POSDAT_NUM_CMPS];
+        public float[] uvDat     = new float[VTRI_UVDAT_NUM_CMPS];
+        public float[] normal    = new float[VCTR_NUM_CMPS];
+        public float[] centerPos = new float[VCTR_NUM_CMPS];
 
         public Tri(Tri toCopy) {
             System.arraycopy(toCopy.posDat, 0, posDat, 0, VTRI_POSDAT_NUM_CMPS);
             System.arraycopy(toCopy.uvDat, 0, uvDat, 0, VTRI_UVDAT_NUM_CMPS);
+            QMath.copy3(normal, toCopy.normal);
+            QMath.copy3(centerPos, toCopy.centerPos);
         }
 
         public Tri(QMesh srcMesh, int tdiIndex) { 
+
+            // INIT POS/UV DATA
             setPosFromTri(srcMesh, tdiIndex, 0);
             setPosFromTri(srcMesh, tdiIndex, 1);
             setPosFromTri(srcMesh, tdiIndex,2);
             setUVFromTri(srcMesh, tdiIndex, 0);
             setUVFromTri(srcMesh, tdiIndex, 1);
             setUVFromTri(srcMesh, tdiIndex,2);
+            
+            // INIT NORMAL
+            float[] d01 = new float[MESH_POSN_NUM_CMPS];
+            QMath.copy3(0, d01, getPosOffset(1), posDat);
+            QMath.sub3(0, d01, getPosOffset(0), posDat);
+
+            float[] d02 = new float[MESH_POSN_NUM_CMPS];
+            QMath.copy3(0, d02, getPosOffset(2), posDat);
+            QMath.sub3(0, d02, getPosOffset(0), posDat);
+
+            float[] tempNormal = QMath.cross3(d01, d02);
+            QMath.mult3(tempNormal, 1.0f / QMath.mag3(tempNormal));
+            QMath.copy3(normal, tempNormal);
+
+            // INIT CENTER POS
+            final float inv3 = 1.0f / 3.0f;
+            centerPos[VCTR_INDEX_X] = 
+                (getPosX(0) + getPosX(1) + getPosX(2)) * inv3;
+            centerPos[VCTR_INDEX_Y] = 
+                (getPosX(0) + getPosX(1) + getPosX(2)) * inv3;
+            centerPos[VCTR_INDEX_Z] = 
+                (getPosX(0) + getPosX(1) + getPosX(2)) * inv3;
         }
 
         public void swapVerts(int v1Num, int v2Num) {
@@ -302,19 +331,23 @@ public final class QViewer extends QEncoding {
         float[] viewMeshPosDat = viewMesh.getPosData( );
         for (int posIndex = 0; posIndex < viewMesh.getPosCount(); posIndex++) {
             if (renderType == RenderType.CustomShader) {
-                QVector3 vec = new QVector3(viewMesh.getPos(posIndex));
-                vec = customShader.vertexShader(
-                    posIndex, 
-                    vec, 
-                    new QMatrix4x4(meshTransform),
+                // PREPARE VERTEX SHADER INFO
+                QShader.VertexDrawInfo vertInfo = new QShader.VertexDrawInfo();
+                vertInfo.vertexNum = posIndex;
+                vertInfo.vertexPos = new QVector3(viewMesh.getPos(posIndex));
+                vertInfo.transform = new QMatrix4x4(meshTransform);
+                QVector3 shaderRetVec = customShader.vertexShader(
+                    vertInfo,
                     shaderInput
                 );
+
                 QMath.copy3(
                     viewMesh.getPosOffset(posIndex), 
                     viewMeshPosDat, 
                     0, 
-                    vec.getComponents()
+                    shaderRetVec.getComponents()
                 );
+
             } else {
                 QMath.mul3_4x4(
                     viewMesh.getPosOffset(posIndex), 
@@ -346,19 +379,8 @@ public final class QViewer extends QEncoding {
     }
 
     private boolean internalCheckBackfacing(Tri tri) {
-        float[] d01 = new float[MESH_POSN_NUM_CMPS];
-        QMath.copy3(0, d01, tri.getPosOffset(1), tri.posDat);
-        QMath.sub3(0, d01, tri.getPosOffset(0), tri.posDat);
-
-        float[] d02 = new float[MESH_POSN_NUM_CMPS];
-        QMath.copy3(0, d02, tri.getPosOffset(2), tri.posDat);
-        QMath.sub3(0, d02, tri.getPosOffset(0), tri.posDat);
-
-        float[] normal = QMath.cross3(d01, d02);
-        QMath.mult3(normal, 1.0f / QMath.mag3(normal));
-
         float[] awayAxis = { 0.0f, 0.0f, -1.0f };
-        return (QMath.dot3(normal, awayAxis) > BACKFACE_CULL_MIN_DOT);
+        return (QMath.dot3(tri.normal, awayAxis) > BACKFACE_CULL_MIN_DOT);
     }
 
     private Tri[] internalClipTri(Tri tri) {
@@ -885,14 +907,31 @@ public final class QViewer extends QEncoding {
                 break;
 
             case CustomShader:
+
+                // PREPARE FRAGMENT SHADER INFO
+                QShader.FragmentDrawInfo fragInfo = new QShader.FragmentDrawInfo();
+                fragInfo.screenX    = drawX;
+                fragInfo.screenY    = drawY;
+                fragInfo.fragU      = uvs[MESH_UV_OFST_U];
+                fragInfo.fragV      = uvs[MESH_UV_OFST_V];
+                fragInfo.texture    = texture;
+                fragInfo.belowColor = new QColor(renderTarget.getColor(drawX, drawY));
+                fragInfo.faceNormal = new QVector3(triangle.normal);
+                fragInfo.faceCenterWorldSpace = new QVector3(triangle.centerPos);
+
                 fragColor = customShader.fragmentShader(
-                    drawX, 
-                    drawY,
-                    uvs[MESH_UV_OFST_U], 
-                    uvs[MESH_UV_OFST_V],
-                    texture,
-                    new QColor(renderTarget.getColor(drawX, drawY)),
+                    fragInfo,
                     shaderInput
+                ).toInt();
+
+                break;
+
+            case Normal:
+                // this color transform maps (-1, 1) to (0, 255)
+                fragColor = new QColor(
+                    (int)((1.0f + triangle.normal[VCTR_INDEX_X]) * 127.0f),
+                    (int)((1.0f + triangle.normal[VCTR_INDEX_Y]) * 127.0f),
+                    (int)((1.0f + triangle.normal[VCTR_INDEX_Z]) * 127.0f)
                 ).toInt();
                 break;
 

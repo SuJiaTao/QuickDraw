@@ -52,6 +52,15 @@ public abstract class QShader {
         );
     }
 
+    public static QColor multiplyColor(QColor color, float factor) {
+        int iFac = (int)(factor * 255.0f);
+        return new QColor(
+            (color.getR() * iFac) >>> 8,
+            (color.getG() * iFac) >>> 8,
+            (color.getB() * iFac) >>> 8
+        );
+    }
+
     public static QColor sampleTexture(
         float u,
         float v,
@@ -104,21 +113,31 @@ public abstract class QShader {
     }
 
     /////////////////////////////////////////////////////////////////
+    // PUBLIC INTERNAL CLASSES
+    public static class VertexDrawInfo {
+        public int        vertexNum;
+        public QVector3   vertexPos;
+        public QMatrix4x4 transform;
+    }
+
+    public static class FragmentDrawInfo {
+        public int         screenX, screenY;
+        public float       fragU, fragV;
+        public QSampleable texture;
+        public QColor      belowColor;
+        public QVector3    faceNormal;
+        public QVector3    faceCenterWorldSpace;
+    }
+
+    /////////////////////////////////////////////////////////////////
     // ABSTRACT METHODS
     public abstract QVector3 vertexShader(
-        int        vertexNum,
-        QVector3   inVertex,
-        QMatrix4x4 transform,
-        Object     userIn
+        VertexDrawInfo infoIn,
+        Object         userIn
     );
 
     public abstract QColor fragmentShader(
-        int    screenX,
-        int    screenY,
-        float  fragU,
-        float  fragV,
-        QSampleable texture,
-        QColor belowColor,
-        Object userIn
+        FragmentDrawInfo infoIn,
+        Object           userIn
     );
 }
