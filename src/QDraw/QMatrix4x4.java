@@ -107,7 +107,6 @@ public final class QMatrix4x4 extends QEncoding {
     }
 
     public static QMatrix4x4 rotationMatrix(float x, float y, float z) {
-        // TODO: optimize
         // references:
         // https://github.com/SuJiaTao/Caesium/blob/master/csm_matrix.c
         // https://math.stackexchange.com/questions/1882276/combining-all-three-rotation-matrices

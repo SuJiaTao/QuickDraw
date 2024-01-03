@@ -146,16 +146,12 @@ public final class QRenderBuffer extends QSampleable {
     }
 
     public void clearColorBuffer( ) {
-        // TODO: possibly optimize
-        // (ensure to profile against regular clear)
         for (int i = 0; i < colorBuffer.length; i++) {
             colorBuffer[i] = CLEAR_COLOR;
         }
     }
 
     public void clearDepthBuffer( ) {
-        // TODO: possibly optimize
-        // TODO: possibly change clear value
         for (int i = 0; i < depthBuffer.length; i++) {
             depthBuffer[i] = CLEAR_DEPTH;
         }

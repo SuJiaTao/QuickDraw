@@ -96,6 +96,18 @@ public final class QVector3 extends QEncoding {
         return multiply3(1.0f / mag3);
     }
 
+    public static float dot(QVector3 v1, QVector3 v2) {
+        return QMath.dot3(v1.components, v2.components);
+    }
+
+    public float dot(QVector3 other) {
+        return QMath.dot3(components, other.components);
+    }
+
+    public static QVector3 cross(QVector3 v1, QVector3 v2) {
+        return new QVector3(QMath.cross3(v1.components, v2.components));
+    }
+
     public static QVector3 add(QVector3 v1, QVector3 v2) {
         QVector3 rvec = v1.copy();
         rvec.add(v2);

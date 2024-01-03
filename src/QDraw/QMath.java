@@ -53,12 +53,6 @@ public final class QMath extends QEncoding {
         float[] src
     ) {
         System.arraycopy(src, srcoffset, trg, trgoffset, 3);
-
-        // TODO: this is for DEBUG only. remove
-        /*for (int i = 0; i < 3; i++) {
-            trg[trgoffset + i] = 
-            src[srcoffset + i];
-        }*/
     }
 
     public static void copy4x4(float[] trg_4x4, float[] src_4x4) {
