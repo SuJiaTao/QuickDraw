@@ -7,9 +7,14 @@ package QDraw;
 public class QTexture extends QSampleable {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
-    private static final int CHUNK_WIDTH  = 4;
-    private static final int CHUNK_HEIGHT = 4;
-    private static final int CHUNK_AREA   = CHUNK_WIDTH * CHUNK_HEIGHT;
+    // note: CHUNK_WIDTH/HEIGHT must be power of 4
+    private static final int CHUNK_WIDTH  = 16;
+    private static final int CHUNK_HEIGHT = 16;
+    private static final int CHUNK_WIDTH_REMAINDER_MASK  = CHUNK_WIDTH  - 1;
+    private static final int CHUNK_HEIGHT_REMAINDER_MASK = CHUNK_HEIGHT - 1;
+    private static final int CHUNK_WIDTH_DIV_SHIFT  = 31 - Integer.numberOfLeadingZeros(CHUNK_WIDTH);
+    private static final int CHUNK_HEIGHT_DIV_SHIFT = 31 - Integer.numberOfLeadingZeros(CHUNK_HEIGHT);
+    private static final int CHUNK_AREA = CHUNK_WIDTH * CHUNK_HEIGHT;
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
@@ -23,12 +28,15 @@ public class QTexture extends QSampleable {
         // NOTE:
         // in this encoding, width/height dimensions must be multiples of
         // CHUNK_WIDTH and CHUNK_HEIGHT, so we will allocate in excess
-        xChunks        = targetWidth  >> 2;
-        int xRemainder = targetWidth & 0b11;
+        width  = targetWidth;
+        height = targetHeight;
+
+        xChunks        = targetWidth >> CHUNK_WIDTH_DIV_SHIFT;
+        int xRemainder = targetWidth & CHUNK_WIDTH_REMAINDER_MASK;
         if (xRemainder > 0) { xChunks++; }
 
-        yChunks        = targetHeight >> 2;
-        int yRemainder = targetWidth & 0b11;
+        yChunks        = targetHeight >> CHUNK_HEIGHT_DIV_SHIFT;
+        int yRemainder = targetWidth & CHUNK_HEIGHT_REMAINDER_MASK;
         if (yRemainder > 0) { yChunks++; }
 
         colorBuffer = new int[CHUNK_AREA * xChunks * yChunks];
@@ -37,11 +45,25 @@ public class QTexture extends QSampleable {
     /////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
     public int translateIndex(int x, int y) {
-        int chunkX = x >> 2; // >> 2 is the same is division by 4
-        int chunkY = y >> 2;
+        // NOTE:
+        // - the texture encoding scheme is designed with cache locality in mind.
+        //   typically, the next sampled pixel will be near to the first one, however,
+        //   if the next pixel is one below, we will have to access an entire scanline
+        //   across memory
+        // - the principle behind this encoding scheme is to subdivide the image into
+        //   local chunks, so that when a nearby pixel is accessed, we wont have to move
+        //   so many scanlines over
+        // - chunks are in dimensions of 4^n x 4^n so that we can do this quick bitwise/shift
+        //   tricks to speed up our translation calculations
+        // - (x, y) maps to chunk (x / 4^n, y / 4^n) and the sub-chunk index is just
+        //   (x mod 4^n, y mod 4^n)
+        // - this requires that we occasionally allocate more memory to a texture than needed
+        //   at times but the overhead is minimal.
+        int chunkX = x >> CHUNK_WIDTH_DIV_SHIFT;
+        int chunkY = y >> CHUNK_HEIGHT_DIV_SHIFT;
 
-        int chunkSubX = x & 0b11;
-        int chunkSubY = y & 0b11;
+        int chunkSubX = x & CHUNK_WIDTH_REMAINDER_MASK;
+        int chunkSubY = y & CHUNK_HEIGHT_REMAINDER_MASK;
 
         int offsetMajor = CHUNK_AREA * (chunkX + (xChunks * chunkY));
         int offsetMinor = chunkSubX + (CHUNK_WIDTH * chunkSubY);

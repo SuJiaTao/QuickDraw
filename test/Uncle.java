@@ -155,6 +155,35 @@ public final class Uncle {
         }
     }
 
+    public static void SpinnyCube( ) {
+        long t0 = System.currentTimeMillis();
+
+        eyes.setNearClip(-0.0f);
+        eyes.setRenderType(RenderType.Textured);
+
+        QMesh cube = new QMesh(System.getProperty("user.dir") + "\\resources\\Cube.obj");
+        QTexture texture = 
+            new QTexture(System.getProperty("user.dir") + "\\resources\\Matrix.jpg");
+        eyes.setTexture(texture);
+
+        float time = 0.0f;
+        while ((System.currentTimeMillis() - t0) < CUT_RUNTIME_MS) {
+            eyes.clearFrame( );
+
+            time += 0.4f;
+
+            QMatrix4x4 m0 = QMatrix4x4.TRS(
+                new QVector3(0.0f, 0.0f, -5.0f), 
+                new QVector3(time, time, time), 
+                QVector3.One()
+            );
+
+            eyes.drawMesh(cube, m0);
+
+            window.updateFrame( );
+        }
+    }
+
     public static void main(String[] args) {
         
         window      = new QWindow("Visual Test", WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -163,9 +192,10 @@ public final class Uncle {
         eyes        = new QViewer(frameBuffer);
         eyes.setViewBounds(-FB_ASPECT, FB_ASPECT, -1.0f, 1.0f);
 
+        SpinnyCube( );
         RegularUncle( );
-        // TechUncle( );
-        // CustomWobblyUncle( );
+        TechUncle( );
+        CustomWobblyUncle( );
 
         System.exit(0);
 
