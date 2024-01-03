@@ -14,8 +14,6 @@ public final class QViewer extends QEncoding {
     public static final float MIN_NEAR_CLIP     = -0.005f;
     public static final float DEFAULT_NEAR_CLIP = MIN_NEAR_CLIP;
     public static final int DEFAULT_FILL_COLOR  = QColor.White().toInt();
-    public static final int NO_TEXTURE_COLOR    = new QColor(0xFF, 0x00, 0xFF).toInt();
-    public static final int NO_SAMPLE_COLOR     = new QColor(0x00, 0x00, 0x00, 0x00).toInt();; 
 
     public static final float DEFAULT_VIEWBOUND_LEFT   = -1.0f;
     public static final float DEFAULT_VIEWBOUND_RIGHT  = 1.0f;
@@ -28,6 +26,7 @@ public final class QViewer extends QEncoding {
     public static final SampleType DEFAULT_SAMPLETYPE = SampleType.Repeat;
 
     private static final float BACKFACE_CULL_MIN_DOT  = 0.5f;
+    private static final float DEPTH_TEST_EPSILON     = 0.002f;
 
     /////////////////////////////////////////////////////////////////
     // PUBLIC ENUMS
@@ -48,13 +47,12 @@ public final class QViewer extends QEncoding {
     // PRIVATE MEMBERS
     private float         nearClip   = DEFAULT_NEAR_CLIP;
     private float         viewLeft, viewRight, viewBottom, viewTop;
-
     private QRenderBuffer renderTarget   = null;
     private QRenderBuffer texture        = null;
     private int           fillColor      = DEFAULT_FILL_COLOR;
     private RenderType    renderType     = DEFAULT_RENDERTYPE;
     private SampleType    sampleType     = DEFAULT_SAMPLETYPE;
-    private QIShader      customShader   = null;
+    private QShader       customShader   = null;
     private Object        shaderInput    = null;
 
     /////////////////////////////////////////////////////////////////
@@ -86,7 +84,7 @@ public final class QViewer extends QEncoding {
         texture = _texture;
     }
 
-    public void setCustomShader(QIShader shader) {
+    public void setCustomShader(QShader shader) {
         customShader = shader;
     }
 
@@ -878,16 +876,22 @@ public final class QViewer extends QEncoding {
                 break;
 
             case Textured:
-                fragColor =  internalSampleTexture(uvs);
+                fragColor = QShader.sampleTexture(
+                    uvs[MESH_UV_OFST_U], 
+                    uvs[MESH_UV_OFST_V],
+                    texture,
+                    sampleType
+                ).toInt();
                 break;
 
             case CustomShader:
-                int texColor = internalSampleTexture(uvs);
-                fragColor    = customShader.fragmentShader(
+                fragColor = customShader.fragmentShader(
                     drawX, 
-                    drawY, 
+                    drawY,
+                    uvs[MESH_UV_OFST_U], 
+                    uvs[MESH_UV_OFST_V],
+                    texture,
                     new QColor(renderTarget.getColor(drawX, drawY)),
-                    new QColor(texColor),
                     shaderInput
                 ).toInt();
                 break;
@@ -920,59 +924,13 @@ public final class QViewer extends QEncoding {
         // since all depths are negative and inverted, the further value
         // will be a smaller negative and hence greater. therefore the failing
         // depth test will be greater than the previous depth
-        if (invDepth > renderTarget.getDepth(drawX, drawY)) {
+        if (invDepth > renderTarget.getDepth(drawX, drawY) - DEPTH_TEST_EPSILON) {
             return;
         }
 
         renderTarget.setDepth(drawX, drawY, invDepth);
         renderTarget.setColor(drawX, drawY, fragColor);
 
-    }
-
-    private int internalSampleTexture(float[] uv) {
-        // refer to
-        // https://github.com/SuJiaTao/Caesium/blob/master/csm_fragment.h
-
-        if (texture == null) {
-            return NO_TEXTURE_COLOR;
-        }
-        
-        switch (sampleType) {
-            case Cutoff:
-                if (uv[0] < 0.0f || uv[0] >= 1.0f || uv[1] < 0.0f || uv[1] >= 1.0f) {
-                    return NO_SAMPLE_COLOR;
-                }
-                break;
-
-            case Clamp:
-                uv[0] = Math.min(1.0f, Math.max(uv[0], 0.0f));
-                uv[1] = Math.min(1.0f, Math.max(uv[1], 0.0f));
-                break;
-
-            case Repeat:
-                uv[0] = uv[0] - (float)Math.floor((float)uv[0]);
-                uv[1] = uv[1] - (float)Math.floor((float)uv[1]);
-                if (uv[0] < 0.0f) {
-                    uv[0] = 1.0f + uv[0];
-                }
-                if (uv[1] > 1.0f) {
-                    uv[1] = 1.0f + uv[1];
-                }
-                break;
-        
-            default:
-                throw new QException(
-                    PointOfError.BadState, 
-                    "bad sample type: " + sampleType.toString()
-                );
-        }
-
-        int texCoordX = (int)((float)texture.getWidth() * uv[0]);
-        int texCoordY = (int)((float)texture.getHeight() * uv[1]);
-        texCoordX = Math.max(0, Math.min(texCoordX, texture.getWidth() - 1));
-        texCoordY = Math.max(0, Math.min(texCoordY, texture.getHeight() - 1));
-
-        return texture.getColor(texCoordX, texCoordY);
     }
 
     /////////////////////////////////////////////////////////////////

@@ -123,7 +123,7 @@ public final class Visual {
 
         eyes.setRenderType(RenderType.CustomShader);
         eyes.setCustomShader(
-            new QIShader() {
+            new QShader() {
                 public QVector3 vertexShader(
                     int        vertexNum,
                     QVector3   inOutVertex,
@@ -136,11 +136,14 @@ public final class Visual {
                 public QColor fragmentShader(
                     int    screenX,
                     int    screenY,
+                    float  fragU,
+                    float  fragV,
+                    QRenderBuffer texture,
                     QColor belowColor,
-                    QColor textureSample,
                     Object userIn
                 ) {
-                    return textureSample;
+                    QColor texCol = sampleTexture(fragU, fragV, texture, QViewer.SampleType.Repeat).setA(128);
+                    return blendColor(belowColor, texCol);
                 }
             }
         );
@@ -176,7 +179,9 @@ public final class Visual {
         eyes        = new QViewer(frameBuffer);
         eyes.setViewBounds(-VISTEST_FB_ASPECT, VISTEST_FB_ASPECT, -1.0f, 1.0f);
 
-        CustomUncle( );
+        while (true) {
+            CustomUncle( );
+        }
 
     }
 }

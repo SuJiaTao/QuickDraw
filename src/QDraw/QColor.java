@@ -59,6 +59,11 @@ public final class QColor extends QEncoding {
         return (colorData & channelMask) >> channelOffset;
     }
 
+    public int getR( ) { return getChannel(Channel.R); };
+    public int getG( ) { return getChannel(Channel.G); };
+    public int getB( ) { return getChannel(Channel.B); };
+    public int getA( ) { return getChannel(Channel.A); };
+
     public QColor setChannel(int val, Channel c) {
         int channelOffset;
         int channelMask;
@@ -88,6 +93,11 @@ public final class QColor extends QEncoding {
 
         return this;
     }
+
+    public QColor setR(int r) { return setChannel(r, Channel.R); };
+    public QColor setG(int g) { return setChannel(g, Channel.G); };
+    public QColor setB(int b) { return setChannel(b, Channel.B); };
+    public QColor setA(int a) { return setChannel(a, Channel.A); };
 
     public QColor set(int r, int g, int b) {
         set(r, g, b, 0xFF);

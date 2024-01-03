@@ -73,6 +73,38 @@ public final class Expect {
                     .toInt()), 
             new Integer(0x00123456)
         );
+        Expect(
+            new QColor(0x12, 0x34, 0x56, 0x78).getChannel(Channel.R),
+            0x12
+        );
+        Expect(
+            new QColor(0x12, 0x34, 0x56, 0x78).getChannel(Channel.G),
+            0x34
+        );
+        Expect(
+            new QColor(0x12, 0x34, 0x56, 0x78).getChannel(Channel.B),
+            0x56
+        );
+        Expect(
+            new QColor(0x12, 0x34, 0x56, 0x78).getChannel(Channel.A),
+            0x78
+        );
+        Expect(
+            new QColor(0x12, 0x34, 0x56, 0x78).getR(),
+            0x12
+        );
+        Expect(
+            new QColor(0x12, 0x34, 0x56, 0x78).getG(),
+            0x34
+        );
+        Expect(
+            new QColor(0x12, 0x34, 0x56, 0x78).getB(),
+            0x56
+        );
+        Expect(
+            new QColor(0x12, 0x34, 0x56, 0x78).getA(),
+            0x78
+        );
     }
 
     private static void RenderBufferTest( ) {
