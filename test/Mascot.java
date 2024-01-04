@@ -24,6 +24,22 @@ public final class Mascot {
         new QTexture(System.getProperty("user.dir") + "\\resources\\Texture_Medium.jpg");
     public static final QTexture TECH_TEXTURE = 
         new QTexture(System.getProperty("user.dir") + "\\resources\\Tech.jpg");
+    public static final QTexture RED_MASCOT_TEXTURE;
+    static {
+        RED_MASCOT_TEXTURE = 
+            new QTexture(System.getProperty("user.dir") + "\\resources\\Mascot256.png");
+        for (int i = 0; i < RED_MASCOT_TEXTURE.getWidth(); i++) {
+            for (int j = 0; j < RED_MASCOT_TEXTURE.getHeight(); j++) {
+                QColor color = new QColor(RED_MASCOT_TEXTURE.getColor(i, j));
+                int r = color.getR();
+                int b = color.getB();
+                color.setR(b);
+                color.setB(r);
+                RED_MASCOT_TEXTURE.setColor(i, j, color.toInt());
+            }
+        }
+    }
+        
 
     public static QWindow       window;
     public static QRenderBuffer frameBuffer;
@@ -82,6 +98,36 @@ public final class Mascot {
 
             eyes.setRenderType(RenderType.Depth);
             eyes.drawMesh(MASCOT_MESH, m2);
+
+            window.updateFrame( );
+        }
+    }
+
+    public static void MascotAndHisBoyFriend( ) {
+        long t0 = System.currentTimeMillis();
+        while ((System.currentTimeMillis() - t0) < CUT_RUNTIME_MS) {
+            eyes.clearFrame( );
+            float time = (float)(System.currentTimeMillis() - t0) * 0.15f;
+
+            QMatrix4x4 m0 = QMatrix4x4.TRS(
+                new QVector3(-0.8f, 0.0f, -2.0f), 
+                new QVector3(0, time, 0), 
+                QVector3.One().multiply3(0.25f)
+            );
+
+            eyes.setRenderType(RenderType.Textured);
+            eyes.setTexture(MASCOT_TEXTURE);
+            eyes.drawMesh(MASCOT_MESH, m0);
+
+            QMatrix4x4 m1 = QMatrix4x4.TRS(
+                new QVector3(0.8f, 0.0f, -2.0f), 
+                new QVector3(-time + 90.0f, 0, 0), 
+                QVector3.One().multiply3(0.25f)
+            );
+
+            eyes.setRenderType(RenderType.Textured);
+            eyes.setTexture(RED_MASCOT_TEXTURE);
+            eyes.drawMesh(MASCOT_MESH, m1);
 
             window.updateFrame( );
         }
@@ -254,6 +300,7 @@ public final class Mascot {
         while (true) {
             RegularMascot( );
             MascotAndHisFriends( );
+            MascotAndHisBoyFriend( );
             TechMascot( );
             CustomWobblyMascot( );
             UltraGFXMascot( );

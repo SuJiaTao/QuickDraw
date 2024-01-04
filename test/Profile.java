@@ -51,7 +51,7 @@ public final class Profile {
             for (int frame = 0; frame < SAMPLE_FRAME_COUNT; frame++) {
                 
                 tMatrix = QMatrix4x4.TRS(
-                    new QVector3(0, 0, -15.0f), 
+                    new QVector3(0, 0, -7.0f), 
                     new QVector3(time * 0.1f, time, 0.0f), 
                     QVector3.One()
                 );
@@ -121,7 +121,7 @@ public final class Profile {
         viewer.setViewBounds(-FB_ASPECT, FB_ASPECT, -1.0f, 1.0f);
 
         String basePath = System.getProperty("user.dir") + "\\resources\\";
-        String meshPath = basePath + "Uncle.obj";
+        String meshPath = basePath + "Mascot.obj";
         String hugeTexPath = basePath + "Texture_Huge.jpg";
         String largeTexPath = basePath + "Texture_Large.jpg";
         String medTexPath = basePath + "Texture_Medium.jpg";
