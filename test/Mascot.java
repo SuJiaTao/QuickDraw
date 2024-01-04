@@ -173,8 +173,8 @@ public final class Mascot {
         eyes.setCustomShader(
             new QShader() {
                 public QVector3 vertexShader(
-                    VertexDrawInfo vertInfo,
-                    Object         userIn
+                    QViewer.VertexDrawInfo vertInfo,
+                    Object userIn
                 ) {
                     float dt = (float)(System.currentTimeMillis() - t0) * 0.6f;
                     float offsetX = 0.1f * QMath.cosf( dt + (vertInfo.vertexPos.getY() * 35.0f) );
@@ -185,8 +185,8 @@ public final class Mascot {
                 }
 
                 public QColor fragmentShader(
-                    FragmentDrawInfo fragInfo,
-                    Object           userIn
+                    QViewer.FragmentDrawInfo fragInfo,
+                    Object userIn
                 ) {
                     QColor texCol = sampleTexture(
                         fragInfo.fragU, 
@@ -221,15 +221,15 @@ public final class Mascot {
         eyes.setCustomShader(
             new QShader() {
                 public QVector3 vertexShader(
-                    VertexDrawInfo vertInfo,
-                    Object         userIn
+                    QViewer.VertexDrawInfo vertInfo,
+                    Object userIn
                 ) {
                     return QMatrix4x4.multiply(vertInfo.transform, vertInfo.vertexPos);
                 }
 
                 public QColor fragmentShader(
-                    FragmentDrawInfo fragInfo,
-                    Object           userIn
+                    QViewer.FragmentDrawInfo fragInfo,
+                    Object userIn
                 ) {
 
                     // WIGGLE UVS

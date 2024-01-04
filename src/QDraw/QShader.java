@@ -124,31 +124,12 @@ public abstract class QShader {
     }
 
     /////////////////////////////////////////////////////////////////
-    // PUBLIC INTERNAL CLASSES
-    public static class VertexDrawInfo {
-        public int        vertexNum;
-        public QVector3   vertexPos;
-        public QMatrix4x4 transform;
-    }
-
-    public static class FragmentDrawInfo {
-        public int         screenX, screenY;
-        public float       fragU, fragV;
-        public QSampleable texture;
-        public QColor      belowColor;
-        public QVector3    faceNormal;
-        public QVector3    faceCenterWorldSpace;
-    }
-
-    /////////////////////////////////////////////////////////////////
     // ABSTRACT METHODS
     public abstract QVector3 vertexShader(
-        VertexDrawInfo infoIn,
-        Object         userIn
+        QViewer.VertexDrawInfo infoIn, Object userIn
     );
 
     public abstract QColor fragmentShader(
-        FragmentDrawInfo infoIn,
-        Object           userIn
+        QViewer.FragmentDrawInfo infoIn, Object userIn
     );
 }
