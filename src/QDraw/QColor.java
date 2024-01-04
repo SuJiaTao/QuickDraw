@@ -116,6 +116,22 @@ public final class QColor extends QEncoding {
         this.colorData = toCopy.colorData;
         return this;
     }
+
+    public boolean equalsIgnoreAlpha(QColor col) {
+        return equalsIgnoreAlpha(col.getR(), col.getG(), col.getB());
+    }
+
+    public boolean equalsIgnoreAlpha(int r, int g, int b) {
+        return getR() == r && getG() == g && getB() == b;
+    }
+
+    public boolean equals(int r, int g, int b, int a) {
+        return equals(new QColor(r, g, b, a));
+    }
+
+    public boolean equals(QColor col) {
+        return colorData == col.toInt();
+    }
     
     /////////////////////////////////////////////////////////////////
     // CONSTRUCTORS

@@ -4,6 +4,12 @@
 
 package QDraw;
 
+import java.io.*;
+import java.awt.image.*;
+import java.awt.Graphics2D;
+import javax.imageio.ImageIO;
+import QDraw.QException.PointOfError;
+
 public class QTexture extends QSampleable {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
@@ -119,6 +125,49 @@ public class QTexture extends QSampleable {
         colorBuffer[translateIndex(x, y)] = color;
     }
 
+    public QTexture fromRenderBuffer(QRenderBuffer rb) {
+        QTexture tex = new QTexture(rb.getWidth(), rb.getHeight());
+        rb.copyTo(tex);
+        return tex;
+    }
+
+    public QRenderBuffer toRenderBuffer( ) {
+        QRenderBuffer rb = new QRenderBuffer(width, height);
+        copyTo(rb);
+        return rb;
+    }
+
+    public void save(String fileSaveOut) {
+        if (!fileSaveOut.endsWith(".png")) {
+            throw new QException(
+                PointOfError.InvalidParameter, 
+                "must save file as .png, file specified was " + fileSaveOut
+            );
+        }
+
+        File outFile = null;
+        try {
+            outFile = new File(fileSaveOut);
+        } catch (Exception e) {
+            throw new QException(
+                PointOfError.InvalidParameter, 
+                "failed to open file " + fileSaveOut
+            );
+        }
+
+        BufferedImage tempImage = toRenderBuffer().getBufferedImage();
+
+        try {
+            boolean result = ImageIO.write(tempImage, "png", outFile);
+            if (!result) { throw new RuntimeException(); } // this is a bad hack
+        } catch (Exception e) {
+            throw new QException(
+                PointOfError.BadState, 
+                "failed to write to file " + fileSaveOut
+            );
+        }
+    }
+
     /////////////////////////////////////////////////////////////////
     // CONSTRUCTORS
     public QTexture(int width, int height) {
@@ -126,14 +175,47 @@ public class QTexture extends QSampleable {
     }
 
     public QTexture(String imgPath) {
-        // renderbuffer convinently converts the image to ARGB format
-        QRenderBuffer tempTexture = new QRenderBuffer(imgPath);
 
-        // copy over data (this can be slow)
-        initColorBuffer(tempTexture.getWidth(), tempTexture.getHeight());
-        for (int copyX = 0; copyX < tempTexture.getWidth(); copyX++) {
-            for (int copyY = 0; copyY < tempTexture.getHeight(); copyY++) {
-                setColor(copyX, copyY, tempTexture.getColor(copyX, copyY));
+        File imgFile = null;
+        try {
+            imgFile = new File(imgPath);
+        } catch (Exception e) {
+            throw new QException(
+                PointOfError.InvalidParameter, 
+                "failed to open image file: " + imgPath
+            );
+        }
+
+        BufferedImage tempImage = null;
+        try {
+            tempImage = ImageIO.read(imgFile);
+        } catch (Exception e) {
+            throw new QException(
+                PointOfError.InvalidParameter, 
+                "failed to read image file: " + imgPath
+            );
+        }
+
+        // refer to
+        // https://stackoverflow.com/questions/10391778/create-a-bufferedimage-from-file-and-make-it-type-int-argb
+        // this is sadly the only way to coerce a read image to an ARGB int
+        BufferedImage bufferARGB = new BufferedImage(
+            tempImage.getWidth(), 
+            tempImage.getHeight(), 
+            COLOR_PACKING
+        );
+
+        Graphics2D tempGraphics = bufferARGB.createGraphics();
+        tempGraphics.drawImage(tempImage, 0, 0, null);
+        tempGraphics.dispose();
+
+        // grab ARGB colors, init texture and copy
+        int[] colorsARGB = ((DataBufferInt)(bufferARGB.getRaster().getDataBuffer())).getData();
+        initColorBuffer(bufferARGB.getWidth(), bufferARGB.getHeight());
+        for (int copyX = 0; copyX < bufferARGB.getWidth(); copyX++) {
+            for (int copyY = 0; copyY < bufferARGB.getHeight(); copyY++) {
+                int invertY = (bufferARGB.getHeight() - copyY - 1);
+                setColor(copyX, copyY, colorsARGB[copyX + (invertY * bufferARGB.getWidth())]);
             }
         }
     }

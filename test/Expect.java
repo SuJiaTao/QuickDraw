@@ -502,11 +502,13 @@ public final class Expect {
     }
 
     public static void main(String[] args) {
+        System.out.println("Beginning tests...");
         ColorTest( );
         RenderBufferTest( );
         VectorTest( );
         MatrixTest( );
         MeshTest( );
         MathTest( );
+        System.out.println("All tests passed!");
     }
 }

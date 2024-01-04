@@ -28,7 +28,7 @@ public final class Profile {
         ) {
         viewer.setRenderType(RenderType.Textured);
 
-        QRenderBuffer rbTex = new QRenderBuffer(texPath);
+        QRenderBuffer rbTex = new QTexture(texPath).toRenderBuffer( );
         QTexture      tTex  = new QTexture(texPath);
         QMesh         mesh  = new QMesh(meshPath);
 

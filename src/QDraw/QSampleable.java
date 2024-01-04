@@ -12,6 +12,30 @@ public abstract class QSampleable {
     public static final int COLOR_PACKING = BufferedImage.TYPE_INT_ARGB;
 
     /////////////////////////////////////////////////////////////////
+    // PUBLIC INTERFACES
+    public static interface ColorProcessFunction {
+        public int mapFunc(int colorIn);
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // PUBLIC METHODS
+    public void mapColor(ColorProcessFunction cpf) {
+        for (int mapX = 0; mapX < getWidth(); mapX++) {
+            for (int mapY = 0; mapY < getHeight(); mapY++) {
+                setColor(mapX, mapY, cpf.mapFunc(getColor(mapX, mapY)));
+            }
+        }
+    }
+
+    public void copyTo(QSampleable target) {
+        for (int copyX = 0; copyX < getWidth(); copyX++) {
+            for (int copyY = 0; copyY < getHeight(); copyY++) {
+                target.setColor(copyX, copyY, getColor(copyX, copyY));
+            }
+        }
+    }
+
+    /////////////////////////////////////////////////////////////////
     // ABSTRACT METHODS
     public abstract int    getWidth( );
     public abstract int    getHeight( );

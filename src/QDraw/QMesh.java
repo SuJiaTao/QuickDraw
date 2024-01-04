@@ -463,6 +463,14 @@ public final class QMesh extends QEncoding {
     }
 
     public QMesh(String objFilePath) {
+        if (!objFilePath.endsWith(".obj")) {
+            throw new QException(
+                PointOfError.InvalidParameter, 
+                "objFilePath must contain .obj file, file was instead " 
+                + objFilePath
+            );
+        }
+
         Scanner scanner = null;
         try {
             scanner = new Scanner(new File(objFilePath));

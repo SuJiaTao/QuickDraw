@@ -4,11 +4,6 @@
 
 package QDraw;
 
-import java.io.*;
-
-import javax.imageio.ImageIO;
-
-import java.awt.Graphics2D;
 import java.awt.image.*;
 import QDraw.QException.PointOfError;
 
@@ -26,47 +21,6 @@ public final class QRenderBuffer extends QSampleable {
 
     /////////////////////////////////////////////////////////////////
     // CONSTRUCTOR
-    public QRenderBuffer(String imgPath) {
-        File imgFile = null;
-        try {
-            imgFile = new File(imgPath);
-        } catch (Exception e) {
-            throw new QException(
-                PointOfError.InvalidParameter, 
-                "failed to open image file: " + imgPath
-            );
-        }
-
-        BufferedImage tempImage = null;
-        try {
-            tempImage = ImageIO.read(imgFile);
-        } catch (Exception e) {
-            throw new QException(
-                PointOfError.InvalidParameter, 
-                "failed to read image file: " + imgPath
-            );
-        }
-
-        // refer to
-        // https://stackoverflow.com/questions/10391778/create-a-bufferedimage-from-file-and-make-it-type-int-argb
-        // this is sadly the only way to coerce a read image to an ARGB int
-
-        buffer = new BufferedImage(
-            tempImage.getWidth(), 
-            tempImage.getHeight(), 
-            COLOR_PACKING
-        );
-
-        Graphics2D tempGraphics = buffer.createGraphics();
-        tempGraphics.drawImage(tempImage, 0, 0, null);
-        tempGraphics.dispose();
-
-        depthBuffer = new float[buffer.getWidth() * buffer.getHeight()];
-        colorBuffer = ((DataBufferInt)(buffer.getRaster().getDataBuffer())).getData();
-
-        clearDepthBuffer();
-    }
-
     public QRenderBuffer(int width, int height) {
         if (width <= 0 || height <= 0) {
             throw new QException(
