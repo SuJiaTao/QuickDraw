@@ -25,8 +25,6 @@ public final class QViewer extends QEncoding {
     public static final RenderType DEFAULT_RENDERTYPE = RenderType.Textured;
     public static final SampleType DEFAULT_SAMPLETYPE = SampleType.Repeat;
 
-    public static final int VERTEX_ATTRIBUTE_SLOTS = 4;
-
     private static final float BACKFACE_CULL_MIN_DOT  = 0.5f;
     private static final float DEPTH_TEST_EPSILON     = 0.002f;
 
@@ -48,88 +46,14 @@ public final class QViewer extends QEncoding {
 
     /////////////////////////////////////////////////////////////////
     // PUBLIC CLASSES
-    public static class VertexAttributeBuffer {
-        // TODO: finish
-
-        /////////////////////////////////////////////////////////////////
-        // PRIVATE MEMBERS
-        private float[] buffer;
-        private int     numComponents;
-        private int     numElements;
-        
-        /////////////////////////////////////////////////////////////////
-        // PUBLIC METHODS
-        public float[] getBuffer( ) {
-            return buffer;
-        }
-
-        public int getNumComponents( ) {
-            return numComponents;
-        }
-
-        public int getNumElements( ) {
-            return numElements;
-        }
-
-        public int getElementOffset(int vertNum) {
-            return numComponents * vertNum;
-        }
-
-        public float[] getElementValues(int vertNum) {
-            float[] rFloat = new float[numComponents];
-            System.arraycopy(
-                buffer, 
-                getElementOffset(vertNum), 
-                rFloat, 
-                0, 
-                numComponents
-            );
-            return rFloat;
-        }
-
-        public float getElementValue(int vertNum, int compNum) {
-            return buffer[getElementOffset(vertNum) + compNum];
-        }
-
-        public void setElementValues(int vertNum, float[] inVals) {
-            System.arraycopy(
-                inVals,
-                0,
-                buffer,
-                getElementOffset(vertNum),
-                numComponents
-            );
-        }
-
-        public void setElementValue(int vertNum, int compNum, float val) {
-            buffer[getElementOffset(vertNum) + compNum] = val;
-        }
-
-        /////////////////////////////////////////////////////////////////
-        // CONSTRUCTORS
-        public VertexAttributeBuffer(
-            float[] inData, 
-            int compsPerElement,
-            int elementCount
-        ) {
-            numComponents = compsPerElement;
-            numElements   = elementCount;
-            buffer        = new float[numComponents * numElements];
-            System.arraycopy(inData, 0, buffer, 0, buffer.length);
-        }
-
-        
-
-    }
-
-    public static class VertexDrawInfo {
+    public static final class VertexDrawInfo {
         public int        vertexNum;
         public QMesh      mesh;
         public QVector3   vertexPos;
         public QMatrix4x4 transform;
     }
 
-    public static class FragmentDrawInfo {
+    public static final class FragmentDrawInfo {
         public int         screenX, screenY;
         public float       fragU, fragV;
         public QSampleable texture;
@@ -149,10 +73,6 @@ public final class QViewer extends QEncoding {
     private SampleType    sampleType     = DEFAULT_SAMPLETYPE;
     private QShader       customShader   = null;
     private Object        shaderInput    = null;
-
-    private VertexAttributeBuffer[] vabSlots = new VertexAttributeBuffer[VERTEX_ATTRIBUTE_SLOTS];
-
-    // TODO: implement VertexAttribute functionality
 
     /////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
@@ -191,28 +111,6 @@ public final class QViewer extends QEncoding {
         shaderInput = input;
     }
 
-    public void setVertexAttributeSlot(VertexAttributeBuffer inBuffer, int slotNum) {
-        if (slotNum < 0 || slotNum >= VERTEX_ATTRIBUTE_SLOTS) {
-            throw new QException(
-                PointOfError.InvalidParameter, 
-                "invalid slot number. slots are from 0 to " + VERTEX_ATTRIBUTE_SLOTS + "." +
-                "provided slot was " + slotNum
-            );
-        }
-        vabSlots[slotNum] = inBuffer;
-    }
-
-    public void clearVertexAttributeSlot(int slotNum) {
-        if (slotNum < 0 || slotNum >= VERTEX_ATTRIBUTE_SLOTS) {
-            throw new QException(
-                PointOfError.InvalidParameter, 
-                "invalid slot number. slots are from 0 to " + VERTEX_ATTRIBUTE_SLOTS + "." +
-                "provided slot was " + slotNum
-            );
-        }
-        vabSlots[slotNum] = null;
-    }
-
     public void clearFrame( ) {
         renderTarget.clearColorBuffer();
         renderTarget.clearDepthBuffer();
@@ -234,7 +132,6 @@ public final class QViewer extends QEncoding {
         public float[] uvDat     = new float[VTRI_UVDAT_NUM_CMPS];
         public float[] normal    = new float[VCTR_NUM_CMPS];
         public float[] centerPos = new float[VCTR_NUM_CMPS];
-        public float[][] attribs = new float[VERTEX_ATTRIBUTE_SLOTS][];
 
         /////////////////////////////////////////////////////////////////
         // CONSTRUCTORS
@@ -243,23 +140,6 @@ public final class QViewer extends QEncoding {
             System.arraycopy(toCopy.uvDat, 0, uvDat, 0, VTRI_UVDAT_NUM_CMPS);
             QMath.copy3(normal, toCopy.normal);
             QMath.copy3(centerPos, toCopy.centerPos);
-
-            // only init attributes if using shaders
-            if (renderType == RenderType.CustomShader) {
-                attribs = new float[VERTEX_ATTRIBUTE_SLOTS][];
-                for (int slotNum = 0; slotNum < VERTEX_ATTRIBUTE_SLOTS; slotNum++) {
-                    if (toCopy.attribs[slotNum] == null) { continue; } 
-
-                    attribs[slotNum] = new float[toCopy.attribs[slotNum].length];
-                    System.arraycopy(
-                        toCopy.attribs[slotNum], 
-                        0, 
-                        attribs[slotNum], 
-                        0, 
-                        attribs[slotNum].length
-                    );
-                }
-            }
         }
 
         public Tri(QMesh srcMesh, int tdiIndex) { 
@@ -292,8 +172,7 @@ public final class QViewer extends QEncoding {
             centerPos[VCTR_INDEX_Y] = 
                 (getPosX(0) + getPosX(1) + getPosX(2)) * inv3;
             centerPos[VCTR_INDEX_Z] = 
-                (getPosX(0) + getPosX(1) + getPosX(2)) * inv3;
-            
+                (getPosX(0) + getPosX(1) + getPosX(2)) * inv3;            
         }
 
         /////////////////////////////////////////////////////////////////
@@ -313,14 +192,6 @@ public final class QViewer extends QEncoding {
             // move temp to v2
             QMath.copy3(getPosOffset(v2Num), posDat, 0, tempPos);
             QMath.copy2(getUVOffset(v2Num), uvDat, 0, tempUV);
-
-            // only swap attributes if using shaders
-            if (renderType == RenderType.CustomShader) {
-                for (int slotNum = 0; slotNum < VERTEX_ATTRIBUTE_SLOTS; slotNum++) {
-                    if (attribs[slotNum] == null) { continue; }
-                    float[] temp = attribs[]
-                }
-            }
         }
 
         public void setPosFromTri(
@@ -374,19 +245,6 @@ public final class QViewer extends QEncoding {
             float[] in
         ) {
             QMath.copy2(getUVOffset(uvNum), uvDat, offsetIn, in);
-        }
-
-        public void getAttribOffset(
-            int attribNum
-        ) {
-            
-        }
-
-        public void setAttrib(
-            int attribNum, VertexAttributeBuffer buffer
-        ) {
-            float[] attribVals = buffer.getElementValues(attribNum);
-
         }
 
         private void projectPos(int vertNum) {

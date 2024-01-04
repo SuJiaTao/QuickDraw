@@ -12,6 +12,8 @@ COMMIT SUMMARY:
 - will be ONE or a CONCATENATION (with /) of:
     - WORKING ON
       (when I'm working on a NEW feature and want to make a quick backup)
+    - ABANDONED
+      (when I'm working on something but it's not gonna work and I have to stop)
     - COMPLETED
       (when I've been working on something for a while and it's now done)
     - TESTING
