@@ -9,32 +9,32 @@ import QDraw.QException.PointOfError;
 public abstract class QShader {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
-    public static final QColor NO_TEXTURE_COLOR = new QColor(0xFF, 0x00, 0xFF);
-    public static final QColor NO_SAMPLE_COLOR  = new QColor(0x00, 0x00, 0x00, 0x00); 
-    public static final float  RCP_65536        = 0.00001525878f;
+    public static final QColor NO_TEXTURE_COLOR    = new QColor(0xFF, 0x00, 0xFF);
+    public static final QColor NO_SAMPLE_COLOR     = new QColor(0x00, 0x00, 0x00, 0x00); 
+    public static final int RANDOM_GRANULATIRY     = 0xFFFF;
+    public static final float NORMALIZATION_FACTOR = 1.0f / (float)RANDOM_GRANULATIRY;
 
     /////////////////////////////////////////////////////////////////
     // BUILT IN SHADER METHODS
+    private static int _seedUniquifier = 0;
     public static float random( ) {
-        return seededRandom((int)System.nanoTime());
+        return seededRandom((_seedUniquifier++) + (int)System.nanoTime());
     }
 
     public static float seededRandom(float seed) {
-        return seededRandom(Float.floatToRawIntBits(seed));
+        return seededRandom(Float.floatToIntBits(seed));
     }
 
-    public static float seededRandom(int seed) {
-        // simple XORSHIFT-32
-        seed ^= seed <<  13;
-        seed ^= seed >>> 17;
-        seed ^= seed <<  5;
+    public static float seededRandom(int iSeed) {
+        // simple XORSHIFT
+        iSeed *= iSeed;
+        iSeed ^= (iSeed <<  13);
+        iSeed ^= (iSeed >>> 17);
+        iSeed ^= (iSeed <<  5);
 
-        // bound to 2^16 (65536)
-        seed &= 0xFFFF;
-
-        // convert to float, normalize to [0, 1) and return
-        float  fltSeed = (float)seed * RCP_65536;
-        return fltSeed;
+        // bound and normalize
+        iSeed = (iSeed & RANDOM_GRANULATIRY);
+        return (float)iSeed * NORMALIZATION_FACTOR;
     }
 
     public static QColor blendColor(QColor bottom, QColor top) {

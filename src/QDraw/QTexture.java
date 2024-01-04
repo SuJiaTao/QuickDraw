@@ -170,6 +170,11 @@ public class QTexture extends QSampleable {
 
     /////////////////////////////////////////////////////////////////
     // CONSTRUCTORS
+    public QTexture(QTexture toCopy) {
+        initColorBuffer(toCopy.width, toCopy.height);
+        toCopy.copyTo(this);
+    }
+    
     public QTexture(int width, int height) {
         initColorBuffer(width, height);
     }
