@@ -13,16 +13,28 @@ public abstract class QSampleable {
 
     /////////////////////////////////////////////////////////////////
     // PUBLIC INTERFACES
-    public static interface ColorProcessFunction {
+    public static interface ColorMapFunction {
         public int mapFunc(int colorIn);
+    }
+
+    public static interface ColorMapSpacialFunction {
+        public int mapFunc(int colorIn, int x, int y);
     }
 
     /////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
-    public void mapColor(ColorProcessFunction cpf) {
+    public void mapColor(ColorMapFunction cpf) {
         for (int mapX = 0; mapX < getWidth(); mapX++) {
             for (int mapY = 0; mapY < getHeight(); mapY++) {
                 setColor(mapX, mapY, cpf.mapFunc(getColor(mapX, mapY)));
+            }
+        }
+    }
+
+    public void mapColorSpacial(ColorMapSpacialFunction cpsf) {
+        for (int mapX = 0; mapX < getWidth(); mapX++) {
+            for (int mapY = 0; mapY < getHeight(); mapY++) {
+                setColor(mapX, mapY, cpsf.mapFunc(getColor(mapX, mapY), mapX, mapY));
             }
         }
     }

@@ -61,6 +61,17 @@ public abstract class QShader {
         );
     }
 
+    public static QColor multiplyColor(QColor color, float facR, float facG, float facB) {
+        int iFacR = (int)(facR * 255.0f);
+        int iFacG = (int)(facG * 255.0f);
+        int iFacB = (int)(facB * 255.0f);
+        return new QColor(
+            (color.getR() * iFacR) >>> 8,
+            (color.getG() * iFacG) >>> 8,
+            (color.getB() * iFacB) >>> 8
+        );
+    }
+
     public static QColor sampleTexture(
         float u,
         float v,
