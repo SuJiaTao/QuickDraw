@@ -5,109 +5,95 @@
 import QDraw.*;
 import QDraw.QViewer.RenderType;
 
-public final class Uncle {
+public final class Mascot {
     public static final int WINDOW_WIDTH    = 1200;
     public static final int WINDOW_HEIGHT   = 960; 
     public static final int FB_WIDTH        = WINDOW_WIDTH  >> 1;
     public static final int FB_HEIGHT       = WINDOW_HEIGHT >> 1;
     public static final float FB_ASPECT     = (float)FB_WIDTH / (float)FB_HEIGHT;
-    public static final int CUT_RUNTIME_SEC = 10;
+    public static final int CUT_RUNTIME_SEC = 15;
     public static final int CUT_RUNTIME_MS  = 1000 * CUT_RUNTIME_SEC;
+    
+    public static final QMesh MASCOT_MESH = 
+        new QMesh(System.getProperty("user.dir") + "\\resources\\Mascot.obj");
+    public static final QMesh CUBE_MESH = 
+        new QMesh(System.getProperty("user.dir") + "\\resources\\Cube.obj");
+    public static final QTexture MASCOT_TEXTURE = 
+        new QTexture(System.getProperty("user.dir") + "\\resources\\Mascot256.png");
+    public static final QTexture BERRIES_TEXTURE = 
+        new QTexture(System.getProperty("user.dir") + "\\resources\\Texture_Medium.jpg");
+    public static final QTexture TECH_TEXTURE = 
+        new QTexture(System.getProperty("user.dir") + "\\resources\\Tech.jpg");
+
     public static QWindow       window;
     public static QRenderBuffer frameBuffer;
     public static QViewer       eyes;
 
-    public static void RegularUncle( ) {
-        long t0 = System.currentTimeMillis();
-
-        eyes.setNearClip(-0.0f);
-        eyes.setRenderType(RenderType.Textured);
-
-        QMesh uncle = new QMesh(System.getProperty("user.dir") + "\\resources\\Uncle.obj");
-        QTexture texture = 
-            new QTexture(System.getProperty("user.dir") + "\\resources\\Uncle_Texture.jpg");
-
-        eyes.setTexture(texture);
-
-        float time = 0.0f;
+    public static void RegularMascot( ) {
+        long  t0   = System.currentTimeMillis();
         while ((System.currentTimeMillis() - t0) < CUT_RUNTIME_MS) {
             eyes.clearFrame( );
-
-            time += 0.4f;
+            float time = (float)(System.currentTimeMillis() - t0) * 0.15f;
 
             QMatrix4x4 m0 = QMatrix4x4.TRS(
                 new QVector3(0.0f, 0.0f, -2.0f), 
                 new QVector3(0, time, 0), 
-                QVector3.One().multiply3(0.125f)
+                QVector3.One().multiply3(0.25f)
             );
 
-            eyes.drawMesh(uncle, m0);
+            eyes.setRenderType(RenderType.Textured);
+            eyes.setTexture(MASCOT_TEXTURE);
+            eyes.drawMesh(MASCOT_MESH, m0);
 
             window.updateFrame( );
         }
     }
 
-    public static void UncleAndHisBuddy( ) {
+    public static void MascotAndHisFriends( ) {
         long t0 = System.currentTimeMillis();
-
-        eyes.setNearClip(-0.0f);
-
-        QMesh uncle = new QMesh(System.getProperty("user.dir") + "\\resources\\Uncle.obj");
-        QTexture texture = 
-            new QTexture(System.getProperty("user.dir") + "\\resources\\Uncle_Texture.jpg");
-
-        eyes.setTexture(texture);
-
-        float time = 0.0f;
         while ((System.currentTimeMillis() - t0) < CUT_RUNTIME_MS) {
             eyes.clearFrame( );
-
-            time += 0.4f;
+            float time = (float)(System.currentTimeMillis() - t0) * 0.15f;
 
             QMatrix4x4 m0 = QMatrix4x4.TRS(
                 new QVector3(-1.3f, 0.0f, -2.3f), 
                 new QVector3(0, time, 0), 
-                QVector3.One().multiply3(0.125f)
+                QVector3.One().multiply3(0.25f)
             );
 
             eyes.setRenderType(RenderType.Textured);
-            eyes.drawMesh(uncle, m0);
+            eyes.setTexture(MASCOT_TEXTURE);
+            eyes.drawMesh(MASCOT_MESH, m0);
 
             QMatrix4x4 m1 = QMatrix4x4.TRS(
                 new QVector3(1.3f, 0.0f, -2.3f), 
                 new QVector3(0, time, 0), 
-                QVector3.One().multiply3(0.125f)
+                QVector3.One().multiply3(0.25f)
             );
 
             eyes.setRenderType(RenderType.Normal);
-            eyes.drawMesh(uncle, m1);
+            eyes.drawMesh(MASCOT_MESH, m1);
+
+            QMatrix4x4 m2 = QMatrix4x4.TRS(
+                new QVector3(0.0f, 0.0f, -3.6f), 
+                new QVector3(0, time, 0), 
+                QVector3.One().multiply3(0.25f)
+            );
+
+            eyes.setRenderType(RenderType.Depth);
+            eyes.drawMesh(MASCOT_MESH, m2);
 
             window.updateFrame( );
         }
     }
 
-    public static void TechUncle( ) {
+    public static void TechMascot( ) {
         long t0 = System.currentTimeMillis();
-
-        eyes.setNearClip(-0.0f);
-        eyes.setRenderType(RenderType.Textured);
-
-        QMesh uncle = 
-            new QMesh(System.getProperty("user.dir") + "\\resources\\Uncle.obj");
-        QTexture texture = 
-            new QTexture(System.getProperty("user.dir") + "\\resources\\Matrix.jpg");
-
-        eyes.setTexture(texture);
-
-        float time = 0.0f;
-        float osc0 = 0.0f;
-        float osc1 = 0.0f;
         while ((System.currentTimeMillis() - t0) < CUT_RUNTIME_MS) {
             eyes.clearFrame( );
-
-            time = time + 2.5f;
-            osc0 = QMath.sinf(time);
-            osc1 = QMath.cosf(time);
+            float time = (float)(System.currentTimeMillis() - t0) * 0.035f;
+            float osc0 = QMath.sinf(time);
+            float osc1 = QMath.cosf(time);
 
             for (int i = -6; i < 6; i++) {
                 for (int j = -6; j < 6; j++) {
@@ -122,10 +108,12 @@ public final class Uncle {
                             z
                         ), 
                         new QVector3(time * i, time, time * j), 
-                        QVector3.One().multiply3(0.125f)
+                        QVector3.One().multiply3(0.2f)
                     );
 
-                    eyes.drawMesh(uncle, m0);
+                    eyes.setRenderType(RenderType.Textured);
+                    eyes.setTexture(TECH_TEXTURE);
+                    eyes.drawMesh(MASCOT_MESH, m0);
 
                 }
             }
@@ -134,9 +122,8 @@ public final class Uncle {
         }
     }
 
-    public static void CustomWobblyUncle( ) {
+    public static void CustomWobblyMascot( ) {
         long t0 = System.currentTimeMillis();
-
         eyes.setRenderType(RenderType.CustomShader);
         eyes.setCustomShader(
             new QShader() {
@@ -167,33 +154,24 @@ public final class Uncle {
             }
         );
 
-        QMesh uncle = new QMesh(System.getProperty("user.dir") + "\\resources\\Uncle.obj");
-        QTexture texture = 
-            new QTexture(System.getProperty("user.dir") + "\\resources\\Uncle_Texture.jpg");
-        eyes.setTexture(texture);
-
-        float time = 0.0f;
         while ((System.currentTimeMillis() - t0) < CUT_RUNTIME_MS) {
             eyes.clearFrame( );
-
-            time += 1.0f;
+            float time = (float)(System.currentTimeMillis() - t0) * 0.15f;
 
             QMatrix4x4 m0 = QMatrix4x4.TRS(
                 new QVector3(0.0f, 0.0f, -2.0f), 
                 new QVector3(0.0f, time, 0.0f), 
-                QVector3.One().multiply3(0.125f)
+                QVector3.One().multiply3(0.25f)
             );
 
-            eyes.drawMesh(uncle, m0);
+            eyes.setTexture(MASCOT_TEXTURE);
+            eyes.drawMesh(MASCOT_MESH, m0);
 
             window.updateFrame( );
         }
     }
 
-    public static void ShadedUncle( ) {
-        long t0 = System.currentTimeMillis();
-
-        eyes.setNearClip(-0.0f);
+    public static void UltraGFXMascot( ) {
         eyes.setRenderType(RenderType.CustomShader);
         eyes.setCustomShader(
             new QShader() {
@@ -226,25 +204,34 @@ public final class Uncle {
             }
         );
 
-        QMesh uncle = new QMesh(System.getProperty("user.dir") + "\\resources\\Uncle.obj");
-        QTexture texture = 
-            new QTexture(System.getProperty("user.dir") + "\\resources\\Uncle_Texture.jpg");
-
-        eyes.setTexture(texture);
-
-        float time = 0.0f;
+        long t0 = System.currentTimeMillis();
         while ((System.currentTimeMillis() - t0) < CUT_RUNTIME_MS) {
             eyes.clearFrame( );
-
-            time += 1.4f;
+            float time = (float)(System.currentTimeMillis() - t0) * 0.15f;
 
             QMatrix4x4 m0 = QMatrix4x4.TRS(
                 new QVector3(0.0f, 0.0f, -2.0f), 
                 new QVector3(0, time, 0), 
-                QVector3.One().multiply3(0.125f)
+                QVector3.One().multiply3(0.25f)
             );
+            eyes.setTexture(MASCOT_TEXTURE);
+            eyes.drawMesh(MASCOT_MESH, m0);
 
-            eyes.drawMesh(uncle, m0);
+            eyes.setTexture(BERRIES_TEXTURE);
+            QMatrix4x4 m1 = QMatrix4x4.TRS(
+                new QVector3(-3.25f, 0.0f, -7.0f), 
+                new QVector3(time * 0.5f, time * 0.5f, time * 0.5f), 
+                QVector3.One().multiply3(1.0f)
+            );
+            eyes.drawMesh(CUBE_MESH, m1);
+
+            eyes.setTexture(TECH_TEXTURE);
+            QMatrix4x4 m2 = QMatrix4x4.TRS(
+                new QVector3(3.25f, 0.0f, -7.0f), 
+                new QVector3(time * 0.5f, time * 0.5f, time * 0.5f), 
+                QVector3.One().multiply3(1.0f)
+            );
+            eyes.drawMesh(CUBE_MESH, m2);
 
             window.updateFrame( );
         }
@@ -258,13 +245,13 @@ public final class Uncle {
         eyes        = new QViewer(frameBuffer);
         eyes.setViewBounds(-FB_ASPECT, FB_ASPECT, -1.0f, 1.0f);
 
-        RegularUncle( );
-        UncleAndHisBuddy( );
-        TechUncle( );
-        CustomWobblyUncle( );
-        ShadedUncle( );
-
-        System.exit(0);
+        while (true) {
+            RegularMascot( );
+            MascotAndHisFriends( );
+            TechMascot( );
+            CustomWobblyMascot( );
+            UltraGFXMascot( );
+        }
 
     }
 }

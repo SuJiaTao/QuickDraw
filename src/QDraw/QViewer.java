@@ -20,7 +20,7 @@ public final class QViewer extends QEncoding {
     public static final float DEFAULT_VIEWBOUND_BOTTOM = -1.0f;
     public static final float DEFAULT_VIEWBOUND_TOP    = 1.0f;
 
-    public static final float RENDER_DEPTH_MAX_DEPTH = -20.0f;
+    public static final float RENDER_DEPTH_MAX_DEPTH = -10.0f;
 
     public static final RenderType DEFAULT_RENDERTYPE = RenderType.Textured;
     public static final SampleType DEFAULT_SAMPLETYPE = SampleType.Repeat;
