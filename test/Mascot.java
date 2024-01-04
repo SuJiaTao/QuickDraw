@@ -13,7 +13,7 @@ public final class Mascot {
     public static final float FB_ASPECT     = (float)FB_WIDTH / (float)FB_HEIGHT;
     public static final int CUT_RUNTIME_SEC = 15;
     public static final int CUT_RUNTIME_MS  = 1000 * CUT_RUNTIME_SEC;
-    
+
     public static final QMesh MASCOT_MESH = 
         new QMesh(System.getProperty("user.dir") + "\\resources\\Mascot.obj");
     public static final QMesh CUBE_MESH = 
@@ -186,10 +186,15 @@ public final class Mascot {
                     FragmentDrawInfo fragInfo,
                     Object           userIn
                 ) {
-                    fragInfo.fragU += random() * 0.005f;
-                    fragInfo.fragV += random() * 0.005f;
 
+                    // WIGGLE UVS
+                    fragInfo.fragU += random() * 0.007f;
+                    fragInfo.fragV += random() * 0.007f;
+
+                    // SAMPLE TEXTURE
                     QColor texCol = sampleTexture(fragInfo.fragU, fragInfo.fragV, fragInfo.texture, QViewer.SampleType.Repeat);
+                    
+                    // CALCULATE BRIGHTNESS FACTOR BASED ON POINT LIGHT
                     QVector3 dFaceLightNormalized = QVector3.sub(
                         new QVector3(-4.0f, 1.4f, 10.0f),
                         fragInfo.faceCenterWorldSpace
@@ -198,8 +203,9 @@ public final class Mascot {
                         fragInfo.faceNormal, 
                         dFaceLightNormalized
                     );
-                    texCol = multiplyColor(texCol, Math.max(0.0f, brightnessFactor));
-                    return blendColor(fragInfo.belowColor, texCol);
+                    
+                    // MULTIPLY COLOR BY BRIGHTNESS
+                    return multiplyColor(texCol, 0.2f + Math.max(0.0f, brightnessFactor * 0.8f));
                 }
             }
         );

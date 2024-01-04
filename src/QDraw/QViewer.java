@@ -840,9 +840,13 @@ public final class QViewer extends QEncoding {
         out[0] = ((p1y - p2y) * (d3x) + 
                  (p2x - p1x) * (d3y)) * 
                  invDenom;
+        out[0] = Math.min(1.0f, Math.max(0.0f, out[0])); // clamp
+
         out[1] = ((p2y - p0y) * (d3x) + 
                  (p0x - p2x) * (d3y)) * 
                  invDenom;
+        out[1] = Math.min(1.0f, Math.max(0.0f, out[1])); // clamp
+
         out[2] = 1.0f - out[1] - out[0];
     }
 
