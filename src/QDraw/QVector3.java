@@ -87,8 +87,17 @@ public final class QVector3 extends QEncoding {
         return QMath.sqrmag3(components);
     }
 
+    public float fastMagnitude( ) {
+        return QMath.fastmag3(components);
+    }
+
     public float magnitude( ) {
         return QMath.mag3(components);
+    }
+
+    public QVector3 fastNormalize( ) {
+        float fmag3 = fastMagnitude( );
+        return multiply3(1.0f / fmag3);
     }
 
     public QVector3 normalize( ) {

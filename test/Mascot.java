@@ -19,7 +19,7 @@ public final class Mascot {
     public static final QMesh CUBE_MESH = 
         new QMesh(System.getProperty("user.dir") + "\\resources\\Cube.obj");
     public static final QTexture MASCOT_TEXTURE = 
-        new QTexture(System.getProperty("user.dir") + "\\resources\\MascotFuzzy256.png");
+        new QTexture(System.getProperty("user.dir") + "\\resources\\Mascot256.png");
     public static final QTexture BERRIES_TEXTURE = 
         new QTexture(System.getProperty("user.dir") + "\\resources\\Texture_Medium.jpg");
     public static final QTexture TECH_TEXTURE = 
@@ -27,7 +27,7 @@ public final class Mascot {
     public static final QTexture RED_MASCOT_TEXTURE;
     static {
         RED_MASCOT_TEXTURE = 
-            new QTexture(System.getProperty("user.dir") + "\\resources\\MascotFuzzy256.png");
+            new QTexture(System.getProperty("user.dir") + "\\resources\\Mascot256.png");
         for (int i = 0; i < RED_MASCOT_TEXTURE.getWidth(); i++) {
             for (int j = 0; j < RED_MASCOT_TEXTURE.getHeight(); j++) {
                 QColor color = new QColor(RED_MASCOT_TEXTURE.getColor(i, j));
@@ -244,7 +244,7 @@ public final class Mascot {
                     QVector3 dFaceLightNormalized = QVector3.sub(
                         new QVector3(-4.0f, 1.4f, 10.0f),
                         fragInfo.faceCenterWorldSpace
-                    ).normalize();
+                    ).fastNormalize( );
                     float brightnessFactor = QVector3.dot(
                         fragInfo.faceNormal, 
                         dFaceLightNormalized
@@ -298,11 +298,11 @@ public final class Mascot {
         eyes.setViewBounds(-FB_ASPECT, FB_ASPECT, -1.0f, 1.0f);
 
         while (true) {
-            RegularMascot( );
-            MascotAndHisFriends( );
-            MascotAndHisBoyFriend( );
-            TechMascot( );
-            CustomWobblyMascot( );
+            //RegularMascot( );
+            //MascotAndHisFriends( );
+            //MascotAndHisBoyFriend( );
+            //TechMascot( );
+            //CustomWobblyMascot( );
             UltraGFXMascot( );
         }
 

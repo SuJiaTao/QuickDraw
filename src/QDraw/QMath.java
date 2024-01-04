@@ -179,6 +179,41 @@ public final class QMath extends QEncoding {
                v_3[offset + VCTR_INDEX_Z] * v_3[offset + VCTR_INDEX_Z];
     }
 
+    public static float fastmag2(
+        float[] v_2
+    ) {
+        return fastmag2(0, v_2);
+    }
+
+    public static float fastmag2(
+        int offset,
+        float[] v_2
+    ) {
+        // refer to 
+        // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_rasterizetri.c
+        float x = Math.abs(v_2[offset + VCTR_INDEX_X]);
+        float y = Math.abs(v_2[offset + VCTR_INDEX_Y]);
+        return (0.96f * Math.max(x, y)) + (0.4f * Math.min(x, y));
+    }
+
+    public static float fastmag3(float[] v_3) {
+        return fastmag3(0, v_3);
+    }
+
+    public static float fastmag3(
+        int offset,
+        float[] v_3
+    ) {
+        // NOTE:
+        // recall that the derivation of 3-space magnitude is a composition of
+        // 2-space magnitudes, which thankfully can be quickly approximated 
+        // sqrt(sqrt(x^2 + y^2)^2 + z^2) = sqrt(x^2 + y^2 + z^2)
+        float[] buff2 = new float[2];
+        buff2[0] = fastmag2(offset, v_3);      // store mag of (x, y)
+        buff2[1] = v_3[offset + VCTR_INDEX_Z]; // store z
+        return fastmag2(buff2); // return mag of both
+    }
+
     public static float mag3(float[] v_3) {
         return mag3(0, v_3);
     }
