@@ -29,12 +29,12 @@ public final class QMesh extends QEncoding {
     private static final int ATTRIBS_PER_FACE_VERTEX   = 3; // 1 - posn, 2 - uv, 3 - normal
     private static final int MIN_ATTRIBS_PER_FACE      = VERTS_PER_TRI * ATTRIBS_PER_FACE_VERTEX; 
     private static final int FACE_ATTRIB_POSN_OFFSET   = 0;
-    private static final int FACE_ATTRIB_UV_OFFSET     = 0 + CMPS_PER_POSN;
-    private static final int FACE_ATTRIB_NORMAL_OFFSET = 0 + CMPS_PER_POSN + CMPS_PER_NORMAL;
+    private static final int FACE_ATTRIB_UV_OFFSET     = 1;
+    private static final int FACE_ATTRIB_NORMAL_OFFSET = 2;
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE CLASSES
-    private class FloatReadBuffer {
+    private class FloatList {
         /////////////////////////////////////////////////////////////////
         // PRIVATE MEMBERS
         private float[] buffer;
@@ -66,13 +66,51 @@ public final class QMesh extends QEncoding {
 
         /////////////////////////////////////////////////////////////////
         // CONSTRUCTOR
-        public FloatReadBuffer(int capacity) {
+        public FloatList(int capacity) {
             buffer = new float[capacity];
             head   = 0;
         }
     }
 
-    private class IndicieReadBuffer {
+    private class IntList {
+        /////////////////////////////////////////////////////////////////
+        // PRIVATE MEMBERS
+        private int[] buffer;
+        private int     head;
+
+        /////////////////////////////////////////////////////////////////
+        // PRIVATE METHODS
+        private void grow( ) {
+            int[] newBuffer = new int[buffer.length * 2];
+            System.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
+            buffer = newBuffer;
+        }
+
+        /////////////////////////////////////////////////////////////////
+        // PUBLIC METHODS
+        public void add(int val) {
+            buffer[head] = val;
+            head++;
+            if (head >= buffer.length) {
+                grow( );
+            }
+        }
+
+        public int[] toArray( ) {
+            int[] retArray = new int[head];
+            System.arraycopy(buffer, 0, retArray, 0, head);
+            return retArray;
+        }
+
+        /////////////////////////////////////////////////////////////////
+        // CONSTRUCTOR
+        public IntList(int capacity) {
+            buffer = new int[capacity];
+            head   = 0;
+        }
+    }
+
+    private class IndicieList {
         /////////////////////////////////////////////////////////////////
         // PRIVATE MEMBERS
         private int[][] buffer;
@@ -104,7 +142,7 @@ public final class QMesh extends QEncoding {
 
         /////////////////////////////////////////////////////////////////
         // CONSTRUCTOR
-        public IndicieReadBuffer(int capacity) {
+        public IndicieList(int capacity) {
             buffer = new int[capacity][];
             head   = 0;
         }
@@ -168,15 +206,96 @@ public final class QMesh extends QEncoding {
             inNormals.length / CMPS_PER_NORMAL
         );
 
+        initIndexers(inFaceIndicies);
+
     }
 
     private void initIndexers(int[][] inFaceIndicies) {
-        // NOTE:
-        //  inFaceIndicies contains faces with more than 3 verticies,
-        //  these must be tesselated into triangles
+
+        int numTriangles = 0;
         for (int faceNum = 0; faceNum < inFaceIndicies.length; faceNum++) {
-            
+            int[] faceIndicies   = inFaceIndicies[faceNum];
+            int faceIndicieCount = faceIndicies.length;
+            int faceVertexCount  = faceIndicieCount / ATTRIBS_PER_FACE_VERTEX;
+
+            // ENSURE WELL FORMED DATA
+            if ((faceIndicieCount % ATTRIBS_PER_FACE_VERTEX) != 0) {
+                throw new QException(
+                    PointOfError.MalformedData, 
+                    "inFaceIndicies face " + faceNum + 
+                    " must have multiple of " + ATTRIBS_PER_FACE_VERTEX +
+                    " indicies. Given was " + faceIndicieCount
+                );
+            }
+
+            // ENSURE VALID VERTEX COUNT
+            if (faceVertexCount < VERTS_PER_TRI) {
+                throw new QException(
+                    PointOfError.MalformedData, 
+                    "inFaceIndicies face " + faceNum + 
+                    " consists of only " + faceVertexCount +
+                    " verticies. Minimum verts per face is " + VERTS_PER_TRI
+                );
+            }
+
+            // COUNT TRIANGLES
+            numTriangles += 1 + (faceVertexCount - VERTS_PER_TRI);
         }
+
+        IntList tempPosIndicies    = new IntList(numTriangles);
+        IntList tempUVIndicies     = new IntList(numTriangles);
+        IntList tempNormalIndicies = new IntList(numTriangles);
+
+        for (int faceNum = 0; faceNum < inFaceIndicies.length; faceNum++) {
+            // NOTE:
+            // one triangle can always be constructed from a face, then the rest will
+            // be tesselated from the face
+            int[] faceIndicies  = inFaceIndicies[faceNum];
+            int   numExtraVerts = (faceIndicies.length / ATTRIBS_PER_FACE_VERTEX) - VERTS_PER_TRI;
+            
+            // construct first triangle
+            tempPosIndicies.add(faceIndicies[ATTRIBS_PER_FACE_VERTEX * 0 + FACE_ATTRIB_POSN_OFFSET]);
+            tempPosIndicies.add(faceIndicies[ATTRIBS_PER_FACE_VERTEX * 1 + FACE_ATTRIB_POSN_OFFSET]);
+            tempPosIndicies.add(faceIndicies[ATTRIBS_PER_FACE_VERTEX * 2 + FACE_ATTRIB_POSN_OFFSET]);
+            
+            tempUVIndicies.add(faceIndicies[ATTRIBS_PER_FACE_VERTEX * 0 + FACE_ATTRIB_UV_OFFSET]);
+            tempUVIndicies.add(faceIndicies[ATTRIBS_PER_FACE_VERTEX * 1 + FACE_ATTRIB_UV_OFFSET]);
+            tempUVIndicies.add(faceIndicies[ATTRIBS_PER_FACE_VERTEX * 2 + FACE_ATTRIB_UV_OFFSET]);
+            
+            tempNormalIndicies.add(faceIndicies[ATTRIBS_PER_FACE_VERTEX * 0 + FACE_ATTRIB_NORMAL_OFFSET]);
+            tempNormalIndicies.add(faceIndicies[ATTRIBS_PER_FACE_VERTEX * 1 + FACE_ATTRIB_NORMAL_OFFSET]);
+            tempNormalIndicies.add(faceIndicies[ATTRIBS_PER_FACE_VERTEX * 2 + FACE_ATTRIB_NORMAL_OFFSET]);
+
+            // tesselate extras if needed as triangle fan
+            for (int nthExtra = 0; nthExtra < numExtraVerts; nthExtra++) {
+                // VERTEX 0 -> first vertex in face
+                int vertex0BaseOffset = ATTRIBS_PER_FACE_VERTEX * 0;
+                tempPosIndicies.add(faceIndicies[vertex0BaseOffset + FACE_ATTRIB_POSN_OFFSET]);
+                tempUVIndicies.add(faceIndicies[vertex0BaseOffset + FACE_ATTRIB_UV_OFFSET]);
+                tempNormalIndicies.add(faceIndicies[vertex0BaseOffset + FACE_ATTRIB_NORMAL_OFFSET]);
+
+                // VERTEX 1 -> (2 + n)th vertex
+                // where n is the nth extra triangle being tesselated (starting from 0)
+                int vertex1BaseOffset = ATTRIBS_PER_FACE_VERTEX * (2 + nthExtra);
+                tempPosIndicies.add(faceIndicies[vertex1BaseOffset + FACE_ATTRIB_POSN_OFFSET]);
+                tempUVIndicies.add(faceIndicies[vertex1BaseOffset + FACE_ATTRIB_UV_OFFSET]);
+                tempNormalIndicies.add(faceIndicies[vertex1BaseOffset + FACE_ATTRIB_NORMAL_OFFSET]);
+
+                // VERTEX 2 -> (3 + n)th vertex
+                // where n is the nth extra triangle being tesselated (starting from 0)
+                int vertex2BaseOffset = ATTRIBS_PER_FACE_VERTEX * (3 + nthExtra);
+                tempPosIndicies.add(faceIndicies[vertex2BaseOffset + FACE_ATTRIB_POSN_OFFSET]);
+                tempUVIndicies.add(faceIndicies[vertex2BaseOffset + FACE_ATTRIB_UV_OFFSET]);
+                tempNormalIndicies.add(faceIndicies[vertex2BaseOffset + FACE_ATTRIB_NORMAL_OFFSET]);
+            }
+
+        }
+
+        int totalVertCount = numTriangles * VERTS_PER_TRI;
+        posIndexer    = new QAttribIndexer(tempPosIndicies.toArray(), totalVertCount);
+        uvIndexer     = new QAttribIndexer(tempUVIndicies.toArray(), totalVertCount);
+        normalIndexer = new QAttribIndexer(tempNormalIndicies.toArray(), totalVertCount);
+
     }
 
     /////////////////////////////////////////////////////////////////
@@ -232,10 +351,10 @@ public final class QMesh extends QEncoding {
             );
         }
 
-        FloatReadBuffer posBuffer    = new FloatReadBuffer(OBJLOAD_POSN_BUFFER_INITIAL_SIZE);
-        FloatReadBuffer uvBuffer     = new FloatReadBuffer(OBJLOAD_UV_BUFFER_INITIAL_SIZE);
-        FloatReadBuffer normalBuffer = new FloatReadBuffer(OBJLOAD_NORMAL_BUFFER_INITIAL_SIZE);
-        IndicieReadBuffer faceIndexBuffer = new IndicieReadBuffer(OBJLOAD_FACEDAT_BUFFER_INITIAL_SIZE);
+        FloatList   posBuffer       = new FloatList(OBJLOAD_POSN_BUFFER_INITIAL_SIZE);
+        FloatList   uvBuffer        = new FloatList(OBJLOAD_UV_BUFFER_INITIAL_SIZE);
+        FloatList   normalBuffer    = new FloatList(OBJLOAD_NORMAL_BUFFER_INITIAL_SIZE);
+        IndicieList faceIndexBuffer = new IndicieList(OBJLOAD_FACEDAT_BUFFER_INITIAL_SIZE);
 
         while (scanner.hasNextLine( )) {
             String line = scanner.nextLine( );
