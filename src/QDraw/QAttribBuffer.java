@@ -36,8 +36,8 @@ public final class QAttribBuffer {
         return compsPerAttrib * attribIndex;
     }
 
-    public void getElement(
-        int     outOffset, 
+    public void getAttrib(
+        int     offsetOut, 
         float[] bufferOut, 
         int     attribIndex
     ) {
@@ -45,7 +45,7 @@ public final class QAttribBuffer {
             buffer, 
             getAttribBaseOffset(attribIndex), 
             bufferOut, 
-            outOffset, 
+            offsetOut, 
             compsPerAttrib
         );
     }

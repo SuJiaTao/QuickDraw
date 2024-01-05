@@ -13,16 +13,16 @@ public final class QAttribIndexer {
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
-    int[] indexBuffer;
+    int[] attribIndexBuffer;
 
     /////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
     public int[] getIndicies( ) {
-        return indexBuffer;
+        return attribIndexBuffer;
     }
 
     public int getIndicieCount( ) {
-        return indexBuffer.length;
+        return attribIndexBuffer.length;
     }
 
     public int getTriCount( ) {
@@ -33,17 +33,33 @@ public final class QAttribIndexer {
         return triNum * INDICIES_PER_TRI;
     }
 
+    public int getIndicie(int vertNum) {
+        return attribIndexBuffer[vertNum];
+    }
+
     public void getTriIndicies(
         int   offsetOut,
         int[] bufferOut,
         int   triNum
     ) {
         System.arraycopy(
-            indexBuffer, 
+            attribIndexBuffer, 
             getTriBaseOffset(triNum), 
             bufferOut, offsetOut, 
             INDICIES_PER_TRI
         );
+    }
+
+    public void indexAttribBuffer(
+        QAttribBuffer buffer,
+        int           triNum,
+        int           vertNum,
+        int           offsetOut,
+        float[]       bufferOut
+    ) {
+        int[] triIndicies = new int[INDICIES_PER_TRI];
+        getTriIndicies(0, triIndicies, triNum);
+        buffer.getAttrib(offsetOut, bufferOut, triIndicies[vertNum]);
     }
 
     /////////////////////////////////////////////////////////////////
@@ -59,11 +75,11 @@ public final class QAttribIndexer {
             );
         }
 
-        indexBuffer = new int[numIndicies];
+        attribIndexBuffer = new int[numIndicies];
         System.arraycopy(
             inIndicies, 
             0, 
-            indexBuffer, 
+            attribIndexBuffer, 
             0, 
             numIndicies
         );
