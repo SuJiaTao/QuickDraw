@@ -19,7 +19,7 @@ public final class Mascot {
     public static final QMesh CUBE_MESH = 
         new QMesh(System.getProperty("user.dir") + "\\resources\\Cube.obj");
     public static final QTexture MASCOT_TEXTURE = 
-        new QTexture(System.getProperty("user.dir") + "\\resources\\MascotFuzzy256.png");
+        new QTexture(System.getProperty("user.dir") + "\\resources\\MascotFuzzy256_AltEyes.png");
     public static final QTexture BERRIES_TEXTURE = 
         new QTexture(System.getProperty("user.dir") + "\\resources\\Texture_Medium.jpg");
     public static final QTexture TECH_TEXTURE = 

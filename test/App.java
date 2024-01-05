@@ -6,7 +6,7 @@ import QDraw.*;
 
 public final class App {
     public static void MakeFuzzyTexture( ) {
-        QTexture tex = new QTexture(System.getProperty("user.dir") + "\\resources\\Mascot256.png");
+        QTexture tex = new QTexture(System.getProperty("user.dir") + "\\resources\\Mascot256_AltEyes.png");
         
         QSampleable.ColorMapSpacialFunction mapping = new QSampleable.ColorMapSpacialFunction() {
             public int mapFunc(int col, int x, int y) {
@@ -48,7 +48,7 @@ public final class App {
         };
 
         tex.mapColorSpacial(mapping);
-        tex.save(System.getProperty("user.dir") + "\\resources\\MascotFuzzy256.png");
+        tex.save(System.getProperty("user.dir") + "\\resources\\MascotFuzzy256_AltEyes.png");
     }
 
     public static void main(String[] args) {
