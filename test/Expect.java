@@ -312,6 +312,7 @@ public final class Expect {
 
     public static void MeshTest( ) {
         // TODO: re-write mesh tests
+        new QMesh(System.getProperty("user.dir") + "//resources//Mascot.obj");
     }
 
     public static void MathTest( ) {

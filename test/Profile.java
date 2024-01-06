@@ -9,7 +9,7 @@ import QDraw.QTexture;
 import QDraw.QVector3;
 import QDraw.QViewer;
 import QDraw.QWindow;
-import QDraw.QViewer.RenderType;
+import QDraw.QViewer.RenderMode;
 
 public final class Profile {
     public static final int WINDOW_WIDTH  = 1200;
@@ -26,7 +26,7 @@ public final class Profile {
             String texPath,
             String meshPath
         ) {
-        viewer.setRenderType(RenderType.Textured);
+        viewer.setRenderType(RenderMode.Textured);
 
         QRenderBuffer rbTex = new QTexture(texPath).toRenderBuffer( );
         QTexture      tTex  = new QTexture(texPath);

@@ -13,66 +13,42 @@ public final class QViewer extends QEncoding {
     // CONSTANTS
     public static final float MIN_NEAR_CLIP     = -0.005f;
     public static final float DEFAULT_NEAR_CLIP = MIN_NEAR_CLIP;
-    public static final int DEFAULT_FILL_COLOR  = QColor.White().toInt();
 
     public static final float DEFAULT_VIEWBOUND_LEFT   = -1.0f;
     public static final float DEFAULT_VIEWBOUND_RIGHT  = 1.0f;
     public static final float DEFAULT_VIEWBOUND_BOTTOM = -1.0f;
     public static final float DEFAULT_VIEWBOUND_TOP    = 1.0f;
 
-    public static final float RENDER_DEPTH_MAX_DEPTH = -10.0f;
-
-    public static final RenderType DEFAULT_RENDERTYPE = RenderType.Textured;
-    public static final SampleType DEFAULT_SAMPLETYPE = SampleType.Repeat;
+    public static final int SHADER_UNIFORM_SLOTS       = 16;
+    public static final int SHADER_TEXTURE_SLOTS       = 16;
+    public static final int SHADER_VERTEX_ATTRIB_SLOTS = 8;
 
     private static final float BACKFACE_CULL_MIN_DOT  = 0.5f;
     private static final float DEPTH_TEST_EPSILON     = 0.002f;
 
     /////////////////////////////////////////////////////////////////
     // PUBLIC ENUMS
-    public enum RenderType {
-        FlatColor,
+    public enum RenderMode {
+        Fill,
         Textured,
-        CustomShader,
         Normal,
-        Depth
+        Depth,
+        CustomShader
     };
-
-    public enum SampleType {
-        Cutoff,
-        Clamp,
-        Repeat
-    };
-
-    /////////////////////////////////////////////////////////////////
-    // PUBLIC CLASSES
-    public static final class VertexDrawInfo {
-        public int        vertexNum;
-        public QMesh      mesh;
-        public QVector3   vertexPos;
-        public QMatrix4x4 transform;
-    }
-
-    public static final class FragmentDrawInfo {
-        public int         screenX, screenY;
-        public float       fragU, fragV;
-        public QSampleable texture;
-        public QColor      belowColor;
-        public QVector3    faceNormal;
-        public QVector3    faceCenterWorldSpace;
-    }
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
-    private float         nearClip   = DEFAULT_NEAR_CLIP;
-    private float         viewLeft, viewRight, viewBottom, viewTop;
-    private QRenderBuffer renderTarget   = null;
-    private QSampleable   texture        = null;
-    private int           fillColor      = DEFAULT_FILL_COLOR;
-    private RenderType    renderType     = DEFAULT_RENDERTYPE;
-    private SampleType    sampleType     = DEFAULT_SAMPLETYPE;
-    private QShader       customShader   = null;
-    private Object        shaderInput    = null;
+    private float         nearClip     = DEFAULT_NEAR_CLIP;
+    private float         viewLeft     = DEFAULT_VIEWBOUND_LEFT;
+    private float         viewRight    = DEFAULT_VIEWBOUND_RIGHT;
+    private float         viewBottom   = DEFAULT_VIEWBOUND_BOTTOM;
+    private float         viewTop      = DEFAULT_VIEWBOUND_TOP;
+    private QRenderBuffer renderTarget = null;
+    private QShader       customShader = null;
+
+    private Object[]   slotUniforms      = new Object[SHADER_UNIFORM_SLOTS];
+    private QTexture[] slotTextures      = new QTexture[SHADER_TEXTURE_SLOTS];
+    private QAttribIndexer[] slotAttribs = new QAttribIndexer[SHADER_VERTEX_ATTRIB_SLOTS];  
 
     /////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
@@ -87,28 +63,29 @@ public final class QViewer extends QEncoding {
         viewTop    = top;
     }
 
-    public void setRenderType(RenderType rType) {
-        renderType = rType;
-    }
-
-    public void setSampleType(SampleType sType) {
-        sampleType = sType;
-    }
-
-    public void setFillColor(QColor color) {
-        fillColor = color.toInt( );
-    }
-
-    public void setTexture(QSampleable _texture) {
-        texture = _texture;
-    }
-
     public void setCustomShader(QShader shader) {
         customShader = shader;
     }
 
-    public void setCustomShaderInput(Object input) {
-        shaderInput = input;
+    public void setShaderUniformSlot(
+        int    slot,
+        Object uniform
+    ) {
+        slotUniforms[slot] = uniform;
+    }
+
+    public void setShaderTextureSlot(
+        int      slot,
+        QTexture texture
+    ) {
+        slotTextures[slot] = texture;
+    }
+
+    public void setShaderVertexAttribSlot(
+        int            slot,
+        QAttribIndexer indexer
+    ) {
+        slotAttribs[slot] = indexer;
     }
 
     public void clearFrame( ) {
@@ -341,7 +318,7 @@ public final class QViewer extends QEncoding {
             );
         }
 
-        if (renderType == RenderType.CustomShader && customShader == null) {
+        if (renderType == RenderMode.CustomShader && customShader == null) {
             throw new QException(
                 PointOfError.BadState, 
                 "render type is CustomShader but no shader was assigned"
@@ -354,7 +331,7 @@ public final class QViewer extends QEncoding {
         QMesh viewMesh         = new QMesh(mesh);
         float[] viewMeshPosDat = viewMesh.getPosData( );
         for (int posIndex = 0; posIndex < viewMesh.getPosCount(); posIndex++) {
-            if (renderType == RenderType.CustomShader) {
+            if (renderType == RenderMode.CustomShader) {
                 // PREPARE VERTEX SHADER INFO
                 VertexDrawInfo vertInfo = new VertexDrawInfo();
                 vertInfo.vertexNum = posIndex;
@@ -922,7 +899,7 @@ public final class QViewer extends QEncoding {
 
         int fragColor;
         switch (renderType) {
-            case FlatColor:
+            case Fill:
                 fragColor = fillColor;
                 break;
 

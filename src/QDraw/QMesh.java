@@ -292,9 +292,15 @@ public final class QMesh extends QEncoding {
         }
 
         int totalVertCount = numTriangles * VERTS_PER_TRI;
-        posIndexer    = new QAttribIndexer(tempPosIndicies.toArray(), totalVertCount);
-        uvIndexer     = new QAttribIndexer(tempUVIndicies.toArray(), totalVertCount);
+        
+        posIndexer = new QAttribIndexer(tempPosIndicies.toArray(), totalVertCount);
+        posIndexer.setAttribBuffer(posBuffer);
+
+        uvIndexer = new QAttribIndexer(tempUVIndicies.toArray(), totalVertCount);
+        uvIndexer.setAttribBuffer(uvBuffer);
+
         normalIndexer = new QAttribIndexer(tempNormalIndicies.toArray(), totalVertCount);
+        normalIndexer.setAttribBuffer(normalBuffer);
 
     }
 

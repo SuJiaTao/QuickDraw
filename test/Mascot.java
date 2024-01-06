@@ -3,7 +3,7 @@
 // Mascot.java
 
 import QDraw.*;
-import QDraw.QViewer.RenderType;
+import QDraw.QViewer.RenderMode;
 
 public final class Mascot {
     public static final int WINDOW_WIDTH    = 1200;
@@ -56,7 +56,7 @@ public final class Mascot {
                 QVector3.One().multiply3(0.25f)
             );
 
-            eyes.setRenderType(RenderType.Textured);
+            eyes.setRenderType(RenderMode.Textured);
             eyes.setTexture(MASCOT_TEXTURE);
             eyes.drawMesh(MASCOT_MESH, m0);
 
@@ -76,7 +76,7 @@ public final class Mascot {
                 QVector3.One().multiply3(0.25f)
             );
 
-            eyes.setRenderType(RenderType.Textured);
+            eyes.setRenderType(RenderMode.Textured);
             eyes.setTexture(MASCOT_TEXTURE);
             eyes.drawMesh(MASCOT_MESH, m0);
 
@@ -86,7 +86,7 @@ public final class Mascot {
                 QVector3.One().multiply3(0.25f)
             );
 
-            eyes.setRenderType(RenderType.Normal);
+            eyes.setRenderType(RenderMode.Normal);
             eyes.drawMesh(MASCOT_MESH, m1);
 
             QMatrix4x4 m2 = QMatrix4x4.TRS(
@@ -95,7 +95,7 @@ public final class Mascot {
                 QVector3.One().multiply3(0.25f)
             );
 
-            eyes.setRenderType(RenderType.Depth);
+            eyes.setRenderType(RenderMode.Depth);
             eyes.drawMesh(MASCOT_MESH, m2);
 
             window.updateFrame( );
@@ -114,7 +114,7 @@ public final class Mascot {
                 QVector3.One().multiply3(0.25f)
             );
 
-            eyes.setRenderType(RenderType.Textured);
+            eyes.setRenderType(RenderMode.Textured);
             eyes.setTexture(MASCOT_TEXTURE);
             eyes.drawMesh(MASCOT_MESH, m0);
 
@@ -124,7 +124,7 @@ public final class Mascot {
                 QVector3.One().multiply3(0.25f)
             );
 
-            eyes.setRenderType(RenderType.Textured);
+            eyes.setRenderType(RenderMode.Textured);
             eyes.setTexture(RED_MASCOT_TEXTURE);
             eyes.drawMesh(MASCOT_MESH, m1);
 
@@ -156,7 +156,7 @@ public final class Mascot {
                         QVector3.One().multiply3(0.2f)
                     );
 
-                    eyes.setRenderType(RenderType.Textured);
+                    eyes.setRenderType(RenderMode.Textured);
                     eyes.setTexture(TECH_TEXTURE);
                     eyes.drawMesh(MASCOT_MESH, m0);
 
@@ -169,7 +169,7 @@ public final class Mascot {
 
     public static void CustomWobblyMascot( ) {
         long t0 = System.currentTimeMillis();
-        eyes.setRenderType(RenderType.CustomShader);
+        eyes.setRenderType(RenderMode.CustomShader);
         eyes.setCustomShader(
             new QShader() {
                 public QVector3 vertexShader(
@@ -217,7 +217,7 @@ public final class Mascot {
     }
 
     public static void UltraGFXMascot( ) {
-        eyes.setRenderType(RenderType.CustomShader);
+        eyes.setRenderType(RenderMode.CustomShader);
         eyes.setCustomShader(
             new QShader() {
                 public QVector3 vertexShader(

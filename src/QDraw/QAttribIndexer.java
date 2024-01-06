@@ -13,7 +13,8 @@ public final class QAttribIndexer {
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
-    int[] attribIndexBuffer;
+    private QAttribBuffer attribBuffer;
+    private int[]         attribIndexBuffer;
 
     /////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
@@ -50,8 +51,11 @@ public final class QAttribIndexer {
         );
     }
 
-    public void indexAttribBuffer(
-        QAttribBuffer buffer,
+    public void setAttribBuffer(QAttribBuffer aBuffer) {
+        attribBuffer = aBuffer;
+    }
+
+    public void index(
         int           triNum,
         int           vertNum,
         int           offsetOut,
@@ -59,7 +63,7 @@ public final class QAttribIndexer {
     ) {
         int[] triIndicies = new int[INDICIES_PER_TRI];
         getTriIndicies(0, triIndicies, triNum);
-        buffer.getAttrib(offsetOut, bufferOut, triIndicies[vertNum]);
+        attribBuffer.getAttrib(offsetOut, bufferOut, triIndicies[vertNum]);
     }
 
     /////////////////////////////////////////////////////////////////
