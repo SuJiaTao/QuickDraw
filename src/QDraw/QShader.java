@@ -4,35 +4,71 @@
 
 package QDraw;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 public abstract class QShader {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
-    public static final int RANDOM_GRANULATIRY     = 0xFFFF;
-    public static final float NORMALIZATION_FACTOR = 1.0f / (float)RANDOM_GRANULATIRY;
+    public static final int RANDOM_GRANULATIRY        = 0xFFFF;
+    public static final float NORMALIZATION_FACTOR    = 1.0f / (float)RANDOM_GRANULATIRY;
+    public static final int VERTEX_SHADER_MAX_OUTPUTS = 4;
 
     /////////////////////////////////////////////////////////////////
-    // PUBLIC CLASSES
-    public static final class VertexDrawInfo {
+    // SHADER CONTEXT CLASSES
+    public static final class VertexShaderContext {
+        public int        triNum;
         public int        vertexNum;
-        public QMesh      mesh;
-        public QVector3   vertexPos;
-        public QMatrix4x4 transform;
+        public Object[]   uniforms;
+        public QTexture[] textures;
+        public float[][]  attributes;
+        public float[][]  outputsToFragShader = new float[VERTEX_SHADER_MAX_OUTPUTS][];
     }
 
-    public static final class FragmentDrawInfo {
-        public int         screenX, screenY;
-        public float       fragU, fragV;
-        public QSampleable texture;
-        public QColor      belowColor;
-        public QVector3    faceNormal;
-        public QVector3    faceCenterWorldSpace;
+    public static final class FragmentShaderContext {
+        public int        triNum;
+        public int        fragmentNum;
+        public Object[]   uniforms;
+        public QTexture[] textures;
+        public int        screenX;
+        public int        screenY;
+        public float      invDepth;
+        public float[][]  inputsFromVertexShader = new float[VERTEX_SHADER_MAX_OUTPUTS][];
     }
 
     /////////////////////////////////////////////////////////////////
-    // BUILT IN SHADER METHODS
-    private static int _seedUniquifier = 0;
+    // BUILT IN SHADER FUNCTIONS
+    public static void setOutputToFragShader(
+        VertexShaderContext vertCtx,
+        int outputSlot, 
+        float[] inBuffer
+    ) {
+        vertCtx.outputsToFragShader[outputSlot] = new float[inBuffer.length];
+        System.arraycopy(
+            inBuffer, 
+            0, 
+            vertCtx.outputsToFragShader[outputSlot], 
+            0, 
+            inBuffer.length
+        );
+    }
+
+    public static void getOutputFromVertShader(
+        FragmentShaderContext fragCtx,
+        int inputSlot, 
+        float[] outBuffer
+    ) {
+        System.arraycopy(
+            fragCtx.inputsFromVertexShader[inputSlot], 
+            0, 
+            outBuffer, 
+            0, 
+            fragCtx.inputsFromVertexShader[inputSlot].length
+        );
+    }
+
+    private static AtomicLong _seedUniquifier = new AtomicLong(0x5EED);
     public static float random( ) {
-        return seededRandom((_seedUniquifier++) + (int)System.nanoTime());
+        return seededRandom((int)(_seedUniquifier.incrementAndGet() + System.nanoTime()));
     }
 
     public static float seededRandom(float seed) {
@@ -89,10 +125,10 @@ public abstract class QShader {
     /////////////////////////////////////////////////////////////////
     // ABSTRACT METHODS
     public abstract QVector3 vertexShader(
-        VertexDrawInfo infoIn, Object userIn
+        VertexShaderContext context
     );
 
     public abstract QColor fragmentShader(
-        FragmentDrawInfo infoIn, Object userIn
+        FragmentShaderContext context
     );
 }

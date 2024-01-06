@@ -170,10 +170,10 @@ public final class Mascot {
     public static void CustomWobblyMascot( ) {
         long t0 = System.currentTimeMillis();
         eyes.setRenderType(RenderMode.CustomShader);
-        eyes.setCustomShader(
+        eyes.setShader(
             new QShader() {
                 public QVector3 vertexShader(
-                    QViewer.VertexDrawInfo vertInfo,
+                    QViewer.VertexShaderContext vertInfo,
                     Object userIn
                 ) {
                     float dt = (float)(System.currentTimeMillis() - t0) * 0.6f;
@@ -185,7 +185,7 @@ public final class Mascot {
                 }
 
                 public QColor fragmentShader(
-                    QViewer.FragmentDrawInfo fragInfo,
+                    QViewer.FragmentShaderContext fragInfo,
                     Object userIn
                 ) {
                     QColor texCol = sampleTexture(
@@ -218,17 +218,17 @@ public final class Mascot {
 
     public static void UltraGFXMascot( ) {
         eyes.setRenderType(RenderMode.CustomShader);
-        eyes.setCustomShader(
+        eyes.setShader(
             new QShader() {
                 public QVector3 vertexShader(
-                    QViewer.VertexDrawInfo vertInfo,
+                    QViewer.VertexShaderContext vertInfo,
                     Object userIn
                 ) {
                     return QMatrix4x4.multiply(vertInfo.transform, vertInfo.vertexPos);
                 }
 
                 public QColor fragmentShader(
-                    QViewer.FragmentDrawInfo fragInfo,
+                    QViewer.FragmentShaderContext fragInfo,
                     Object userIn
                 ) {
 

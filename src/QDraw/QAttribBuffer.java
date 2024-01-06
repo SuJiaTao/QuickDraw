@@ -10,7 +10,6 @@ public final class QAttribBuffer {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
     public static final int MIN_COMPS_PER_ATTRIB = 1;
-    public static final int MAX_COMPS_PER_ATTRIB = 8;
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
@@ -52,15 +51,25 @@ public final class QAttribBuffer {
 
     /////////////////////////////////////////////////////////////////
     // CONSTRUCTORS
+    public QAttribBuffer(QAttribBuffer toCopy) {
+        buffer = new float[toCopy.buffer.length];
+        System.arraycopy(
+            toCopy, 
+            0, 
+            buffer, 
+            0, 
+            buffer.length
+        );
+        compsPerAttrib = toCopy.compsPerAttrib;
+        attribCount    = toCopy.attribCount;
+    }
+
     public QAttribBuffer(float[] bufferIn, int numCompsPerAttrib, int numAttribs) {
-        if (numCompsPerAttrib < MIN_COMPS_PER_ATTRIB || 
-            numCompsPerAttrib > MAX_COMPS_PER_ATTRIB) {
+        if (numCompsPerAttrib < MIN_COMPS_PER_ATTRIB) {
             throw new QException(
                 PointOfError.InvalidParameter, 
-                "numAttribs must be between " +
-                MIN_COMPS_PER_ATTRIB + 
-                " and " +
-                MAX_COMPS_PER_ATTRIB +
+                "numAttribs must be greater than " +
+                MIN_COMPS_PER_ATTRIB +
                 ". Given was: " + numAttribs
             );
         }

@@ -26,6 +26,8 @@ public final class QViewer extends QEncoding {
     private static final float BACKFACE_CULL_MIN_DOT  = 0.5f;
     private static final float DEPTH_TEST_EPSILON     = 0.002f;
 
+    private static final int VERTS_PER_TRI = 3;
+
     /////////////////////////////////////////////////////////////////
     // PUBLIC ENUMS
     public enum RenderMode {
@@ -44,7 +46,7 @@ public final class QViewer extends QEncoding {
     private float         viewBottom   = DEFAULT_VIEWBOUND_BOTTOM;
     private float         viewTop      = DEFAULT_VIEWBOUND_TOP;
     private QRenderBuffer renderTarget = null;
-    private QShader       customShader = null;
+    private QShader       shader = null;
 
     private Object[]   slotUniforms      = new Object[SHADER_UNIFORM_SLOTS];
     private QTexture[] slotTextures      = new QTexture[SHADER_TEXTURE_SLOTS];
@@ -63,8 +65,8 @@ public final class QViewer extends QEncoding {
         viewTop    = top;
     }
 
-    public void setCustomShader(QShader shader) {
-        customShader = shader;
+    public void setShader(QShader shader) {
+        shader = shader;
     }
 
     public void setShaderUniformSlot(
@@ -93,204 +95,75 @@ public final class QViewer extends QEncoding {
         renderTarget.clearDepthBuffer();
     }
 
+    public void draw( ) {
+        internalDraw( );
+    }
+
     public void drawMesh(
         QMesh mesh,
         QMatrix4x4 meshTransform
     ) {
-        internalViewMesh(mesh, meshTransform);
+        // TODO: replace
+        // internalDrawMesh(mesh, meshTransform);
     }
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE CLASSES
-    private class Tri extends QEncoding {
-        /////////////////////////////////////////////////////////////////
-        // PUBLIC MEMBERS
-        public float[] posDat    = new float[VTRI_POSDAT_NUM_CMPS];
-        public float[] uvDat     = new float[VTRI_UVDAT_NUM_CMPS];
-        public float[] normal    = new float[VCTR_NUM_CMPS];
-        public float[] centerPos = new float[VCTR_NUM_CMPS];
+    private static class Vertex {
+        public float[]   posn;
+        public float[][] shaderOutputs;
 
-        /////////////////////////////////////////////////////////////////
-        // CONSTRUCTORS
-        public Tri(Tri toCopy) {
-            System.arraycopy(toCopy.posDat, 0, posDat, 0, VTRI_POSDAT_NUM_CMPS);
-            System.arraycopy(toCopy.uvDat, 0, uvDat, 0, VTRI_UVDAT_NUM_CMPS);
-            QMath.copy3(normal, toCopy.normal);
-            QMath.copy3(centerPos, toCopy.centerPos);
-        }
-
-        public Tri(QMesh srcMesh, int tdiIndex) { 
-
-            // INIT POS/UV DATA
-            setPosFromTri(srcMesh, tdiIndex, 0);
-            setPosFromTri(srcMesh, tdiIndex, 1);
-            setPosFromTri(srcMesh, tdiIndex,2);
-            setUVFromTri(srcMesh, tdiIndex, 0);
-            setUVFromTri(srcMesh, tdiIndex, 1);
-            setUVFromTri(srcMesh, tdiIndex,2);
-            
-            // INIT NORMAL
-            float[] d01 = new float[MESH_POSN_NUM_CMPS];
-            QMath.copy3(0, d01, getPosOffset(1), posDat);
-            QMath.sub3(0, d01, getPosOffset(0), posDat);
-
-            float[] d02 = new float[MESH_POSN_NUM_CMPS];
-            QMath.copy3(0, d02, getPosOffset(2), posDat);
-            QMath.sub3(0, d02, getPosOffset(0), posDat);
-
-            float[] tempNormal = QMath.cross3(d01, d02);
-            QMath.mult3(tempNormal, 1.0f / QMath.mag3(tempNormal));
-            QMath.copy3(normal, tempNormal);
-
-            // INIT CENTER POS
-            final float inv3 = 1.0f / 3.0f;
-            centerPos[VCTR_INDEX_X] = 
-                (getPosX(0) + getPosX(1) + getPosX(2)) * inv3;
-            centerPos[VCTR_INDEX_Y] = 
-                (getPosX(0) + getPosX(1) + getPosX(2)) * inv3;
-            centerPos[VCTR_INDEX_Z] = 
-                (getPosX(0) + getPosX(1) + getPosX(2)) * inv3;            
-        }
-
-        /////////////////////////////////////////////////////////////////
-        // PUBLIC METHODS
-        public void swapVerts(int v1Num, int v2Num) {
-            float[] tempPos = new float[MESH_POSN_NUM_CMPS];
-            float[] tempUV  = new float[MESH_UV_NUM_CMPS];
-
-            // move v1 to temp
-            QMath.copy3(0, tempPos, getPosOffset(v1Num), posDat);
-            QMath.copy2(0, tempUV, getUVOffset(v1Num), uvDat);
-
-            // move v2 to v1
-            QMath.copy3(getPosOffset(v1Num), posDat, getPosOffset(v2Num), posDat);
-            QMath.copy2(getUVOffset(v1Num), uvDat, getUVOffset(v2Num), uvDat);
-
-            // move temp to v2
-            QMath.copy3(getPosOffset(v2Num), posDat, 0, tempPos);
-            QMath.copy2(getUVOffset(v2Num), uvDat, 0, tempUV);
-        }
-
-        public void setPosFromTri(
-            QMesh meshSrc,
-            int   tdiIndex,
-            int   posIndex
-        ) {
-            QMath.copy3(
-                getPosOffset(posIndex), 
-                posDat,
-                meshSrc.getPosOffset(meshSrc.getTriPosIndex(tdiIndex, posIndex)),
-                meshSrc.getPosData()
-            );
-        }
-
-        public void setUVFromTri(
-            QMesh meshSrc,
-            int   tdiIndex,
-            int   uvIndex
-        ) {
-            QMath.copy2(
-                getUVOffset(uvIndex), 
-                uvDat, 
-                meshSrc.getUVOffset(meshSrc.getTriUVIndex(tdiIndex, uvIndex)),
-                meshSrc.getUVData()
-            );;
-        }
-
-        public void setVert(
-            int vertNum,
-            int posOffsetIn,
-            float[] posIn,
-            int uvOffsetIn,
-            float[] uvIn
-        ) {
-            setPos(vertNum, posOffsetIn, posIn);
-            setUV(vertNum, uvOffsetIn, uvIn);
-        }
-
-        public void setPos(
-            int     posNum,
-            int     offsetIn,
-            float[] in
-        ) {
-            QMath.copy3(getPosOffset(posNum), posDat, offsetIn, in);
-        }
-
-        public void setUV(
-            int     uvNum,
-            int     offsetIn,
-            float[] in
-        ) {
-            QMath.copy2(getUVOffset(uvNum), uvDat, offsetIn, in);
-        }
-
-        private void projectPos(int vertNum) {
-            float invZ = 1.0f / getPosZ(vertNum);
-            setPosZ(vertNum, invZ);
-            QMath.mult2(getPosOffset(vertNum), posDat, -invZ);
-        }
-
-        public int getPosOffset(int posNum) {
-            return MESH_POSN_NUM_CMPS * posNum;
-        }
-
-        public float getPosX(int posNum) {
-            return posDat[getPosOffset(posNum) + VCTR_INDEX_X];
-        }
-
-        public void setPosX(int posNum, float x) {
-            posDat[getPosOffset(posNum) + VCTR_INDEX_X] = x;
-        }
-
-        public float getPosY(int posNum) {
-            return posDat[getPosOffset(posNum) + VCTR_INDEX_Y];
-        }
-
-        public void setPosY(int posNum, float y) {
-            posDat[getPosOffset(posNum) + VCTR_INDEX_Y] = y;
-        }
-
-        public float getPosZ(int posNum) {
-            return posDat[getPosOffset(posNum) + VCTR_INDEX_Z];
-        }
-
-        public void setPosZ(int posNum, float z) {
-            posDat[getPosOffset(posNum) + VCTR_INDEX_Z] = z;
-        }
-
-        public int getUVOffset(int uvNum) {
-            return MESH_UV_NUM_CMPS * uvNum;
-        }
-
-        public float getUV_U(int uvNum) {
-            return uvDat[getUVOffset(uvNum) + MESH_UV_OFST_U];
-        }
-
-        public float getUV_V(int uvNum) {
-            return uvDat[getUVOffset(uvNum) + MESH_UV_OFST_V];
-        }
-
-        public String toString( ) {
-            return String.format(
-                "<(%f %f %f) (%f %f %f) (%f %f %f)>", 
-                posDat[0], posDat[1], posDat[2],
-                posDat[3], posDat[4], posDat[5],
-                posDat[6], posDat[7], posDat[8]);
+        public void project( ) {
+            posn[VCTR_INDEX_Z] = 1.0f / posn[VCTR_INDEX_Z];
+            QMath.mult2(1, posn, -posn[VCTR_INDEX_Z]);
         }
     }
 
-    private class ClipState {
+    private static class Triangle {
+        public static final int VERTS_PER_TRI = 3;
+        public static final int VERTEX_0      = 0;
+        public static final int VERTEX_1      = 1;
+        public static final int VERTEX_2      = 2;
+
+        public int      triNum;
+        public Vertex[] verts  = new Vertex[VERTS_PER_TRI];
+        public float[]  normal = new float[VCTR_NUM_CMPS];
+
+        public void swapVerts(int v0, int v1) {
+            Vertex temp = verts[v0];
+            verts[v0]   = verts[v1];
+            verts[v1]   = temp;
+        }
+
+        public float getPosnX(int vertNum) {
+            return verts[vertNum].posn[VCTR_INDEX_X];
+        }
+
+        public float getPosnY(int vertNum) {
+            return verts[vertNum].posn[VCTR_INDEX_Y];
+        }
+
+        public float getPosnZ(int vertNum) {
+            return verts[vertNum].posn[VCTR_INDEX_Z];
+        }
+
+        public Triangle(int _num) {
+            triNum = _num;
+        }
+    }
+
+    private static class ClipState {
         public int       numVertsBehind     = 0;
-        public boolean[] vertBehindState    = new boolean[MESH_POSN_NUM_CMPS];
-        public int[]     vertBehindIndicies = new int[MESH_POSN_NUM_CMPS];
+        public boolean[] vertBehindState    = new boolean[VERTS_PER_TRI];
+        public int[]     vertBehindIndicies = new int[VERTS_PER_TRI];
 
         public String toString( ) {
             return String.format(
-                        "<numVBehind: %d, vStates: %s vIndicies: %s>",
-                        numVertsBehind,
-                        Arrays.toString(vertBehindState),
-                        Arrays.toString(vertBehindIndicies)
-                    );
+                "<numVBehind: %d, vStates: %s vIndicies: %s>",
+                numVertsBehind,
+                Arrays.toString(vertBehindState),
+                Arrays.toString(vertBehindIndicies)
+            );
         }
     }
 
@@ -298,110 +171,97 @@ public final class QViewer extends QEncoding {
     // PRIVATE METHODS
     private void init(QRenderBuffer target) {
         renderTarget = target;
-        setViewBounds(
-            DEFAULT_VIEWBOUND_LEFT, 
-            DEFAULT_VIEWBOUND_RIGHT, 
-            DEFAULT_VIEWBOUND_BOTTOM, 
-            DEFAULT_VIEWBOUND_TOP
-        );
     }
 
-    private void internalViewMesh(
-        QMesh mesh,
-        QMatrix4x4 meshTransform
-    ) {
-        
+    private void internalDraw( ) {
         if (renderTarget == null) {
             throw new QException(
                 PointOfError.BadState, 
-                "render target unassigned"
+                "Render target unassigned"
             );
         }
 
-        if (renderType == RenderMode.CustomShader && customShader == null) {
+        if (shader == null) {
             throw new QException(
                 PointOfError.BadState, 
-                "render type is CustomShader but no shader was assigned"
+                "Shader not set"
             );
         }
 
-        // NOTE:
-        // - a copy of the mesh is created, but each vertex is transformed by
-        //   the provided transformation matrix or vertex shader
-        QMesh viewMesh         = new QMesh(mesh);
-        float[] viewMeshPosDat = viewMesh.getPosData( );
-        for (int posIndex = 0; posIndex < viewMesh.getPosCount(); posIndex++) {
-            if (renderType == RenderMode.CustomShader) {
-                // PREPARE VERTEX SHADER INFO
-                VertexDrawInfo vertInfo = new VertexDrawInfo();
-                vertInfo.vertexNum = posIndex;
-                vertInfo.mesh      = mesh;
-                vertInfo.vertexPos = new QVector3(viewMesh.getPos(posIndex));
-                vertInfo.transform = new QMatrix4x4(meshTransform);
-                QVector3 shaderRetVec = customShader.vertexShader(
-                    vertInfo,
-                    shaderInput
-                );
-
-                QMath.copy3(
-                    viewMesh.getPosOffset(posIndex), 
-                    viewMeshPosDat, 
-                    0, 
-                    shaderRetVec.getComponents()
-                );
-
-            } else {
-                QMath.mul3_4x4(
-                    viewMesh.getPosOffset(posIndex), 
-                    viewMeshPosDat, 
-                    0, 
-                    meshTransform.getComponents()
+        // ENSURE ALL INDEXERS HAVE THE SAME TRI COUNT
+        int triCount = -1;
+        for (int slot = 0; slot < slotAttribs.length; slot++) {
+            if (slotAttribs[slot] == null) continue;
+            if (triCount == -1) {
+                triCount = slotAttribs[slot].getTriCount();
+                continue;
+            }
+            if (slotAttribs[slot].getTriCount() != triCount) {
+                throw new QException(
+                    PointOfError.BadState, 
+                    "Not all vertex attribute slots are the same length."
                 );
             }
         }
+        if (triCount == -1) {
+            throw new QException(
+                PointOfError.BadState, 
+                "No vertex attribute slots set!"
+            );
+        }
 
-        // NOTE:
-        // - a triangle is constructed from viewMesh's TDI, if it is facing away from the camera
-        //   it is culled, otherwise it is then clipped and the clipping output is rendered
-        for (int tdiIndex = 0; tdiIndex < viewMesh.getTriCount(); tdiIndex++) {
-
-            Tri viewTri    = new Tri(viewMesh, tdiIndex);
-            if (internalCheckBackfacing(viewTri)) {
-                continue;
-            }
-
-            Tri[] clipTris = internalClipTri(viewTri);
-
-            for (Tri tri : clipTris) {
-                internalViewTri(tri);
-            }
-
+        for (int triNum = 0; triNum < triCount; triNum++) {
+            // PROCESS EACH VERTEX AND CONSTRUCT TRIANGLE
+            Triangle tri = new Triangle(triNum);
+            internalProcessVertex(tri, 0);
+            internalProcessVertex(tri, 1);
+            internalProcessVertex(tri, 2);
         }
 
     }
 
-    private boolean internalCheckBackfacing(Tri tri) {
+    private void internalProcessVertex(Triangle tri, int triVertNum) {
+        QShader.VertexShaderContext vctx = new QShader.VertexShaderContext();
+        vctx.triNum    = tri.triNum; 
+        vctx.vertexNum = tri.triNum * VERTS_PER_TRI + triVertNum;
+        vctx.uniforms  = slotUniforms;
+        vctx.textures  = slotTextures;
+
+        for (int slot = 0; slot < slotAttribs.length; slot++) {
+            QAttribIndexer indexer = slotAttribs[slot];
+            if (indexer == null) { continue; }
+
+            vctx.attributes[slot] = new float[indexer.getComponentsPerAttrib( )];
+            indexer.index(tri.triNum, triVertNum, 0, vctx.attributes[slot]);
+        }
+
+        QVector3 vertShaderOut              = shader.vertexShader(vctx);
+        tri.verts[triVertNum].posn          = vertShaderOut.getComponents();
+        tri.verts[triVertNum].shaderOutputs = vctx.outputsToFragShader; 
+    }
+
+    private boolean internalCheckBackfacing(Triangle tri) {
         float[] awayAxis = { 0.0f, 0.0f, -1.0f };
         return (QMath.dot3(tri.normal, awayAxis) > BACKFACE_CULL_MIN_DOT);
     }
 
-    private Tri[] internalClipTri(Tri tri) {
+    private Triangle[] internalClipTri(Triangle tri) {
         // refer to
         // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_cliptri.c
 
         ClipState clipState = new ClipState();
 
-        if (tri.getPosZ(0) > nearClip) {
+        if (tri.getPosnZ(0) > nearClip) {
             clipState.vertBehindIndicies[clipState.numVertsBehind++] = 0;
             clipState.vertBehindState[0] = true;
         }
 
-        if (tri.getPosZ(1) > nearClip) {
+        if (tri.getPosnZ(1) > nearClip) {
             clipState.vertBehindIndicies[clipState.numVertsBehind++] = 1;
             clipState.vertBehindState[1] = true;
         }
 
-        if (tri.getPosZ(2) > nearClip) {
+        if (tri.getPosnZ(2) > nearClip) {
             clipState.vertBehindIndicies[clipState.numVertsBehind++] = 2;
             clipState.vertBehindState[2] = true;
         }
@@ -410,12 +270,12 @@ public final class QViewer extends QEncoding {
             // ALL VERTS BEFORE
             // triangle is not clipped
             case 0:
-                return new Tri[] { tri };
+                return new Triangle[] { tri };
             
             // ALL VERTS BEHIND
             // triangle should be culled
             case 3:
-                return new Tri[0];
+                return new Triangle[0];
 
             // 2 VERTS BEHIND
             // triangle is turned into smaller triangle
@@ -437,7 +297,7 @@ public final class QViewer extends QEncoding {
     }
 
     private void internalFindClipIntersect(
-        Tri srcTri,
+        Triangle srcTri,
         int pI,
         int pF,
         int offsetOut,
@@ -475,7 +335,7 @@ public final class QViewer extends QEncoding {
     }
 
     private void internalFindIntersectUV(
-        Tri     tri,
+        Triangle     tri,
         int     vnumI,
         int     vnumF,
         float[] intersect,
@@ -505,7 +365,7 @@ public final class QViewer extends QEncoding {
         uvOut[MESH_UV_OFST_V] = tri.getUV_V(vnumI) * factorI + tri.getUV_V(vnumF) * factorF;
     }
 
-    private Tri[] internalClipTriCase1(Tri tri, ClipState clipState) {
+    private Triangle[] internalClipTriCase1(Triangle tri, ClipState clipState) {
         // refer to
         // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_cliptri.c
 
@@ -515,7 +375,7 @@ public final class QViewer extends QEncoding {
         // - triangle will be re-shuffled so that it remains CLOCKWISE where pos2 is clipped
         // - (this is slightly different from Casesium where pos0 is clipped)
 
-        Tri shuffledTri = new Tri(tri);
+        Triangle shuffledTri = new Triangle(tri);
 
         // SHUFFLE TRIANGLE
         switch (clipState.vertBehindIndicies[0]) {
@@ -562,23 +422,23 @@ public final class QViewer extends QEncoding {
         // - our quad is 0/2, 0, 1, 1/2 (where a/b is clipped interpolation),
         //   which will be tesselated as (0/2, 0, 1), (0/2, 1, 1/2)
 
-        Tri quadTri0 = new Tri(shuffledTri);
+        Triangle quadTri0 = new Triangle(shuffledTri);
         quadTri0.setPos(2, 0, pos02); // (0 1 2) -> (0 1 0/2)
         quadTri0.setUV(2, 0, uv02);
         quadTri0.swapVerts(0, 2); // (0 1 0/2) -> (0/2 1 0)
         quadTri0.swapVerts(1, 2); // (0/2 1 0) -> (0/2 0 1)
         
-        Tri quadTri1 = new Tri(shuffledTri); // (0 1 2)
+        Triangle quadTri1 = new Triangle(shuffledTri); // (0 1 2)
         quadTri1.setPos(0, 0, pos02); // (0 1 2)   -> (0/2 1 2)
         quadTri1.setUV(0, 0, uv02);
         quadTri1.setPos(2, 0, pos12); // (0/2 1 2) -> (0/2 1 1/2)
         quadTri1.setUV(2, 0, uv12);
         
-        return new Tri[] { quadTri0, quadTri1 };
+        return new Triangle[] { quadTri0, quadTri1 };
 
     }
 
-    private Tri[] internalClipTriCase2(Tri tri, ClipState clipState) {
+    private Triangle[] internalClipTriCase2(Triangle tri, ClipState clipState) {
         // refer to
         // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_cliptri.c
 
@@ -600,7 +460,7 @@ public final class QViewer extends QEncoding {
                 tri.setVert(1, 0, pos10, 0, uv10);
                 tri.setVert(2, 0, pos20, 0, uv20);
 
-                return new Tri[] { tri };
+                return new Triangle[] { tri };
 
             // VERTS 0 & 2 ARE CLIPPED
             case (0 + 2):
@@ -618,7 +478,7 @@ public final class QViewer extends QEncoding {
                 tri.setVert(0, 0, pos01, 0, uv01);
                 tri.setVert(2, 0, pos21, 0, uv21);
 
-                return new Tri[] { tri };
+                return new Triangle[] { tri };
 
             // VERTS 0 & 1 ARE CLIPPED
             case (0 + 1):
@@ -636,7 +496,7 @@ public final class QViewer extends QEncoding {
                 tri.setVert(0, 0, pos02, 0, uv02);
                 tri.setVert(1, 0, pos12, 0, uv12);
 
-                return new Tri[] { tri };
+                return new Triangle[] { tri };
         
             // BAD STATE
             default:
@@ -648,7 +508,7 @@ public final class QViewer extends QEncoding {
 
     }
 
-    private void internalMapVertToScreenSpace(Tri srcTri, int vertNum) {
+    private void internalMapVertToScreenSpace(Triangle srcTri, int vertNum) {
         // NOTE:
         //  - this transformation will map (left, right) -> (0, targetWidth) and
         //    (bottom, top) -> (0, targetheight). this is essentially a worldspace
@@ -656,19 +516,19 @@ public final class QViewer extends QEncoding {
         //  - in order to do this, the space is translated such that the bottom left
         //    corner is (0, 0), and then it is scaled to fit the screenspace
 
-        srcTri.setPosX(vertNum, srcTri.getPosX(vertNum) - viewLeft);
-        srcTri.setPosY(vertNum, srcTri.getPosY(vertNum) - viewBottom);
+        srcTri.setPosX(vertNum, srcTri.getPosnX(vertNum) - viewLeft);
+        srcTri.setPosY(vertNum, srcTri.getPosnY(vertNum) - viewBottom);
 
         srcTri.setPosX(vertNum, 
-            srcTri.getPosX(vertNum) * 
+            srcTri.getPosnX(vertNum) * 
             (renderTarget.getWidth()  / (viewRight - viewLeft)));
         srcTri.setPosY(vertNum, 
-            srcTri.getPosY(vertNum) * 
+            srcTri.getPosnY(vertNum) * 
             (renderTarget.getHeight() / (viewTop - viewBottom)));
 
     }
 
-    private void internalViewTri(Tri tri) {
+    private void internalViewTri(Triangle tri) {
         
         // NOTE:
         // - from this point forward, all z values will be inverted
@@ -688,26 +548,26 @@ public final class QViewer extends QEncoding {
         // - the triangle will have to be sorted by height then cut
         // - after being cut, the top two verticies will be sorted from left to right
 
-        Tri sortedTri = internalSortTriVertsByHeight(tri);
+        Triangle sortedTri = internalSortTriVertsByHeight(tri);
 
         float invSlope20 =
-            (sortedTri.getPosX(0) - sortedTri.getPosX(2)) / 
-            (sortedTri.getPosY(0) - sortedTri.getPosY(2));
-        float dY21 = sortedTri.getPosY(1) - sortedTri.getPosY(2);
+            (sortedTri.getPosnX(0) - sortedTri.getPosnX(2)) / 
+            (sortedTri.getPosnY(0) - sortedTri.getPosnY(2));
+        float dY21 = sortedTri.getPosnY(1) - sortedTri.getPosnY(2);
 
         float[] midPoint = new float[] {
-            sortedTri.getPosX(2) + (invSlope20 * dY21),
-            sortedTri.getPosY(1),
+            sortedTri.getPosnX(2) + (invSlope20 * dY21),
+            sortedTri.getPosnY(1),
             0.0f // Z value can be ignored as interpolation uses unsplit tri
         };
 
         // flatTopTri is (1, mid, 2)
-        Tri flatTopTri = new Tri(sortedTri);
+        Triangle flatTopTri = new Triangle(sortedTri);
         flatTopTri.swapVerts(0, 1); // (0 1 2) -> (1 0 2)
         flatTopTri.setPos(1, 0, midPoint); // (1 0 2) -> (1 mid 2)
 
         // flatBottomTri is (1, mid, 0)
-        Tri flatBottomTri = new Tri(sortedTri);
+        Triangle flatBottomTri = new Triangle(sortedTri);
         flatBottomTri.swapVerts(0, 1); // (0 1 2) -> (1 0 2)
         flatBottomTri.swapVerts(1, 2); // (1 0 2) -> (1 2 0)
         flatBottomTri.setPos(1, 0, midPoint); // (1 2 0) -> (1 mid 0)
@@ -717,15 +577,15 @@ public final class QViewer extends QEncoding {
 
     }
 
-    private Tri internalSortTriVertsByHeight(Tri tri) { 
+    private Triangle internalSortTriVertsByHeight(Triangle tri) { 
 
-        if (tri.getPosY(2) > tri.getPosY(1)) {
+        if (tri.getPosnY(2) > tri.getPosnY(1)) {
             tri.swapVerts(2, 1);
         }
-        if (tri.getPosY(1) > tri.getPosY(0)) {
+        if (tri.getPosnY(1) > tri.getPosnY(0)) {
             tri.swapVerts(1, 0);
         }
-        if (tri.getPosY(2) > tri.getPosY(1)) {
+        if (tri.getPosnY(2) > tri.getPosnY(1)) {
             tri.swapVerts(2, 1);
         }
 
@@ -733,7 +593,7 @@ public final class QViewer extends QEncoding {
 
     }
 
-    private void internalDrawFlatTopTri(Tri flatTri, Tri sortedTri) {
+    private void internalDrawFlatTopTri(Triangle flatTri, Triangle sortedTri) {
         
         // NOTE: 
         // - vertex arrangement is as follows:
@@ -741,28 +601,28 @@ public final class QViewer extends QEncoding {
         // - flattop triangle is drawn from bottom to top
 
         // sort top 2 verticies from left to right
-        if (flatTri.getPosX(0) > flatTri.getPosX(1)) {
+        if (flatTri.getPosnX(0) > flatTri.getPosnX(1)) {
             flatTri.swapVerts(1, 0);
         }
 
-        float invDY = 1.0f / (flatTri.getPosY(0) - flatTri.getPosY(2));
+        float invDY = 1.0f / (flatTri.getPosnY(0) - flatTri.getPosnY(2));
         if (Float.isNaN(invDY)) { return; }
 
-        float invSlope20 = (flatTri.getPosX(0) - flatTri.getPosX(2)) * invDY;
-        float invSlope21 = (flatTri.getPosX(1) - flatTri.getPosX(2)) * invDY;
+        float invSlope20 = (flatTri.getPosnX(0) - flatTri.getPosnX(2)) * invDY;
+        float invSlope21 = (flatTri.getPosnX(1) - flatTri.getPosnX(2)) * invDY;
 
-        int Y_START = Math.max((int)flatTri.getPosY(2), 0);
-        int Y_END   = Math.min((int)flatTri.getPosY(0), renderTarget.getHeight() - 1);
+        int Y_START = Math.max((int)flatTri.getPosnY(2), 0);
+        int Y_END   = Math.min((int)flatTri.getPosnY(0), renderTarget.getHeight() - 1);
 
         for (int drawY = Y_START; drawY <= Y_END; drawY++) {
 
-            float distY = Math.max(0.0f, drawY - flatTri.getPosY(2));
+            float distY = Math.max(0.0f, drawY - flatTri.getPosnY(2));
             int X_START = Math.max(
-                (int)(flatTri.getPosX(2) + (invSlope20 * distY)),
+                (int)(flatTri.getPosnX(2) + (invSlope20 * distY)),
                 0
             );
             int X_END   = Math.min(
-                (int)(flatTri.getPosX(2) + (invSlope21 * distY)), 
+                (int)(flatTri.getPosnX(2) + (invSlope21 * distY)), 
                 renderTarget.getWidth() - 1
             );
 
@@ -774,7 +634,7 @@ public final class QViewer extends QEncoding {
 
     }
 
-    private void internalDrawFlatBottomTri(Tri flatTri, Tri sortedTri) {
+    private void internalDrawFlatBottomTri(Triangle flatTri, Triangle sortedTri) {
         
         // NOTE: 
         // - vertex arrangement is as follows:
@@ -782,28 +642,28 @@ public final class QViewer extends QEncoding {
         // - flatbottom triangle is drawn from bottom to top
 
         // sort bottom 2 verticies from left to right
-        if (flatTri.getPosX(0) > flatTri.getPosX(1)) {
+        if (flatTri.getPosnX(0) > flatTri.getPosnX(1)) {
             flatTri.swapVerts(1, 0);
         }
 
-        float invDY = 1.0f / (flatTri.getPosY(2) - flatTri.getPosY(0));
+        float invDY = 1.0f / (flatTri.getPosnY(2) - flatTri.getPosnY(0));
         if (Float.isNaN(invDY)) { return; }
 
-        float invSlope02 = (flatTri.getPosX(2) - flatTri.getPosX(0)) * invDY;
-        float invSlope12 = (flatTri.getPosX(2) - flatTri.getPosX(1)) * invDY;
+        float invSlope02 = (flatTri.getPosnX(2) - flatTri.getPosnX(0)) * invDY;
+        float invSlope12 = (flatTri.getPosnX(2) - flatTri.getPosnX(1)) * invDY;
 
-        int Y_START = Math.max((int)flatTri.getPosY(0), 0);
-        int Y_END   = Math.min((int)flatTri.getPosY(2), renderTarget.getHeight() - 1);
+        int Y_START = Math.max((int)flatTri.getPosnY(0), 0);
+        int Y_END   = Math.min((int)flatTri.getPosnY(2), renderTarget.getHeight() - 1);
 
         for (int drawY = Y_START; drawY <= Y_END; drawY++) {
 
-            float distY = Math.max(0.0f, drawY - flatTri.getPosY(0));
+            float distY = Math.max(0.0f, drawY - flatTri.getPosnY(0));
             int X_START = Math.max(
-                (int)(flatTri.getPosX(0) + (invSlope02 * distY)),
+                (int)(flatTri.getPosnX(0) + (invSlope02 * distY)),
                 0
             );
             int X_END   = Math.min(
-                (int)(flatTri.getPosX(1) + (invSlope12 * distY)), 
+                (int)(flatTri.getPosnX(1) + (invSlope12 * distY)), 
                 renderTarget.getWidth() - 1
             );
 
@@ -818,18 +678,18 @@ public final class QViewer extends QEncoding {
     private void internalFindBaryWeights(
         int     drawX,
         int     drawY,
-        Tri     tri,
+        Triangle     tri,
         float[] out
     ) {
         // refer to 
         // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_rasterizetri.c
 
-        float p0x = tri.getPosX(0);
-        float p0y = tri.getPosY(0);
-        float p1x = tri.getPosX(1);
-        float p1y = tri.getPosY(1);
-        float p2x = tri.getPosX(2);
-        float p2y = tri.getPosY(2);
+        float p0x = tri.getPosnX(0);
+        float p0y = tri.getPosnY(0);
+        float p1x = tri.getPosnX(1);
+        float p1y = tri.getPosnY(1);
+        float p2x = tri.getPosnX(2);
+        float p2y = tri.getPosnY(2);
         float invDenom = 
             1.0f / 
             (((p1y - p2y) *
@@ -854,16 +714,16 @@ public final class QViewer extends QEncoding {
 
     private void internalFindScreenUV(
         float[] weights,
-        Tri tri,
+        Triangle tri,
         float[] outUV
     ) {
 
         // refer to
         // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_rasterizetri.c
 
-        float w0      = tri.getPosZ(0) * weights[0];
-        float w1      = tri.getPosZ(1) * weights[1];
-        float w2      = tri.getPosZ(2) * weights[2];
+        float w0      = tri.getPosnZ(0) * weights[0];
+        float w1      = tri.getPosnZ(1) * weights[1];
+        float w2      = tri.getPosnZ(2) * weights[2];
         float invSumW = 1.0f / (w0 + w1 + w2);
 
         float interpU = 
@@ -884,7 +744,7 @@ public final class QViewer extends QEncoding {
     private void internalDrawFragment(
         int drawX, 
         int drawY,
-        Tri triangle
+        Triangle triangle
     ) {
 
         float[] weights = new float[MESH_VERTS_PER_TRI];
@@ -893,9 +753,9 @@ public final class QViewer extends QEncoding {
         internalFindScreenUV(weights, triangle, uvs);
 
         float invDepth = 
-            triangle.getPosZ(0) * weights[0] + 
-            triangle.getPosZ(1) * weights[1] +
-            triangle.getPosZ(2) * weights[2];
+            triangle.getPosnZ(0) * weights[0] + 
+            triangle.getPosnZ(1) * weights[1] +
+            triangle.getPosnZ(2) * weights[2];
 
         int fragColor;
         switch (renderType) {
@@ -915,7 +775,7 @@ public final class QViewer extends QEncoding {
             case CustomShader:
 
                 // PREPARE FRAGMENT SHADER INFO
-                FragmentDrawInfo fragInfo = new FragmentDrawInfo();
+                FragmentShaderContext fragInfo = new FragmentShaderContext();
                 fragInfo.screenX    = drawX;
                 fragInfo.screenY    = drawY;
                 fragInfo.fragU      = uvs[MESH_UV_OFST_U];
@@ -925,7 +785,7 @@ public final class QViewer extends QEncoding {
                 fragInfo.faceNormal = new QVector3(triangle.normal);
                 fragInfo.faceCenterWorldSpace = new QVector3(triangle.centerPos);
 
-                fragColor = customShader.fragmentShader(
+                fragColor = shader.fragmentShader(
                     fragInfo,
                     shaderInput
                 ).toInt();
