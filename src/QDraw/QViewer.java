@@ -117,6 +117,30 @@ public final class QViewer extends QEncoding {
             posn[VCTR_INDEX_Z] = 1.0f / posn[VCTR_INDEX_Z];
             QMath.mult2(1, posn, -posn[VCTR_INDEX_Z]);
         }
+
+        public Vertex(float[] inPosn) {
+            posn = QMath.new3( );
+            QMath.copy3(posn, inPosn);
+        }
+
+        public Vertex(Vertex toCopy) {
+            posn = QMath.new3();
+            QMath.copy3(posn, toCopy.posn);
+
+            shaderOutputs = new float[toCopy.shaderOutputs.length][];
+            for (int i = 0; i < shaderOutputs.length; i++) {
+                if (shaderOutputs[i] == null) { continue; }
+
+                shaderOutputs[i] = new float[toCopy.shaderOutputs[i].length];
+                System.arraycopy(
+                    toCopy.shaderOutputs[i], 
+                    0, 
+                    shaderOutputs[i], 
+                    0, 
+                    toCopy.shaderOutputs.length
+                );
+            }
+        }
     }
 
     private static class Triangle {
@@ -153,6 +177,66 @@ public final class QViewer extends QEncoding {
 
         public Triangle(int _num) {
             triNum = _num;
+        }
+
+        public Vertex getVertex(int vertNum) {
+            return verts[vertNum];
+        }
+
+        public Vertex interpolateVertexLinear(
+            float fac0,
+            float fac1,
+            float fac2
+        ) {
+            Vertex v0 = verts[VERTEX_0];
+            Vertex v1 = verts[VERTEX_1];
+            Vertex v2 = verts[VERTEX_2];
+
+            float[] weightedv0 = QMath.new3( );
+            QMath.copy3(weightedv0, v0.posn);
+            QMath.mult3(weightedv0, fac0);
+            float[] weightedv1 = QMath.new3( );
+            QMath.copy3(weightedv1, v1.posn);
+            QMath.mult3(weightedv1, fac1);
+            float[] weightedv2 = QMath.new3( );
+            QMath.copy3(weightedv2, v2.posn);
+            QMath.mult3(weightedv2, fac2);
+
+            float[] weightedPos = QMath.new3( );
+            QMath.add3(weightedPos, weightedv0);
+            QMath.add3(weightedPos, weightedv1);
+            QMath.add3(weightedPos, weightedv2);
+
+            Vertex rVertex = new Vertex(weightedPos);
+            rVertex.shaderOutputs = new float[v0.shaderOutputs.length][];
+
+            for (int i = 0; i < rVertex.shaderOutputs.length; i++) {
+                // NOTE:
+                //  once again, vertex0 is used here arbitrarily because in principle 
+                //  all should be the same
+                if (v0.shaderOutputs[i] == null) { continue; }
+                rVertex.shaderOutputs[i] = new float[v0.shaderOutputs[i].length];
+
+                for (int comp = 0; comp < rVertex.shaderOutputs[i].length; comp++) {
+                    rVertex.shaderOutputs[i][comp] = 
+                        v0.shaderOutputs[i][comp] * fac0 + 
+                        v1.shaderOutputs[i][comp] * fac1 + 
+                        v2.shaderOutputs[i][comp] * fac2;
+                }
+            }
+
+            return rVertex;
+        }
+
+        public Triangle(Triangle toCopy) {
+            triNum = toCopy.triNum;
+            normal = new float[VCTR_NUM_CMPS];
+            QMath.copy3(normal, toCopy.normal);
+
+            toCopy.verts  = new Vertex[VERTS_PER_TRI];
+            for (int i = 0; i < toCopy.verts.length; i++) {
+                verts[i] = new Vertex(toCopy.verts[i]);
+            }
         }
     }
 
@@ -321,38 +405,31 @@ public final class QViewer extends QEncoding {
         Triangle srcTri,
         int pI,
         int pF,
-        int offsetOut,
         float[] out
     ) {
         internalFindClipIntersect(
-            srcTri.getPosOffset(pI),
-            srcTri.posDat,
-            srcTri.getPosOffset(pF),
-            srcTri.posDat,
-            offsetOut,
+            srcTri.getPosn(pI),
+            srcTri.getPosn(pF),
             out
         );
     }
 
     private void internalFindClipIntersect(
-        int offsetPI,
         float[] pI,
-        int offsetPF,
         float[] pF,
-        int offsetOut,
         float[] out
     ) {
         // refer to
         // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_cliptri.c
 
-        float invDZ   = 1.0f / (pF[offsetPF + VCTR_INDEX_Z] - pI[offsetPI + VCTR_INDEX_Z]);
-        float slopeXZ = (pF[offsetPF + VCTR_INDEX_X] - pI[offsetPI + VCTR_INDEX_X]) * invDZ;
-        float slopeYZ = (pF[offsetPF + VCTR_INDEX_Y] - pI[offsetPI + VCTR_INDEX_Y]) * invDZ;
-        float dClip   = (nearClip - pI[offsetPI + VCTR_INDEX_Z]);
+        float invDZ   = 1.0f / (pF[VCTR_INDEX_Z] - pI[VCTR_INDEX_Z]);
+        float slopeXZ = (pF[VCTR_INDEX_X] - pI[VCTR_INDEX_X]) * invDZ;
+        float slopeYZ = (pF[VCTR_INDEX_Y] - pI[VCTR_INDEX_Y]) * invDZ;
+        float dClip   = (nearClip - pI[VCTR_INDEX_Z]);
 
-        out[offsetOut + VCTR_INDEX_X] = pI[offsetPI + VCTR_INDEX_X] + slopeXZ * dClip;
-        out[offsetOut + VCTR_INDEX_Y] = pI[offsetPI + VCTR_INDEX_Y] + slopeYZ * dClip;
-        out[offsetOut + VCTR_INDEX_Z] = nearClip;
+        out[VCTR_INDEX_X] = pI[VCTR_INDEX_X] + slopeXZ * dClip;
+        out[VCTR_INDEX_Y] = pI[VCTR_INDEX_Y] + slopeYZ * dClip;
+        out[VCTR_INDEX_Z] = nearClip;
     }
 
     private Triangle[] internalClipTriCase1(Triangle tri, ClipState clipState) {
@@ -398,14 +475,8 @@ public final class QViewer extends QEncoding {
 
         float[] pos02 = new float[VCTR_NUM_CMPS];
         float[] pos12 = new float[VCTR_NUM_CMPS];
-        internalFindClipIntersect(shuffledTri, 0, 2, 0, pos02);
-        internalFindClipIntersect(shuffledTri, 1, 2, 0, pos12);
-
-        float[] uv02  = new float[VCTR_NUM_CMPS];
-        float[] uv12  = new float[VCTR_NUM_CMPS];
-        internalFindIntersectUV(shuffledTri, 0, 2, pos02, 0, uv02);
-        internalFindIntersectUV(shuffledTri, 1, 2, pos12, 0, uv12);
-
+        internalFindClipIntersect(shuffledTri, 0, 2, pos02);
+        internalFindClipIntersect(shuffledTri, 1, 2, pos12);
 
         // NOTE:
         // - when 1 vertex is clipped, the resulting mesh is a quad
@@ -437,15 +508,10 @@ public final class QViewer extends QEncoding {
             // VERTS 1 & 2 ARE CLIPPED
             case (1 + 2):
 
-                float[] pos10 = new float[MESH_POSN_NUM_CMPS];
-                float[] pos20 = new float[MESH_POSN_NUM_CMPS];
-                internalFindClipIntersect(tri, 1, 0, 0, pos10);
-                internalFindClipIntersect(tri, 2, 0, 0, pos20);
-
-                float[] uv10 = new float[MESH_UV_NUM_CMPS];
-                float[] uv20 = new float[MESH_UV_NUM_CMPS];
-                internalFindIntersectUV(tri, 1, 0, pos10, 0, uv10);
-                internalFindIntersectUV(tri, 2, 0, pos20, 0, uv20);
+                float[] pos10 = new float[VCTR_NUM_CMPS];
+                float[] pos20 = new float[VCTR_NUM_CMPS];
+                internalFindClipIntersect(tri, 1, 0, pos10);
+                internalFindClipIntersect(tri, 2, 0, pos20);
                 
                 tri.setVert(1, 0, pos10, 0, uv10);
                 tri.setVert(2, 0, pos20, 0, uv20);
@@ -455,15 +521,10 @@ public final class QViewer extends QEncoding {
             // VERTS 0 & 2 ARE CLIPPED
             case (0 + 2):
 
-                float[] pos01 = new float[MESH_POSN_NUM_CMPS];
-                float[] pos21 = new float[MESH_POSN_NUM_CMPS];
-                internalFindClipIntersect(tri, 0, 1, 0, pos01);
-                internalFindClipIntersect(tri, 2, 1, 0, pos21);
-
-                float[] uv01 = new float[MESH_UV_NUM_CMPS];
-                float[] uv21 = new float[MESH_UV_NUM_CMPS];
-                internalFindIntersectUV(tri, 0, 1, pos01, 0, uv01);
-                internalFindIntersectUV(tri, 2, 1, pos21, 0, uv21);
+                float[] pos01 = new float[VCTR_NUM_CMPS];
+                float[] pos21 = new float[VCTR_NUM_CMPS];
+                internalFindClipIntersect(tri, 0, 1, pos01);
+                internalFindClipIntersect(tri, 2, 1, pos21);
 
                 tri.setVert(0, 0, pos01, 0, uv01);
                 tri.setVert(2, 0, pos21, 0, uv21);
@@ -473,15 +534,10 @@ public final class QViewer extends QEncoding {
             // VERTS 0 & 1 ARE CLIPPED
             case (0 + 1):
 
-                float[] pos02 = new float[MESH_POSN_NUM_CMPS];
-                float[] pos12 = new float[MESH_POSN_NUM_CMPS];
-                internalFindClipIntersect(tri, 2, 0, 0, pos02);
-                internalFindClipIntersect(tri, 2, 1, 0, pos12);
-
-                float[] uv02 = new float[MESH_UV_NUM_CMPS];
-                float[] uv12 = new float[MESH_UV_NUM_CMPS];
-                internalFindIntersectUV(tri, 0, 2, pos02, 0, uv02);
-                internalFindIntersectUV(tri, 1, 2, pos12, 0, uv12);
+                float[] pos02 = new float[VCTR_NUM_CMPS];
+                float[] pos12 = new float[VCTR_NUM_CMPS];
+                internalFindClipIntersect(tri, 2, 0, pos02);
+                internalFindClipIntersect(tri, 2, 1, pos12);
 
                 tri.setVert(0, 0, pos02, 0, uv02);
                 tri.setVert(1, 0, pos12, 0, uv12);
@@ -492,7 +548,7 @@ public final class QViewer extends QEncoding {
             default:
                 throw new QException(
                     PointOfError.BadState, 
-                    "bad clip state:" + clipState.toString()
+                    "Bad clip state:" + clipState.toString()
                 );
         }
 
@@ -522,9 +578,9 @@ public final class QViewer extends QEncoding {
         
         // NOTE:
         // - from this point forward, all z values will be inverted
-        tri.projectPos(0);
-        tri.projectPos(1);
-        tri.projectPos(2);
+        tri.getVertex(0).project();
+        tri.getVertex(1).project();
+        tri.getVertex(2).project();
 
         // MAP TO SCREEN SPACE
         internalMapVertToScreenSpace(tri, 0);
