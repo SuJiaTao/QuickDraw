@@ -267,17 +267,17 @@ public final class Mascot {
                         new QVector3(pos)
                     ).fastNormalize( );
 
-                    float brightnessFactor = Math.max(0.0f, QVector3.dot(
+                    float diffuse = Math.max(0.0f, QVector3.dot(
                         new QVector3(normal).add(randOffset).fastNormalize( ), 
                         dFaceLightNormalized
                     ));
                     
-                    // MULTIPLY COLOR BY BRIGHTNESS
-                    float ambient       = 0.55f;
-                    float brignessRange = 1.0f - ambient;
+                    // APPLY SIMPLE PHONG SHADING
+                    float ambient = 0.4f;
+                    float phong   = (float)Math.pow(diffuse, 5.5f);
                     return multiplyColor(
                         texCol, 
-                        ambient + ((float)Math.pow(brightnessFactor, 5.5f) * brignessRange)
+                        Math.min(1.0f, ambient + diffuse + phong)
                     );
                 }
             }

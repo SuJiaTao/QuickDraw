@@ -1136,6 +1136,14 @@ public final class QViewer extends QEncoding {
             triangle.getPosnZ(1) * weights[1] +
             triangle.getPosnZ(2) * weights[2];
 
+        // NOTE:
+        // since all depths are negative and inverted, the further value
+        // will be a smaller negative and hence greater. therefore the failing
+        // depth test will be greater than the previous depth
+        if (invDepth > renderTarget.getDepth(drawX, drawY) - DEPTH_TEST_EPSILON) {
+            return;
+        }
+        
         QShader.FragmentShaderContext fctx = new QShader.FragmentShaderContext();
         fctx.uniforms = slotUniforms;
         fctx.textures = slotTextures;
@@ -1150,14 +1158,6 @@ public final class QViewer extends QEncoding {
 
         // don't draw on transparent
         if ((fragColor.getA( )) == 0) {
-            return;
-        }
-
-        // NOTE:
-        // since all depths are negative and inverted, the further value
-        // will be a smaller negative and hence greater. therefore the failing
-        // depth test will be greater than the previous depth
-        if (invDepth > renderTarget.getDepth(drawX, drawY) - DEPTH_TEST_EPSILON) {
             return;
         }
 
