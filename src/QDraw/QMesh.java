@@ -408,6 +408,12 @@ public final class QMesh extends QEncoding {
                 for (String faceAttribs : faceAttribIndicies) {
                     // NOTE: obj files are NOT 0 indexed
                     String[] indicies = faceAttribs.split("/");
+                    if (indicies.length < 3) {
+                        throw new QException(
+                            PointOfError.MalformedData, 
+                            ".obj file must contain face normal data! Normals not found."
+                        );
+                    }
                     iBuffer.add(Integer.parseInt(indicies[0]) - 1);
                     iBuffer.add(Integer.parseInt(indicies[1]) - 1);
                     iBuffer.add(Integer.parseInt(indicies[2]) - 1);

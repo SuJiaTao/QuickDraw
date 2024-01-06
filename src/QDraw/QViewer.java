@@ -160,7 +160,7 @@ public final class QViewer extends QEncoding {
 
         public void project( ) {
             posn[VCTR_INDEX_Z] = 1.0f / posn[VCTR_INDEX_Z];
-            QMath.mult2(1, posn, -posn[VCTR_INDEX_Z]);
+            QMath.mult2(0, posn, -posn[VCTR_INDEX_Z]);
         }
 
         public void findClippedShaderOutputs(
@@ -277,7 +277,7 @@ public final class QViewer extends QEncoding {
             normal = new float[VCTR_NUM_CMPS];
             QMath.copy3(normal, toCopy.normal);
 
-            toCopy.verts  = new Vertex[VERTS_PER_TRI];
+            verts = new Vertex[VERTS_PER_TRI];
             for (int i = 0; i < toCopy.verts.length; i++) {
                 verts[i] = new Vertex(toCopy.verts[i]);
             }

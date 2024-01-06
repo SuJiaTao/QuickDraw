@@ -12,8 +12,8 @@ import QDraw.QWindow;
 import QDraw.QViewer.RenderMode;
 
 public final class Profile {
-    public static final int WINDOW_WIDTH  = 1200;
-    public static final int WINDOW_HEIGHT = 960; 
+    public static final int WINDOW_WIDTH  = 1600;
+    public static final int WINDOW_HEIGHT = 1000; 
     public static final int FB_WIDTH      = WINDOW_WIDTH;
     public static final int FB_HEIGHT     = WINDOW_HEIGHT;
     public static final float FB_ASPECT   = (float)FB_WIDTH / (float)FB_HEIGHT;
@@ -121,7 +121,7 @@ public final class Profile {
         viewer.setViewBounds(-FB_ASPECT, FB_ASPECT, -1.0f, 1.0f);
 
         String basePath = System.getProperty("user.dir") + "\\resources\\";
-        String meshPath = basePath + "Mascot.obj";
+        String meshPath = basePath + "Cube.obj";
         String hugeTexPath = basePath + "Texture_Huge.jpg";
         String largeTexPath = basePath + "Texture_Large.jpg";
         String medTexPath = basePath + "Texture_Medium.jpg";
