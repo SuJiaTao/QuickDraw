@@ -312,6 +312,7 @@ public final class Mascot {
         window.setRenderBuffer(frameBuffer);
         eyes        = new QViewer(frameBuffer);
         eyes.setViewBounds(-FB_ASPECT, FB_ASPECT, -1.0f, 1.0f);
+        eyes.setNearClip(-2.0f);
 
         while (true) {
             RegularMascot( );

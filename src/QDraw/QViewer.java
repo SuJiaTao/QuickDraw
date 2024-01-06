@@ -255,25 +255,29 @@ public final class QViewer extends QEncoding {
             float  factor
         ) {
             // NOTE:
-            //   vISrc and vFSrc should have identically formatted shader outputs,
+            // - vISrc and vFSrc should have identically formatted shader outputs,
             //   that is, the slots are consistent in usage and component count,
             //   so when initializing the new shader outputs, we arbitrarily use vISrc
             //   as a reference
-            shaderOutputs = new float[vISrc.shaderOutputs.length][];
+            // - vISrc or vFSrc might actually be THIS vertex, so we calculate everything
+            //   to an auxillary buffer before updating shaderOutputs
+            float[][] tempShaderOutputs = new float[vISrc.shaderOutputs.length][];
             float facI = 1.0f - factor;
             float facF = factor;
 
-            for (int i = 0; i < shaderOutputs.length; i++) {
+            for (int i = 0; i < tempShaderOutputs.length; i++) {
                 
                 if (vISrc.shaderOutputs[i] == null) { continue; }
-                shaderOutputs[i] = new float[vISrc.shaderOutputs[i].length];
+                tempShaderOutputs[i] = new float[vISrc.shaderOutputs[i].length];
 
-                for (int comp = 0; comp < shaderOutputs[i].length; comp++) {
-                    shaderOutputs[i][comp] = 
+                for (int comp = 0; comp < tempShaderOutputs[i].length; comp++) {
+                    tempShaderOutputs[i][comp] = 
                         vISrc.shaderOutputs[i][comp] * facI + 
                         vFSrc.shaderOutputs[i][comp] * facF;
                 }
             }
+            
+            shaderOutputs = tempShaderOutputs;
         }
 
         public Vertex( ) {
@@ -656,6 +660,7 @@ public final class QViewer extends QEncoding {
     }
 
     private Triangle[] internalClipTriCase1(Triangle tri, ClipState clipState) {
+        System.out.println("CASE 1");
         // refer to
         // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_cliptri.c
 
@@ -701,25 +706,55 @@ public final class QViewer extends QEncoding {
         internalFindClipIntersect(shuffledTri, 0, 2, pos02);
         internalFindClipIntersect(shuffledTri, 1, 2, pos12);
 
+        float fac02 = internalFindClipInterpolationFactor(
+            shuffledTri.getPosn(0), 
+            shuffledTri.getPosn(2), 
+            pos02
+        );
+        float fac12 = internalFindClipInterpolationFactor(
+            shuffledTri.getPosn(1), 
+            shuffledTri.getPosn(2), 
+            pos12
+        );
+
         // NOTE:
         // - when 1 vertex is clipped, the resulting mesh is a quad
         // - our quad is 0/2, 0, 1, 1/2 (where a/b is clipped interpolation),
         //   which will be tesselated as (0/2, 0, 1), (0/2, 1, 1/2)
 
         Triangle quadTri0 = new Triangle(shuffledTri);
+        quadTri0.getVertex(2).findClippedShaderOutputs(
+            shuffledTri.getVertex(0),
+            shuffledTri.getVertex(2), 
+            fac02
+        );
         quadTri0.setPosn(2, pos02); // (0 1 2) -> (0 1 0/2)
         quadTri0.swapVerts(0, 2); // (0 1 0/2) -> (0/2 1 0)
         quadTri0.swapVerts(1, 2); // (0/2 1 0) -> (0/2 0 1)
         
         Triangle quadTri1 = new Triangle(shuffledTri); // (0 1 2)
+        
+        quadTri1.getVertex(0).findClippedShaderOutputs(
+            shuffledTri.getVertex(0),
+            shuffledTri.getVertex(2), 
+            fac02
+        );
         quadTri1.setPosn(0, pos02); // (0 1 2)   -> (0/2 1 2)
+
+        quadTri1.getVertex(2).findClippedShaderOutputs(
+            shuffledTri.getVertex(1),
+            shuffledTri.getVertex(2), 
+            fac12
+        );
         quadTri1.setPosn(2, pos12); // (0/2 1 2) -> (0/2 1 1/2)
         
+
         return new Triangle[] { quadTri0, quadTri1 };
 
     }
 
     private Triangle[] internalClipTriCase2(Triangle tri, ClipState clipState) {
+        System.out.println("CASE 2");
         // refer to
         // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_cliptri.c
 
@@ -743,18 +778,19 @@ public final class QViewer extends QEncoding {
                     pos10
                 );
                 
-                tri.setPosn(1, pos10);
                 tri.getVertex(1).findClippedShaderOutputs(
                     tri.getVertex(1), 
                     tri.getVertex(0), 
                     fac10
                 );
-                tri.setPosn(2, pos20);
+                tri.setPosn(1, pos10);
+                
                 tri.getVertex(2).findClippedShaderOutputs(
                     tri.getVertex(2), 
                     tri.getVertex(0), 
                     fac20
                 );
+                tri.setPosn(2, pos20);
 
                 return new Triangle[] { tri };
 
@@ -776,18 +812,19 @@ public final class QViewer extends QEncoding {
                     pos21
                 );
                 
-                tri.setPosn(0, pos01);
                 tri.getVertex(0).findClippedShaderOutputs(
                     tri.getVertex(0), 
                     tri.getVertex(1), 
                     fac01
                 );
-                tri.setPosn(2, pos21);
+                tri.setPosn(0, pos01);
+
                 tri.getVertex(2).findClippedShaderOutputs(
                     tri.getVertex(2), 
                     tri.getVertex(1), 
                     fac21
                 );
+                tri.setPosn(2, pos21);
 
                 return new Triangle[] { tri };
 
@@ -809,18 +846,19 @@ public final class QViewer extends QEncoding {
                     pos12
                 );
                 
-                tri.setPosn(0, pos02);
                 tri.getVertex(0).findClippedShaderOutputs(
                     tri.getVertex(0), 
                     tri.getVertex(2), 
                     fac02
                 );
-                tri.setPosn(1, pos12);
+                tri.setPosn(0, pos02);
+                
                 tri.getVertex(1).findClippedShaderOutputs(
                     tri.getVertex(1), 
                     tri.getVertex(2), 
                     fac12
                 );
+                tri.setPosn(1, pos12);
 
                 return new Triangle[] { tri };
         
@@ -1117,8 +1155,13 @@ public final class QViewer extends QEncoding {
             return;
         }
 
+        QColor blendedColor = QShader.blendColor(
+            new QColor(renderTarget.getColor(drawX, drawY)), 
+            fragColor
+        );
+
         renderTarget.setDepth(drawX, drawY, invDepth);
-        renderTarget.setColor(drawX, drawY, fragColor.toInt());
+        renderTarget.setColor(drawX, drawY, blendedColor.toInt());
     }
 
     /////////////////////////////////////////////////////////////////
