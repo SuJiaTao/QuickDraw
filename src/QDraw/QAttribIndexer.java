@@ -46,7 +46,8 @@ public final class QAttribIndexer {
         System.arraycopy(
             attribIndexBuffer, 
             getTriBaseOffset(triNum), 
-            bufferOut, offsetOut, 
+            bufferOut, 
+            offsetOut, 
             INDICIES_PER_TRI
         );
     }

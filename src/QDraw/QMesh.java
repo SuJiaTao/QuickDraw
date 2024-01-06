@@ -389,7 +389,7 @@ public final class QMesh extends QEncoding {
             }
 
             // PARSE NORMAL
-            if (line.substring(0, 2).equals("vn ")) {
+            if (line.substring(0, 3).equals("vn ")) {
                 String[] normVals = line.substring(3).split(" ");
                 normalBuffer.add(Float.parseFloat(normVals[0]));
                 normalBuffer.add(Float.parseFloat(normVals[1]));

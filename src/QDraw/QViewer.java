@@ -190,14 +190,16 @@ public final class QViewer extends QEncoding {
             }
         }
 
-        public Vertex(float[] inPosn) {
+        public Vertex( ) {
             posn = QMath.new3( );
-            QMath.copy3(posn, inPosn);
         }
 
         public Vertex(Vertex toCopy) {
             posn = QMath.new3();
-            QMath.copy3(posn, toCopy.posn);
+            QMath.copy3(
+                posn, 
+                toCopy.posn
+            );
 
             shaderOutputs = new float[toCopy.shaderOutputs.length][];
             for (int i = 0; i < shaderOutputs.length; i++) {
@@ -219,7 +221,9 @@ public final class QViewer extends QEncoding {
         public static final int VERTS_PER_TRI = 3;
 
         public int      triNum;
-        public Vertex[] verts  = new Vertex[VERTS_PER_TRI];
+        public Vertex[] verts  = new Vertex[] {
+            new Vertex( ), new Vertex( ), new Vertex( )
+        };
         public float[]  normal = new float[VCTR_NUM_CMPS];
 
         public void swapVerts(int v0, int v1) {
@@ -260,12 +264,12 @@ public final class QViewer extends QEncoding {
             getPosn(vertNum)[VCTR_INDEX_Z] = val;
         }
 
-        public Triangle(int _num) {
-            triNum = _num;
-        }
-
         public Vertex getVertex(int vertNum) {
             return verts[vertNum];
+        }
+
+        public Triangle(int _num) {
+            triNum = _num;
         }
 
         public Triangle(Triangle toCopy) {
@@ -378,13 +382,19 @@ public final class QViewer extends QEncoding {
         vctx.vertexNum = tri.triNum * VERTS_PER_TRI + triVertNum;
         vctx.uniforms  = slotUniforms;
         vctx.textures  = slotTextures;
+        vctx.attributes = new float[slotAttribs.length][];
 
         for (int slot = 0; slot < slotAttribs.length; slot++) {
             QAttribIndexer indexer = slotAttribs[slot];
             if (indexer == null) { continue; }
 
             vctx.attributes[slot] = new float[indexer.getComponentsPerAttrib( )];
-            indexer.index(tri.triNum, triVertNum, 0, vctx.attributes[slot]);
+            indexer.index(
+                tri.triNum, 
+                triVertNum, 
+                0, 
+                vctx.attributes[slot]
+            );
         }
 
         QVector3 vertShaderOut              = shader.vertexShader(vctx);
