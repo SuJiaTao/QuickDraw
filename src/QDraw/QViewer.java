@@ -8,6 +8,7 @@ import java.util.Arrays;
 
 import QDraw.QException.PointOfError;
 import QDraw.QSampleable.SampleType;
+import javafx.scene.layout.TilePane;
 
 public final class QViewer extends QEncoding {
     /////////////////////////////////////////////////////////////////
@@ -291,19 +292,23 @@ public final class QViewer extends QEncoding {
                 toCopy.posn
             );
 
-            shaderOutputs = new float[toCopy.shaderOutputs.length][];
-            for (int i = 0; i < shaderOutputs.length; i++) {
-                if (shaderOutputs[i] == null) { continue; }
+            // NOTE:
+            // toCopy could be THIS vertex, so create a temp before assinging
+            float[][] tempShaderOutputs = new float[toCopy.shaderOutputs.length][];
+            for (int i = 0; i < tempShaderOutputs.length; i++) {
+                if (toCopy.shaderOutputs[i] == null) { continue; }
 
-                shaderOutputs[i] = new float[toCopy.shaderOutputs[i].length];
+                tempShaderOutputs[i] = new float[toCopy.shaderOutputs[i].length];
                 System.arraycopy(
                     toCopy.shaderOutputs[i], 
                     0, 
-                    shaderOutputs[i], 
+                    tempShaderOutputs[i], 
                     0, 
-                    toCopy.shaderOutputs.length
+                    toCopy.shaderOutputs[i].length
                 );
             }
+
+            shaderOutputs = tempShaderOutputs;
         }
     }
 
@@ -364,7 +369,7 @@ public final class QViewer extends QEncoding {
             QMath.copy3(normal, toCopy.normal);
 
             verts = new Vertex[VERTS_PER_TRI];
-            for (int i = 0; i < toCopy.verts.length; i++) {
+            for (int i = 0; i < verts.length; i++) {
                 verts[i] = new Vertex(toCopy.verts[i]);
             }
         }
@@ -523,7 +528,7 @@ public final class QViewer extends QEncoding {
 
             Triangle[] clipTris = internalClipTri(tri);
             for (Triangle clippedTri : clipTris) {
-                internalViewTri(clippedTri);
+                internalDrawTri(clippedTri);
             }
 
         }
@@ -660,7 +665,6 @@ public final class QViewer extends QEncoding {
     }
 
     private Triangle[] internalClipTriCase1(Triangle tri, ClipState clipState) {
-        System.out.println("CASE 1");
         // refer to
         // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_cliptri.c
 
@@ -723,38 +727,41 @@ public final class QViewer extends QEncoding {
         //   which will be tesselated as (0/2, 0, 1), (0/2, 1, 1/2)
 
         Triangle quadTri0 = new Triangle(shuffledTri);
+
+        // (0 1 2) -> (0 1 0/2)
         quadTri0.getVertex(2).findClippedShaderOutputs(
             shuffledTri.getVertex(0),
             shuffledTri.getVertex(2), 
             fac02
         );
-        quadTri0.setPosn(2, pos02); // (0 1 2) -> (0 1 0/2)
+        quadTri0.setPosn(2, pos02); 
+
         quadTri0.swapVerts(0, 2); // (0 1 0/2) -> (0/2 1 0)
         quadTri0.swapVerts(1, 2); // (0/2 1 0) -> (0/2 0 1)
         
         Triangle quadTri1 = new Triangle(shuffledTri); // (0 1 2)
-        
+
+        // (0 1 2)   -> (0/2 1 2)
         quadTri1.getVertex(0).findClippedShaderOutputs(
             shuffledTri.getVertex(0),
             shuffledTri.getVertex(2), 
             fac02
         );
-        quadTri1.setPosn(0, pos02); // (0 1 2)   -> (0/2 1 2)
+        quadTri1.setPosn(0, pos02); 
 
+        // (0/2 1 2) -> (0/2 1 1/2)
         quadTri1.getVertex(2).findClippedShaderOutputs(
             shuffledTri.getVertex(1),
             shuffledTri.getVertex(2), 
             fac12
         );
-        quadTri1.setPosn(2, pos12); // (0/2 1 2) -> (0/2 1 1/2)
+        quadTri1.setPosn(2, pos12); 
         
-
         return new Triangle[] { quadTri0, quadTri1 };
 
     }
 
     private Triangle[] internalClipTriCase2(Triangle tri, ClipState clipState) {
-        System.out.println("CASE 2");
         // refer to
         // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_cliptri.c
 
@@ -892,7 +899,7 @@ public final class QViewer extends QEncoding {
 
     }
 
-    private void internalViewTri(Triangle tri) {
+    private void internalDrawTri(Triangle tri) {
         
         // NOTE:
         // - from this point forward, all z values will be inverted
