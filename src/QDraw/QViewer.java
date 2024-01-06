@@ -135,16 +135,20 @@ public final class QViewer extends QEncoding {
             verts[v1]   = temp;
         }
 
+        public float[] getPosn(int vertNum) {
+            return verts[vertNum].posn;
+        }
+
         public float getPosnX(int vertNum) {
-            return verts[vertNum].posn[VCTR_INDEX_X];
+            return getPosn(vertNum)[VCTR_INDEX_X];
         }
 
         public float getPosnY(int vertNum) {
-            return verts[vertNum].posn[VCTR_INDEX_Y];
+            return getPosn(vertNum)[VCTR_INDEX_Y];
         }
 
         public float getPosnZ(int vertNum) {
-            return verts[vertNum].posn[VCTR_INDEX_Z];
+            return getPosn(vertNum)[VCTR_INDEX_Z];
         }
 
         public Triangle(int _num) {
@@ -210,12 +214,29 @@ public final class QViewer extends QEncoding {
             );
         }
 
+        // TODO: clean up
         for (int triNum = 0; triNum < triCount; triNum++) {
-            // PROCESS EACH VERTEX AND CONSTRUCT TRIANGLE
+            // generate tri
             Triangle tri = new Triangle(triNum);
             internalProcessVertex(tri, 0);
             internalProcessVertex(tri, 1);
             internalProcessVertex(tri, 2);
+
+            float[] d01 = new float[VCTR_NUM_CMPS];
+            QMath.copy3(d01, tri.getPosn(1));
+            QMath.sub3(d01, tri.getPosn(0));
+
+            float[] d02 = new float[VCTR_NUM_CMPS];
+            QMath.copy3(d02, tri.getPosn(2));
+            QMath.sub3(d02, tri.getPosn(0));
+
+            float[] tempNormal = QMath.cross3(d01, d02);
+            QMath.mult3(tempNormal, 1.0f / QMath.fastmag3(tempNormal));
+            QMath.copy3(tri.normal, tempNormal);
+
+            // clip tri
+            Triangle[] clipTris = internalClipTri(tri);
+
         }
 
     }
@@ -334,37 +355,6 @@ public final class QViewer extends QEncoding {
         out[offsetOut + VCTR_INDEX_Z] = nearClip;
     }
 
-    private void internalFindIntersectUV(
-        Triangle     tri,
-        int     vnumI,
-        int     vnumF,
-        float[] intersect,
-        int     offsetUVOut,
-        float[] uvOut
-    ) {
-
-        // NOTE:
-        // - the intersection UV is naiively calculated by taking the
-        //   magnitude of the displacement between midpoint and pI over
-        //   the magnitude of the displacement between pF and Pi
-
-        float[] temp = new float[MESH_POSN_NUM_CMPS];
-
-        QMath.copy3(temp, intersect);
-        QMath.sub3(0, temp, tri.getPosOffset(vnumI), tri.posDat);
-        float magIntersect = QMath.mag3(temp);
-
-        QMath.copy3(0, temp, tri.getPosOffset(vnumF), tri.posDat);
-        QMath.sub3(0, temp, tri.getPosOffset(vnumI), tri.posDat);
-        float magTotal = QMath.mag3(temp);
-
-        float factorF = magIntersect / magTotal;
-        float factorI = 1.0f - factorF;
-
-        uvOut[MESH_UV_OFST_U] = tri.getUV_U(vnumI) * factorI + tri.getUV_U(vnumF) * factorF;
-        uvOut[MESH_UV_OFST_V] = tri.getUV_V(vnumI) * factorI + tri.getUV_V(vnumF) * factorF;
-    }
-
     private Triangle[] internalClipTriCase1(Triangle tri, ClipState clipState) {
         // refer to
         // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_cliptri.c
@@ -406,13 +396,13 @@ public final class QViewer extends QEncoding {
                 );
         }
 
-        float[] pos02 = new float[MESH_POSN_NUM_CMPS];
-        float[] pos12 = new float[MESH_POSN_NUM_CMPS];
+        float[] pos02 = new float[VCTR_NUM_CMPS];
+        float[] pos12 = new float[VCTR_NUM_CMPS];
         internalFindClipIntersect(shuffledTri, 0, 2, 0, pos02);
         internalFindClipIntersect(shuffledTri, 1, 2, 0, pos12);
 
-        float[] uv02  = new float[MESH_UV_NUM_CMPS];
-        float[] uv12  = new float[MESH_UV_NUM_CMPS];
+        float[] uv02  = new float[VCTR_NUM_CMPS];
+        float[] uv12  = new float[VCTR_NUM_CMPS];
         internalFindIntersectUV(shuffledTri, 0, 2, pos02, 0, uv02);
         internalFindIntersectUV(shuffledTri, 1, 2, pos12, 0, uv12);
 
