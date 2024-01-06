@@ -170,7 +170,7 @@ public final class Mascot {
     public static void CustomWobblyMascot( ) {
         long t0 = System.currentTimeMillis();
         eyes.setRenderType(RenderMode.CustomShader);
-        eyes.setShader(
+        eyes.setCustomShader(
             new QShader() {
                 public QVector3 vertexShader(
                     QViewer.VertexShaderContext vertInfo,
@@ -218,7 +218,7 @@ public final class Mascot {
 
     public static void UltraGFXMascot( ) {
         eyes.setRenderType(RenderMode.CustomShader);
-        eyes.setShader(
+        eyes.setCustomShader(
             new QShader() {
                 public QVector3 vertexShader(
                     QViewer.VertexShaderContext vertInfo,

@@ -7,6 +7,7 @@ package QDraw;
 import java.util.Arrays;
 
 import QDraw.QException.PointOfError;
+import QDraw.QSampleable.SampleType;
 
 public final class QViewer extends QEncoding {
     /////////////////////////////////////////////////////////////////
@@ -19,22 +20,111 @@ public final class QViewer extends QEncoding {
     public static final float DEFAULT_VIEWBOUND_BOTTOM = -1.0f;
     public static final float DEFAULT_VIEWBOUND_TOP    = 1.0f;
 
+    private static final float BACKFACE_CULL_MIN_DOT  = 0.5f;
+    private static final float DEPTH_TEST_EPSILON     = 0.002f;
+    private static final int   VERTS_PER_TRI = 3;
+
     public static final int SHADER_UNIFORM_SLOTS       = 16;
     public static final int SHADER_TEXTURE_SLOTS       = 16;
     public static final int SHADER_VERTEX_ATTRIB_SLOTS = 8;
 
-    private static final float BACKFACE_CULL_MIN_DOT  = 0.5f;
-    private static final float DEPTH_TEST_EPSILON     = 0.002f;
+    public static final RenderMode DEFAULT_RENDER_MODE   = RenderMode.Textured;
+    public static final QColor     DEFAULT_FILL_COLOR    = QColor.White();
+    public static final SampleType DEFAULT_SAMPLE_TYPE   = SampleType.Repeat;
+    public static final int DEFAULT_SHADER_POSITION_SLOT = 0;
+    public static final int DEFAULT_SHADER_UV_SLOT       = 1;
+    public static final int DEFAULT_SHADER_NORMAL_SLOT   = 2;
+    public static final int DEFAULT_SHADER_MATRIX_SLOT   = 0;
+    public static final int DEFAULT_SHADER_TEXTURE_SLOT  = 0;
 
-    private static final int VERTS_PER_TRI = 3;
+    private final QShader SOLIDFILL_SHADER = new QShader( ) {
+        public QVector3 vertexShader(
+            VertexShaderContext context
+        ) {
+            QMatrix4x4 mtr = (QMatrix4x4)context.uniforms[DEFAULT_SHADER_MATRIX_SLOT];
+            return QMatrix4x4.multiply(
+                mtr, 
+                new QVector3(context.attributes[DEFAULT_SHADER_POSITION_SLOT])
+            );
+        }
+
+        public QColor fragmentShader(
+            FragmentShaderContext context
+        ) {
+            return fillColor;
+        }
+    };
+
+    private final QShader TEXTURED_SHADER = new QShader( ) {
+        public QVector3 vertexShader(
+            VertexShaderContext context
+        ) {
+            QMatrix4x4 mtr = (QMatrix4x4)context.uniforms[DEFAULT_SHADER_MATRIX_SLOT];
+            setOutputToFragShader(
+                context, 
+                DEFAULT_SHADER_UV_SLOT, 
+                context.attributes[DEFAULT_SHADER_UV_SLOT]
+            );
+            return QMatrix4x4.multiply(
+                mtr, 
+                new QVector3(context.attributes[DEFAULT_SHADER_POSITION_SLOT])
+            );
+        }
+
+        public QColor fragmentShader(
+            FragmentShaderContext context
+        ) {
+            QSampleable tex = context.textures[DEFAULT_SHADER_TEXTURE_SLOT];
+            float[] uv = new float[2];
+            getOutputFromVertShader(
+                context, 
+                DEFAULT_SHADER_UV_SLOT, 
+                uv
+            );
+            return new QColor(tex.sample(uv[0], uv[1], sampleType));
+        }
+    };
+
+    private final QShader NORMAL_SHADER = new QShader( ) {
+        public QVector3 vertexShader(
+            VertexShaderContext context
+        ) {
+            QMatrix4x4 mtr = (QMatrix4x4)context.uniforms[DEFAULT_SHADER_MATRIX_SLOT];
+            setOutputToFragShader(
+                context, 
+                DEFAULT_SHADER_NORMAL_SLOT, 
+                context.attributes[DEFAULT_SHADER_NORMAL_SLOT]
+            );
+            return QMatrix4x4.multiply(
+                mtr, 
+                new QVector3(context.attributes[DEFAULT_SHADER_POSITION_SLOT])
+            );
+        }
+
+        public QColor fragmentShader(
+            FragmentShaderContext context
+        ) {
+            QSampleable tex = context.textures[DEFAULT_SHADER_TEXTURE_SLOT];
+            float[] normal = new float[3]; // TODO: remove magic numbers
+            getOutputFromVertShader(
+                context, 
+                DEFAULT_SHADER_NORMAL_SLOT, 
+                normal
+            );
+            return new QColor(
+                (int)((1.0f + normal[VCTR_INDEX_X]) * 127.0f),
+                (int)((1.0f + normal[VCTR_INDEX_Y]) * 127.0f),
+                (int)((1.0f + normal[VCTR_INDEX_Z]) * 127.0f)
+            );
+        }
+    };
 
     /////////////////////////////////////////////////////////////////
     // PUBLIC ENUMS
     public enum RenderMode {
-        Fill,
+        SolidFill,
         Textured,
         Normal,
-        Depth,
         CustomShader
     };
 
@@ -46,10 +136,13 @@ public final class QViewer extends QEncoding {
     private float         viewBottom   = DEFAULT_VIEWBOUND_BOTTOM;
     private float         viewTop      = DEFAULT_VIEWBOUND_TOP;
     private QRenderBuffer renderTarget = null;
-    private QShader       shader = null;
+    private QShader       customShader = null;
+    private RenderMode    renderMode   = DEFAULT_RENDER_MODE;
+    private QColor        fillColor    = DEFAULT_FILL_COLOR;
+    private SampleType    sampleType   = DEFAULT_SAMPLE_TYPE;
 
     private Object[]   slotUniforms      = new Object[SHADER_UNIFORM_SLOTS];
-    private QTexture[] slotTextures      = new QTexture[SHADER_TEXTURE_SLOTS];
+    private QSampleable[] slotTextures   = new QSampleable[SHADER_TEXTURE_SLOTS];
     private QAttribIndexer[] slotAttribs = new QAttribIndexer[SHADER_VERTEX_ATTRIB_SLOTS];  
 
     /////////////////////////////////////////////////////////////////
@@ -65,8 +158,20 @@ public final class QViewer extends QEncoding {
         viewTop    = top;
     }
 
-    public void setShader(QShader _shader) {
-        shader = _shader;
+    public void setRenderMode(RenderMode mode) {
+        renderMode = mode;
+    }
+
+    public void setSampleType(SampleType _type) {
+        sampleType = _type;
+    }
+
+    public void setFillColor(QColor _color) {
+        fillColor.set(_color);
+    }
+
+    public void setCustomShader(QShader _shader) {
+        customShader = _shader;
     }
 
     public void setUniformSlot(
@@ -83,8 +188,8 @@ public final class QViewer extends QEncoding {
     }
 
     public void setTextureSlot(
-        int      slot,
-        QTexture texture
+        int         slot,
+        QSampleable texture
     ) {
         slotTextures[slot] = texture;
     }
@@ -121,10 +226,7 @@ public final class QViewer extends QEncoding {
         QMesh      mesh,
         QMatrix4x4 meshTransform
     ) {
-        clearTextureSlots( );
-        clearUniformSlots( );
-        clearVertexAttribSlots( );
-
+        
         setUniformSlot(0, meshTransform);
         // setTextureSlot(0, texture);
         setVertexAttribSlot(0, mesh.getPosIndexer( ));
@@ -148,8 +250,13 @@ public final class QViewer extends QEncoding {
             }
         };
 
-        setShader(tempShader);
+        setCustomShader(tempShader);
         draw( );
+
+        clearTextureSlots( );
+        clearUniformSlots( );
+        clearVertexAttribSlots( );
+
     }
 
     /////////////////////////////////////////////////////////////////
@@ -160,7 +267,7 @@ public final class QViewer extends QEncoding {
 
         public void project( ) {
             posn[VCTR_INDEX_Z] = 1.0f / posn[VCTR_INDEX_Z];
-            QMath.mult2(0, posn, -posn[VCTR_INDEX_Z]);
+            QMath.mult2(posn, -posn[VCTR_INDEX_Z]);
         }
 
         public void findClippedShaderOutputs(
@@ -260,10 +367,6 @@ public final class QViewer extends QEncoding {
             return getPosn(vertNum)[VCTR_INDEX_Z];
         }
 
-        public void setPosnZ(int vertNum, float val) {
-            getPosn(vertNum)[VCTR_INDEX_Z] = val;
-        }
-
         public Vertex getVertex(int vertNum) {
             return verts[vertNum];
         }
@@ -305,6 +408,81 @@ public final class QViewer extends QEncoding {
         renderTarget = target;
     }
 
+    private void internalEnsureDefaultShaderRequirements( ) {
+        if (slotAttribs[DEFAULT_SHADER_POSITION_SLOT] == null) {
+            throw new QException(
+                PointOfError.BadState, 
+                "Tried to use a default shader but vertex position " +
+                "slot was not set."
+            );
+        }
+        if (slotUniforms[DEFAULT_SHADER_MATRIX_SLOT] == null) {
+            throw new QException(
+                PointOfError.BadState, 
+                "Tried to use a default shader but matrix uniform " +
+                "slot was not set."
+            );
+        }
+    }
+
+    private QShader internalGetRelevantShader( ) {
+        switch (renderMode) {
+            case SolidFill:
+                internalEnsureDefaultShaderRequirements( );
+
+                return SOLIDFILL_SHADER;
+
+            case Textured:
+                internalEnsureDefaultShaderRequirements( );
+
+                if (slotAttribs[DEFAULT_SHADER_UV_SLOT] == null) {
+                    throw new QException(
+                        PointOfError.BadState, 
+                        "Tried to use default texture shader but uv " +
+                        "slot was not set."
+                    );
+                }
+
+                if (slotTextures[DEFAULT_SHADER_TEXTURE_SLOT] == null) {
+                    throw new QException(
+                        PointOfError.BadState, 
+                        "Tried to use default texture shader but uv " +
+                        "slot was not set."
+                    );
+                }
+
+                return TEXTURED_SHADER;
+
+            case Normal:
+                internalEnsureDefaultShaderRequirements( );
+
+                if (slotAttribs[DEFAULT_SHADER_NORMAL_SLOT] == null) {
+                    throw new QException(
+                        PointOfError.BadState, 
+                        "Tried to use default normal shader but normal " +
+                        "slot was not set."
+                    );
+                }
+
+                return NORMAL_SHADER;
+
+            case CustomShader:
+                if (customShader == null) {
+                    throw new QException(
+                        PointOfError.BadState, 
+                        "Tried to use a custom shader but none was set"
+                    );
+                }
+                return customShader;
+
+            default:
+                throw new QException(
+                    PointOfError.BadState, 
+                    "Unknown renderMode: " + renderMode.toString( )
+                );
+        }
+    }
+
     private void internalDraw( ) {
         if (renderTarget == null) {
             throw new QException(
@@ -313,7 +491,7 @@ public final class QViewer extends QEncoding {
             );
         }
 
-        if (shader == null) {
+        if (customShader == null) {
             throw new QException(
                 PointOfError.BadState, 
                 "Shader not set"
@@ -378,10 +556,8 @@ public final class QViewer extends QEncoding {
 
     private void internalProcessVertex(Triangle tri, int triVertNum) {
         QShader.VertexShaderContext vctx = new QShader.VertexShaderContext();
-        vctx.triNum    = tri.triNum; 
-        vctx.vertexNum = tri.triNum * VERTS_PER_TRI + triVertNum;
-        vctx.uniforms  = slotUniforms;
-        vctx.textures  = slotTextures;
+        vctx.uniforms   = slotUniforms;
+        vctx.textures   = slotTextures;
         vctx.attributes = new float[slotAttribs.length][];
 
         for (int slot = 0; slot < slotAttribs.length; slot++) {
@@ -397,8 +573,9 @@ public final class QViewer extends QEncoding {
             );
         }
 
-        QVector3 vertShaderOut              = shader.vertexShader(vctx);
-        tri.verts[triVertNum].posn          = vertShaderOut.getComponents();
+        QShader  shader         = internalGetRelevantShader( );
+        QVector3 vertShaderOut  = shader.vertexShader(vctx);
+        tri.verts[triVertNum].posn          = vertShaderOut.getComponents( );
         tri.verts[triVertNum].shaderOutputs = vctx.outputsToFragShader; 
     }
 
@@ -889,6 +1066,46 @@ public final class QViewer extends QEncoding {
         out[2] = 1.0f - out[1] - out[0];
     }
 
+    private float[][] internalInterpolateFragmentInputs(
+        float[]   baryWeights,
+        Triangle  tri
+    ) {
+        // NOTE:
+        //  in principle, all vertex outputs/fragment inputs should be formatted
+        //  the same, so we will use v0 as a reference
+        Vertex v0 = tri.getVertex(0);
+        float[][] buffer = new float[v0.shaderOutputs.length][];
+
+        for (int slot = 0; slot < buffer.length; slot++) {
+
+            float[] outputSlot = v0.shaderOutputs[slot];
+            if (outputSlot == null) { continue; }
+            buffer[slot] = new float[outputSlot.length];
+
+            // NOTE:
+            //  do a perspective-correct interpolation of each vertex output
+            float[] output0 = tri.getVertex(0).shaderOutputs[slot];
+            float[] output1 = tri.getVertex(1).shaderOutputs[slot];
+            float[] output2 = tri.getVertex(2).shaderOutputs[slot];
+
+            // refer to
+            // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_rasterizetri.c
+            int compCount = outputSlot.length;
+            float w0      = tri.getPosnZ(0) * baryWeights[0];
+            float w1      = tri.getPosnZ(1) * baryWeights[1];
+            float w2      = tri.getPosnZ(2) * baryWeights[2];
+            float invWSum = 1.0f / (w0 + w1 + w2);  
+            for (int comp = 0; comp < compCount; comp++) {
+                buffer[slot][comp] =
+                    (w0 * output0[comp] +
+                     w1 * output1[comp] + 
+                     w2 * output2[comp]) * invWSum;
+            }
+        }
+
+        return buffer;
+    }
+
     private void internalDrawFragment(
         int drawX, 
         int drawY,
@@ -903,10 +1120,19 @@ public final class QViewer extends QEncoding {
             triangle.getPosnZ(1) * weights[1] +
             triangle.getPosnZ(2) * weights[2];
 
-        int fragColor = 0xFFFFFFFF; // TODO: finish
+        QShader.FragmentShaderContext fctx = new QShader.FragmentShaderContext();
+        fctx.uniforms = slotUniforms;
+        fctx.textures = slotTextures;
+        fctx.screenX  = drawX;
+        fctx.screenY  = drawY;
+        fctx.invDepth = invDepth;
+        fctx.inputsFromVertexShader = internalInterpolateFragmentInputs(weights, triangle);
+
+        QShader shader    = internalGetRelevantShader( );
+        QColor  fragColor = shader.fragmentShader(fctx);
 
         // don't draw on transparent
-        if ((fragColor >> COL_LSHIFT_OFST_A) == 0) {
+        if ((fragColor.getA( )) == 0) {
             return;
         }
 
@@ -919,7 +1145,7 @@ public final class QViewer extends QEncoding {
         }
 
         renderTarget.setDepth(drawX, drawY, invDepth);
-        renderTarget.setColor(drawX, drawY, QColor.White().toInt());
+        renderTarget.setColor(drawX, drawY, fragColor.toInt());
     }
 
     /////////////////////////////////////////////////////////////////

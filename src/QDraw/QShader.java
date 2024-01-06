@@ -16,19 +16,15 @@ public abstract class QShader {
     /////////////////////////////////////////////////////////////////
     // SHADER CONTEXT CLASSES
     public static final class VertexShaderContext {
-        public int        triNum;
-        public int        vertexNum;
         public Object[]   uniforms;
-        public QTexture[] textures;
+        public QSampleable[] textures;
         public float[][]  attributes;
         public float[][]  outputsToFragShader = new float[VERTEX_SHADER_MAX_OUTPUTS][];
     }
 
     public static final class FragmentShaderContext {
-        public int        triNum;
-        public int        fragmentNum;
         public Object[]   uniforms;
-        public QTexture[] textures;
+        public QSampleable[] textures;
         public int        screenX;
         public int        screenY;
         public float      invDepth;

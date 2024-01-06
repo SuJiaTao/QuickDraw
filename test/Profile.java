@@ -60,7 +60,7 @@ public final class Profile {
 
                     // PROFILE TEX
                     viewer.clearFrame( );
-                    //viewer.setTexture(tTex);
+                    viewer.setTextureSlot(0, tTex);
 
                     texTimer.beginTime();
                     viewer.drawMesh(mesh, tMatrix);
@@ -70,7 +70,7 @@ public final class Profile {
 
                     // PROFILE RB
                     viewer.clearFrame( );
-                    //viewer.setTexture(rbTex);
+                    viewer.setTextureSlot(0, rbTex);
 
                     rbTimer.beginTime();
                     viewer.drawMesh(mesh, tMatrix);
@@ -82,7 +82,7 @@ public final class Profile {
 
                     // PROFILE RB
                     viewer.clearFrame( );
-                    //viewer.setTexture(rbTex);
+                    viewer.setTextureSlot(0, rbTex);
 
                     rbTimer.beginTime();
                     viewer.drawMesh(mesh, tMatrix);
@@ -92,7 +92,7 @@ public final class Profile {
 
                     // PROFILE TEX
                     viewer.clearFrame( );
-                    //viewer.setTexture(tTex);
+                    viewer.setTextureSlot(0, tTex);
 
                     texTimer.beginTime();
                     viewer.drawMesh(mesh, tMatrix);
@@ -119,9 +119,10 @@ public final class Profile {
         window.setRenderBuffer(frameBuffer);
         viewer      = new QViewer(frameBuffer);
         viewer.setViewBounds(-FB_ASPECT, FB_ASPECT, -1.0f, 1.0f);
+        viewer.setRenderMode(RenderMode.Textured);
 
         String basePath = System.getProperty("user.dir") + "\\resources\\";
-        String meshPath = basePath + "Cube.obj";
+        String meshPath = basePath + "Mascot.obj";
         String hugeTexPath = basePath + "Texture_Huge.jpg";
         String largeTexPath = basePath + "Texture_Large.jpg";
         String medTexPath = basePath + "Texture_Medium.jpg";
