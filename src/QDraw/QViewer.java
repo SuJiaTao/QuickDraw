@@ -60,11 +60,7 @@ public final class QViewer extends QEncoding {
             VertexShaderContext context
         ) {
             QMatrix4x4 mtr = (QMatrix4x4)context.uniforms[DEFAULT_SHADER_MATRIX_SLOT];
-            setOutputToFragShader(
-                context, 
-                DEFAULT_SHADER_UV_SLOT, 
-                context.attributes[DEFAULT_SHADER_UV_SLOT]
-            );
+            forwardAttributeToFragShader(context, DEFAULT_SHADER_UV_SLOT);
             return QMatrix4x4.multiply(
                 mtr, 
                 new QVector3(context.attributes[DEFAULT_SHADER_POSITION_SLOT])
@@ -90,11 +86,12 @@ public final class QViewer extends QEncoding {
             VertexShaderContext context
         ) {
             QMatrix4x4 mtr = (QMatrix4x4)context.uniforms[DEFAULT_SHADER_MATRIX_SLOT];
-            setOutputToFragShader(
-                context, 
-                DEFAULT_SHADER_NORMAL_SLOT, 
-                context.attributes[DEFAULT_SHADER_NORMAL_SLOT]
+            QMatrix4x4 rotMtr = mtr.extractRotation( );
+            QMath.mul3_4x4(
+                context.attributes[DEFAULT_SHADER_NORMAL_SLOT], 
+                rotMtr.getComponents( )
             );
+            forwardAttributeToFragShader(context, DEFAULT_SHADER_NORMAL_SLOT);
             return QMatrix4x4.multiply(
                 mtr, 
                 new QVector3(context.attributes[DEFAULT_SHADER_POSITION_SLOT])
@@ -104,13 +101,8 @@ public final class QViewer extends QEncoding {
         public QColor fragmentShader(
             FragmentShaderContext context
         ) {
-            QSampleable tex = context.textures[DEFAULT_SHADER_TEXTURE_SLOT];
-            float[] normal = new float[3]; // TODO: remove magic numbers
-            getOutputFromVertShader(
-                context, 
-                DEFAULT_SHADER_NORMAL_SLOT, 
-                normal
-            );
+            float[] normal = new float[VCTR_NUM_CMPS];
+            getOutputFromVertShader(context, DEFAULT_SHADER_NORMAL_SLOT, normal);
             return new QColor(
                 (int)((1.0f + normal[VCTR_INDEX_X]) * 127.0f),
                 (int)((1.0f + normal[VCTR_INDEX_Y]) * 127.0f),
@@ -181,6 +173,10 @@ public final class QViewer extends QEncoding {
         slotUniforms[slot] = uniform;
     }
 
+    public void setMatrix(QMatrix4x4 matrix) {
+        setUniformSlot(DEFAULT_SHADER_MATRIX_SLOT, matrix);
+    }
+
     public void clearUniformSlots( ) {
         for (int i = 0; i < slotUniforms.length; i++) {
             slotUniforms[i] = null;
@@ -192,6 +188,10 @@ public final class QViewer extends QEncoding {
         QSampleable texture
     ) {
         slotTextures[slot] = texture;
+    }
+
+    public void setTexture(QSampleable texture) {
+        setTextureSlot(DEFAULT_SHADER_TEXTURE_SLOT, texture);
     }
 
     public void clearTextureSlots( ) {
@@ -226,37 +226,16 @@ public final class QViewer extends QEncoding {
         QMesh      mesh,
         QMatrix4x4 meshTransform
     ) {
-        
-        setUniformSlot(0, meshTransform);
-        // setTextureSlot(0, texture);
-        setVertexAttribSlot(0, mesh.getPosIndexer( ));
-        setVertexAttribSlot(1, mesh.getUVIndexer( ));
-        setVertexAttribSlot(2, mesh.getNormalIndexer( ));
+        setMatrix(meshTransform);
+        setVertexAttribSlot(DEFAULT_SHADER_POSITION_SLOT, mesh.getPosIndexer( ));
+        setVertexAttribSlot(DEFAULT_SHADER_UV_SLOT, mesh.getUVIndexer( ));
+        setVertexAttribSlot(DEFAULT_SHADER_NORMAL_SLOT, mesh.getNormalIndexer( ));
 
-        // TODO: remove and complete
-        QShader tempShader = new QShader() {
-            public QVector3 vertexShader(
-                VertexShaderContext context
-            ) {
-                QMatrix4x4 transform = (QMatrix4x4)context.uniforms[0];
-                QVector3   pos = new QVector3(context.attributes[0]);
-                return QMatrix4x4.multiply(transform, pos);
-            }
-
-            public QColor fragmentShader(
-                FragmentShaderContext context
-            ) { 
-                return null;
-            }
-        };
-
-        setCustomShader(tempShader);
         draw( );
 
         clearTextureSlots( );
         clearUniformSlots( );
         clearVertexAttribSlots( );
-
     }
 
     /////////////////////////////////////////////////////////////////
@@ -488,13 +467,6 @@ public final class QViewer extends QEncoding {
             throw new QException(
                 PointOfError.BadState, 
                 "Render target unassigned"
-            );
-        }
-
-        if (customShader == null) {
-            throw new QException(
-                PointOfError.BadState, 
-                "Shader not set"
             );
         }
 
@@ -1126,6 +1098,7 @@ public final class QViewer extends QEncoding {
         fctx.screenX  = drawX;
         fctx.screenY  = drawY;
         fctx.invDepth = invDepth;
+        fctx.normal   = new QVector3(triangle.normal);
         fctx.inputsFromVertexShader = internalInterpolateFragmentInputs(weights, triangle);
 
         QShader shader    = internalGetRelevantShader( );

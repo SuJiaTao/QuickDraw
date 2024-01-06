@@ -112,7 +112,6 @@ public final class Profile {
         }
     }
 
-    // TODO: fix
     public static void main(String[] args) {
         window      = new QWindow("Profiling Tests", WINDOW_WIDTH, WINDOW_HEIGHT);
         frameBuffer = new QRenderBuffer(FB_WIDTH, FB_HEIGHT);

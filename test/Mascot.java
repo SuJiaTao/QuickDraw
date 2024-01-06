@@ -3,6 +3,7 @@
 // Mascot.java
 
 import QDraw.*;
+import QDraw.QSampleable.SampleType;
 import QDraw.QViewer.RenderMode;
 
 public final class Mascot {
@@ -15,26 +16,27 @@ public final class Mascot {
     public static final int CUT_RUNTIME_MS  = 1000 * CUT_RUNTIME_SEC;
 
     public static final QMesh MASCOT_MESH = 
-        new QMesh(System.getProperty("user.dir") + "\\resources\\Mascot.obj");
+        new QMesh(System.getProperty("user.dir") + "\\resources\\Mascot_Smooth.obj");
     public static final QMesh CUBE_MESH = 
         new QMesh(System.getProperty("user.dir") + "\\resources\\Cube.obj");
     public static final QTexture MASCOT_TEXTURE = 
-        new QTexture(System.getProperty("user.dir") + "\\resources\\MascotFuzzy256_AltEyes.png");
+        new QTexture(System.getProperty("user.dir") + "\\resources\\MascotFuzzy256.png");
     public static final QTexture BERRIES_TEXTURE = 
         new QTexture(System.getProperty("user.dir") + "\\resources\\Texture_Medium.jpg");
     public static final QTexture TECH_TEXTURE = 
         new QTexture(System.getProperty("user.dir") + "\\resources\\Tech.jpg");
-    public static final QTexture RED_MASCOT_TEXTURE;
+    public static final QTexture MASCOTS_BOYFRIEND_TEXTURE;
     static {
-        RED_MASCOT_TEXTURE = new QTexture(MASCOT_TEXTURE);
-        for (int i = 0; i < RED_MASCOT_TEXTURE.getWidth(); i++) {
-            for (int j = 0; j < RED_MASCOT_TEXTURE.getHeight(); j++) {
-                QColor color = new QColor(RED_MASCOT_TEXTURE.getColor(i, j));
+        MASCOTS_BOYFRIEND_TEXTURE = 
+            new QTexture(System.getProperty("user.dir") + "\\resources\\MascotFuzzy256_AltEyes.png");
+        for (int i = 0; i < MASCOTS_BOYFRIEND_TEXTURE.getWidth(); i++) {
+            for (int j = 0; j < MASCOTS_BOYFRIEND_TEXTURE.getHeight(); j++) {
+                QColor color = new QColor(MASCOTS_BOYFRIEND_TEXTURE.getColor(i, j));
                 int r = color.getR();
                 int b = color.getB();
                 color.setR(b);
                 color.setB(r);
-                RED_MASCOT_TEXTURE.setColor(i, j, color.toInt());
+                MASCOTS_BOYFRIEND_TEXTURE.setColor(i, j, color.toInt());
             }
         }
     }
@@ -56,7 +58,7 @@ public final class Mascot {
                 QVector3.One().multiply3(0.25f)
             );
 
-            eyes.setRenderType(RenderMode.Textured);
+            eyes.setRenderMode(RenderMode.Textured);
             eyes.setTexture(MASCOT_TEXTURE);
             eyes.drawMesh(MASCOT_MESH, m0);
 
@@ -64,7 +66,7 @@ public final class Mascot {
         }
     }
 
-    public static void MascotAndHisFriends( ) {
+    public static void MascotAndMetalMascot( ) {
         long t0 = System.currentTimeMillis();
         while ((System.currentTimeMillis() - t0) < CUT_RUNTIME_MS) {
             eyes.clearFrame( );
@@ -76,7 +78,7 @@ public final class Mascot {
                 QVector3.One().multiply3(0.25f)
             );
 
-            eyes.setRenderType(RenderMode.Textured);
+            eyes.setRenderMode(RenderMode.Textured);
             eyes.setTexture(MASCOT_TEXTURE);
             eyes.drawMesh(MASCOT_MESH, m0);
 
@@ -86,17 +88,8 @@ public final class Mascot {
                 QVector3.One().multiply3(0.25f)
             );
 
-            eyes.setRenderType(RenderMode.Normal);
+            eyes.setRenderMode(RenderMode.Normal);
             eyes.drawMesh(MASCOT_MESH, m1);
-
-            QMatrix4x4 m2 = QMatrix4x4.TRS(
-                new QVector3(0.0f, 0.0f, -3.6f), 
-                new QVector3(0, time, 0), 
-                QVector3.One().multiply3(0.25f)
-            );
-
-            eyes.setRenderType(RenderMode.Depth);
-            eyes.drawMesh(MASCOT_MESH, m2);
 
             window.updateFrame( );
         }
@@ -114,7 +107,7 @@ public final class Mascot {
                 QVector3.One().multiply3(0.25f)
             );
 
-            eyes.setRenderType(RenderMode.Textured);
+            eyes.setRenderMode(RenderMode.Textured);
             eyes.setTexture(MASCOT_TEXTURE);
             eyes.drawMesh(MASCOT_MESH, m0);
 
@@ -124,8 +117,8 @@ public final class Mascot {
                 QVector3.One().multiply3(0.25f)
             );
 
-            eyes.setRenderType(RenderMode.Textured);
-            eyes.setTexture(RED_MASCOT_TEXTURE);
+            eyes.setRenderMode(RenderMode.Textured);
+            eyes.setTexture(MASCOTS_BOYFRIEND_TEXTURE);
             eyes.drawMesh(MASCOT_MESH, m1);
 
             window.updateFrame( );
@@ -156,7 +149,7 @@ public final class Mascot {
                         QVector3.One().multiply3(0.2f)
                     );
 
-                    eyes.setRenderType(RenderMode.Textured);
+                    eyes.setRenderMode(RenderMode.Textured);
                     eyes.setTexture(TECH_TEXTURE);
                     eyes.drawMesh(MASCOT_MESH, m0);
 
@@ -169,32 +162,35 @@ public final class Mascot {
 
     public static void CustomWobblyMascot( ) {
         long t0 = System.currentTimeMillis();
-        eyes.setRenderType(RenderMode.CustomShader);
+        eyes.setRenderMode(RenderMode.CustomShader);
         eyes.setCustomShader(
-            new QShader() {
+            new QShader( ) {
                 public QVector3 vertexShader(
-                    QViewer.VertexShaderContext vertInfo,
-                    Object userIn
+                    VertexShaderContext vctx
                 ) {
-                    float dt = (float)(System.currentTimeMillis() - t0) * 0.6f;
-                    float offsetX = 0.1f * QMath.cosf( dt + (vertInfo.vertexPos.getY() * 35.0f) );
-                    float offsetY = 0.1f * QMath.sinf( (dt + vertInfo.vertexPos.getX() * 70.0f) * 0.5f );
-                    float offsetZ = 0.1f * QMath.sinf( 90.0f + dt + (vertInfo.vertexPos.getY() * 35.0f) );                    
-                    vertInfo.transform.multiply(QMatrix4x4.translationMatrix(offsetX, offsetY, offsetZ));
-                    return QMatrix4x4.multiply(vertInfo.transform, vertInfo.vertexPos);
+                    QVector3   vertexPos = new QVector3(vctx.attributes[QViewer.DEFAULT_SHADER_POSITION_SLOT]);
+                    QMatrix4x4 transform = 
+                        new QMatrix4x4((QMatrix4x4)vctx.uniforms[QViewer.DEFAULT_SHADER_MATRIX_SLOT]);
+                    Float      dt        = ((Float)vctx.uniforms[1]) * 0.35f;
+
+                    float offsetX = 0.03f * QMath.cosf( dt + (vertexPos.getY() * 35.0f) );
+                    float offsetY = 0.12f * QMath.sinf( 35.0f + (dt + vertexPos.getX() * 70.0f) * 0.5f );
+                    float offsetZ = 0.15f * QMath.sinf( 90.0f + dt + (vertexPos.getY() * 35.0f) ); 
+
+                    transform.multiply(QMatrix4x4.translationMatrix(offsetX, offsetY, offsetZ));
+
+                    forwardAttributeToFragShader(vctx, QViewer.DEFAULT_SHADER_UV_SLOT);
+
+                    return QMatrix4x4.multiply(transform, vertexPos);
                 }
 
                 public QColor fragmentShader(
-                    QViewer.FragmentShaderContext fragInfo,
-                    Object userIn
+                    FragmentShaderContext fragInfo
                 ) {
-                    QColor texCol = sampleTexture(
-                        fragInfo.fragU, 
-                        fragInfo.fragV, 
-                        fragInfo.texture, 
-                        QViewer.SampleType.Repeat
-                    ).setA(200);
-                    return blendColor(fragInfo.belowColor, texCol);
+                    QSampleable tex = fragInfo.textures[QViewer.DEFAULT_SHADER_TEXTURE_SLOT];
+                    float[]     uv  = new float[2];
+                    getOutputFromVertShader(fragInfo, QViewer.DEFAULT_SHADER_UV_SLOT, uv);
+                    return new QColor(tex.sample(uv[0], uv[1], SampleType.Repeat)).setA(200);
                 }
             }
         );
@@ -209,6 +205,9 @@ public final class Mascot {
                 QVector3.One().multiply3(0.25f)
             );
 
+            Float dt = (float)(System.currentTimeMillis() - t0);
+
+            eyes.setUniformSlot(1, dt);
             eyes.setTexture(MASCOT_TEXTURE);
             eyes.drawMesh(MASCOT_MESH, m0);
 
@@ -217,35 +216,53 @@ public final class Mascot {
     }
 
     public static void UltraGFXMascot( ) {
-        eyes.setRenderType(RenderMode.CustomShader);
+        eyes.setRenderMode(RenderMode.CustomShader);
         eyes.setCustomShader(
-            new QShader() {
+            new QShader( ) {
+                
                 public QVector3 vertexShader(
-                    QViewer.VertexShaderContext vertInfo,
-                    Object userIn
+                    VertexShaderContext vctx
                 ) {
-                    return QMatrix4x4.multiply(vertInfo.transform, vertInfo.vertexPos);
+                    QVector3   vertexPos = new QVector3(vctx.attributes[QViewer.DEFAULT_SHADER_POSITION_SLOT]);
+                    QMatrix4x4 transform = (QMatrix4x4)vctx.uniforms[QViewer.DEFAULT_SHADER_MATRIX_SLOT];
+                    QMatrix4x4 rotMtr = transform.extractRotation( );
+                    QMath.mul3_4x4(
+                        vctx.attributes[QViewer.DEFAULT_SHADER_NORMAL_SLOT], 
+                        rotMtr.getComponents( )
+                    );
+                    forwardAttributeToFragShader(vctx, QViewer.DEFAULT_SHADER_POSITION_SLOT);
+                    forwardAttributeToFragShader(vctx, QViewer.DEFAULT_SHADER_UV_SLOT);
+                    forwardAttributeToFragShader(vctx, QViewer.DEFAULT_SHADER_NORMAL_SLOT);
+
+                    return QMatrix4x4.multiply(transform, vertexPos);
                 }
 
                 public QColor fragmentShader(
-                    QViewer.FragmentShaderContext fragInfo,
-                    Object userIn
+                    FragmentShaderContext fragInfo
                 ) {
+                    float[] pos    = new float[3];
+                    float[] uv     = new float[2];
+                    float[] normal = new float[3];
+                    getOutputFromVertShader(fragInfo, QViewer.DEFAULT_SHADER_POSITION_SLOT, pos);
+                    getOutputFromVertShader(fragInfo, QViewer.DEFAULT_SHADER_UV_SLOT, uv);
+                    getOutputFromVertShader(fragInfo, QViewer.DEFAULT_SHADER_NORMAL_SLOT, normal);
 
+                    QSampleable tex = fragInfo.textures[QViewer.DEFAULT_SHADER_TEXTURE_SLOT];
+                    
                     // WIGGLE UVS
-                    fragInfo.fragU += random() * 0.007f;
-                    fragInfo.fragV += random() * 0.007f;
+                    uv[0] += random() * 0.007f;
+                    uv[1] += random() * 0.007f;
 
                     // SAMPLE TEXTURE
-                    QColor texCol = sampleTexture(fragInfo.fragU, fragInfo.fragV, fragInfo.texture, QViewer.SampleType.Repeat);
+                    QColor texCol = new QColor(tex.sample(uv[0], uv[1], SampleType.Repeat));
                     
                     // CALCULATE BRIGHTNESS FACTOR BASED ON POINT LIGHT
                     QVector3 dFaceLightNormalized = QVector3.sub(
                         new QVector3(-4.0f, 1.4f, 10.0f),
-                        fragInfo.faceCenterWorldSpace
+                        new QVector3(pos)
                     ).fastNormalize( );
                     float brightnessFactor = QVector3.dot(
-                        fragInfo.faceNormal, 
+                        new QVector3(normal), 
                         dFaceLightNormalized
                     );
                     
@@ -298,7 +315,7 @@ public final class Mascot {
 
         while (true) {
             RegularMascot( );
-            MascotAndHisFriends( );
+            MascotAndMetalMascot( );
             MascotAndHisBoyFriend( );
             TechMascot( );
             CustomWobblyMascot( );

@@ -28,6 +28,7 @@ public abstract class QShader {
         public int        screenX;
         public int        screenY;
         public float      invDepth;
+        public QVector3   normal;
         public float[][]  inputsFromVertexShader = new float[VERTEX_SHADER_MAX_OUTPUTS][];
     }
 
@@ -46,6 +47,13 @@ public abstract class QShader {
             0, 
             inBuffer.length
         );
+    }
+
+    public static void forwardAttributeToFragShader(
+        VertexShaderContext vertCtx,
+        int attribSlot
+    ) {
+        setOutputToFragShader(vertCtx, attribSlot, vertCtx.attributes[attribSlot]);
     }
 
     public static void getOutputFromVertShader(
