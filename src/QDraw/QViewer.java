@@ -65,29 +65,47 @@ public final class QViewer extends QEncoding {
         viewTop    = top;
     }
 
-    public void setShader(QShader shader) {
-        shader = shader;
+    public void setShader(QShader _shader) {
+        shader = _shader;
     }
 
-    public void setShaderUniformSlot(
+    public void setUniformSlot(
         int    slot,
         Object uniform
     ) {
         slotUniforms[slot] = uniform;
     }
 
-    public void setShaderTextureSlot(
+    public void clearUniformSlots( ) {
+        for (int i = 0; i < slotUniforms.length; i++) {
+            slotUniforms[i] = null;
+        }
+    }
+
+    public void setTextureSlot(
         int      slot,
         QTexture texture
     ) {
         slotTextures[slot] = texture;
     }
 
-    public void setShaderVertexAttribSlot(
+    public void clearTextureSlots( ) {
+        for (int i = 0; i < slotTextures.length; i++) {
+            slotTextures[i] = null;
+        }
+    }
+
+    public void setVertexAttribSlot(
         int            slot,
         QAttribIndexer indexer
     ) {
         slotAttribs[slot] = indexer;
+    }
+
+    public void clearVertexAttribSlots( ) {
+        for (int i = 0; i < slotAttribs.length; i++) {
+            slotAttribs[i] = null;
+        }
     }
 
     public void clearFrame( ) {
@@ -100,11 +118,38 @@ public final class QViewer extends QEncoding {
     }
 
     public void drawMesh(
-        QMesh mesh,
+        QMesh      mesh,
         QMatrix4x4 meshTransform
     ) {
-        // TODO: replace
-        // internalDrawMesh(mesh, meshTransform);
+        clearTextureSlots( );
+        clearUniformSlots( );
+        clearVertexAttribSlots( );
+
+        setUniformSlot(0, meshTransform);
+        // setTextureSlot(0, texture);
+        setVertexAttribSlot(0, mesh.getPosIndexer( ));
+        setVertexAttribSlot(1, mesh.getUVIndexer( ));
+        setVertexAttribSlot(2, mesh.getNormalIndexer( ));
+
+        // TODO: remove and complete
+        QShader tempShader = new QShader() {
+            public QVector3 vertexShader(
+                VertexShaderContext context
+            ) {
+                QMatrix4x4 transform = (QMatrix4x4)context.uniforms[0];
+                QVector3   pos = new QVector3(context.attributes[0]);
+                return QMatrix4x4.multiply(transform, pos);
+            }
+
+            public QColor fragmentShader(
+                FragmentShaderContext context
+            ) { 
+                return null;
+            }
+        };
+
+        setShader(tempShader);
+        draw( );
     }
 
     /////////////////////////////////////////////////////////////////

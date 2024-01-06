@@ -158,6 +158,12 @@ public final class QMesh extends QEncoding {
     private QAttribIndexer normalIndexer;
 
     /////////////////////////////////////////////////////////////////
+    // PUBLIC METHODS
+    public QAttribIndexer getPosIndexer( ) { return posIndexer; }
+    public QAttribIndexer getUVIndexer( ) { return uvIndexer; }
+    public QAttribIndexer getNormalIndexer( ) { return normalIndexer; }
+
+    /////////////////////////////////////////////////////////////////
     // PRIVATE METHODS
     private void initMesh(
         float[] inPosns,

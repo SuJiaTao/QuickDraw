@@ -26,7 +26,6 @@ public final class Profile {
             String texPath,
             String meshPath
         ) {
-        viewer.setRenderType(RenderMode.Textured);
 
         QRenderBuffer rbTex = new QTexture(texPath).toRenderBuffer( );
         QTexture      tTex  = new QTexture(texPath);
@@ -61,7 +60,7 @@ public final class Profile {
 
                     // PROFILE TEX
                     viewer.clearFrame( );
-                    viewer.setTexture(tTex);
+                    //viewer.setTexture(tTex);
 
                     texTimer.beginTime();
                     viewer.drawMesh(mesh, tMatrix);
@@ -71,7 +70,7 @@ public final class Profile {
 
                     // PROFILE RB
                     viewer.clearFrame( );
-                    viewer.setTexture(rbTex);
+                    //viewer.setTexture(rbTex);
 
                     rbTimer.beginTime();
                     viewer.drawMesh(mesh, tMatrix);
@@ -83,7 +82,7 @@ public final class Profile {
 
                     // PROFILE RB
                     viewer.clearFrame( );
-                    viewer.setTexture(rbTex);
+                    //viewer.setTexture(rbTex);
 
                     rbTimer.beginTime();
                     viewer.drawMesh(mesh, tMatrix);
@@ -93,7 +92,7 @@ public final class Profile {
 
                     // PROFILE TEX
                     viewer.clearFrame( );
-                    viewer.setTexture(tTex);
+                    //viewer.setTexture(tTex);
 
                     texTimer.beginTime();
                     viewer.drawMesh(mesh, tMatrix);
@@ -113,6 +112,7 @@ public final class Profile {
         }
     }
 
+    // TODO: fix
     public static void main(String[] args) {
         window      = new QWindow("Profiling Tests", WINDOW_WIDTH, WINDOW_HEIGHT);
         frameBuffer = new QRenderBuffer(FB_WIDTH, FB_HEIGHT);
