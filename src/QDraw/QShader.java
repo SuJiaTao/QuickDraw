@@ -91,6 +91,22 @@ public abstract class QShader {
         return (float)iSeed * NORMALIZATION_FACTOR;
     }
 
+    public static QVector3 randomVector( ) {
+        return new QVector3(random( ), random( ), random( ));
+    }
+
+    public static QVector3 seededRandomVector(float flt) {
+        return seededRandomVector(Float.floatToRawIntBits(flt));
+    }
+
+    public static QVector3 seededRandomVector(int seed) {
+        return new QVector3(
+            seededRandom((seed << 2) + 1),
+            seededRandom((seed << 2) + 2),
+            seededRandom((seed << 2) + 3)
+        );
+    }
+
     public static QColor blendColor(QColor bottom, QColor top) {
         int tFac = top.getA();
         if (tFac == 0xFF) return top;

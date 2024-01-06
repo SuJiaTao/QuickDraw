@@ -250,24 +250,35 @@ public final class Mascot {
                     QSampleable tex = fragInfo.textures[QViewer.DEFAULT_SHADER_TEXTURE_SLOT];
                     
                     // WIGGLE UVS
-                    uv[0] += random() * 0.007f;
-                    uv[1] += random() * 0.007f;
+                    final float wigglemag     = 0.004f;
+                    final float halfwigglemag = wigglemag * 0.5f;
+                    uv[0] += (random() * wigglemag) - halfwigglemag;
+                    uv[1] += (random() * wigglemag) - halfwigglemag;
 
                     // SAMPLE TEXTURE
                     QColor texCol = new QColor(tex.sample(uv[0], uv[1], SampleType.Repeat));
+
+                    // GENERATE RANDOM NORMAL OFFSET BASED ON COLOR
+                    QVector3 randOffset = seededRandomVector(texCol.toInt( )).multiply3(0.3f);
                     
                     // CALCULATE BRIGHTNESS FACTOR BASED ON POINT LIGHT
                     QVector3 dFaceLightNormalized = QVector3.sub(
-                        new QVector3(-4.0f, 1.4f, 10.0f),
+                        new QVector3(3.0f, 2.4f, 3.0f),
                         new QVector3(pos)
                     ).fastNormalize( );
-                    float brightnessFactor = QVector3.dot(
-                        new QVector3(normal), 
+
+                    float brightnessFactor = Math.max(0.0f, QVector3.dot(
+                        new QVector3(normal).add(randOffset).fastNormalize( ), 
                         dFaceLightNormalized
-                    );
+                    ));
                     
                     // MULTIPLY COLOR BY BRIGHTNESS
-                    return multiplyColor(texCol, 0.2f + Math.max(0.0f, brightnessFactor * 0.8f));
+                    float ambient       = 0.55f;
+                    float brignessRange = 1.0f - ambient;
+                    return multiplyColor(
+                        texCol, 
+                        ambient + ((float)Math.pow(brightnessFactor, 5.5f) * brignessRange)
+                    );
                 }
             }
         );
@@ -275,7 +286,7 @@ public final class Mascot {
         long t0 = System.currentTimeMillis();
         while ((System.currentTimeMillis() - t0) < CUT_RUNTIME_MS) {
             eyes.clearFrame( );
-            float time = (float)(System.currentTimeMillis() - t0) * 0.15f;
+            float time = (float)(System.currentTimeMillis() - t0) * 0.10f;
 
             QMatrix4x4 m0 = QMatrix4x4.TRS(
                 new QVector3(0.0f, 0.0f, -2.0f), 
@@ -312,14 +323,14 @@ public final class Mascot {
         window.setRenderBuffer(frameBuffer);
         eyes        = new QViewer(frameBuffer);
         eyes.setViewBounds(-FB_ASPECT, FB_ASPECT, -1.0f, 1.0f);
-        eyes.setNearClip(-2.0f);
+        eyes.setNearClip(-0.3f);
 
         while (true) {
-            RegularMascot( );
-            MascotAndMetalMascot( );
-            MascotAndHisBoyFriend( );
-            TechMascot( );
-            CustomWobblyMascot( );
+            // RegularMascot( );
+            // MascotAndMetalMascot( );
+            // MascotAndHisBoyFriend( );
+            // TechMascot( );
+            // CustomWobblyMascot( );
             UltraGFXMascot( );
         }
 

@@ -8,7 +8,6 @@ import java.util.Arrays;
 
 import QDraw.QException.PointOfError;
 import QDraw.QSampleable.SampleType;
-import javafx.scene.layout.TilePane;
 
 public final class QViewer extends QEncoding {
     /////////////////////////////////////////////////////////////////

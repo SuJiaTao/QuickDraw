@@ -179,6 +179,11 @@ public class QTexture extends QSampleable {
         initColorBuffer(width, height);
     }
 
+    public QTexture(int width, int height, QSampleable.ColorMapSpacialFunction initFunc) {
+        initColorBuffer(width, height);
+        mapColorSpacial(initFunc);
+    }
+
     public QTexture(String imgPath) {
 
         File imgFile = null;
