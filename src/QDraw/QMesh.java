@@ -421,18 +421,18 @@ public final class QMesh extends QEncoding {
 
                 // refer to
                 // https://stackoverflow.com/questions/960431/how-can-i-convert-listinteger-to-int-in-java
-                faceIndexBuffer.add(iBuffer.stream().mapToInt(i -> i).toArray());
+                faceIndexBuffer.add(iBuffer.stream( ).mapToInt(i -> i).toArray( ));
                 continue;
             }
         }
 
-        scanner.close();
+        scanner.close( );
 
         initMesh(
-            posBuffer.toArray(), 
-            uvBuffer.toArray(), 
-            normalBuffer.toArray(),
-            faceIndexBuffer.toArray()
+            posBuffer.toArray( ), 
+            uvBuffer.toArray( ), 
+            normalBuffer.toArray( ),
+            faceIndexBuffer.toArray( )
         );
     }
 

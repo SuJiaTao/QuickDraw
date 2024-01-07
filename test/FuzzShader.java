@@ -41,7 +41,7 @@ public class FuzzShader extends QShader {
             )
         };
     }
-    
+
     public QVector3 vertexShader(
         VertexShaderContext vctx
     ) {
@@ -74,12 +74,11 @@ public class FuzzShader extends QShader {
         QSampleable tex = fragInfo.textures[SHADER_TEXTURE_SLOT];
         
         // WIGGLE UVS
-        final int randSeedU = (((fragInfo.screenX >> 1) + (fragInfo.screenY >> 1) * fragInfo.target.getWidth( )) << 1);
-        final int randSeedV = randSeedU + 1;
+        final float randDir       = seededRandom(fragInfo);
         final float wigglemag     = 0.004f;
         final float halfwigglemag = wigglemag * 0.5f;
-        uv[0] += (seededRandom(randSeedU) * wigglemag) - halfwigglemag;
-        uv[1] += (seededRandom(randSeedV) * wigglemag) - halfwigglemag;
+        uv[0] += (randDir * wigglemag) - halfwigglemag;
+        uv[1] += (randDir * wigglemag) - halfwigglemag;
 
         // SAMPLE TEXTURE
         QColor texCol = new QColor(tex.sample(uv[0], uv[1], QSampleable.SampleType.Repeat));

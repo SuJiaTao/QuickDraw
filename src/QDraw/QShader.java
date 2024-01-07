@@ -6,8 +6,6 @@ package QDraw;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import QDraw.QShader.ShaderRequirement.RequirementType;
-
 public abstract class QShader {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
@@ -18,6 +16,8 @@ public abstract class QShader {
     /////////////////////////////////////////////////////////////////
     // PUBLIC CLASSES
     public static final class VertexShaderContext {
+        /////////////////////////////////////////////////////////////////
+        // PUBLIC MEMBERS
         public Object[]   uniforms;
         public QSampleable[] textures;
         public float[][]  attributes;
@@ -25,6 +25,8 @@ public abstract class QShader {
     }
 
     public static final class FragmentShaderContext {
+        /////////////////////////////////////////////////////////////////
+        // PUBLIC MEMBERS
         public Object[]   uniforms;
         public QSampleable[] textures;
         public QRenderBuffer target;
@@ -36,15 +38,22 @@ public abstract class QShader {
     }
 
     public static final class ShaderRequirement {
+        /////////////////////////////////////////////////////////////////
+        // PUBLIC ENUMS
         public static enum RequirementType {
             Attribute,
             Uniform,
             Texture
         }
+
+        /////////////////////////////////////////////////////////////////
+        // PUBLIC MEMBERS
         public int             slot;
         public RequirementType requireType;
         public String          purpose;
 
+        /////////////////////////////////////////////////////////////////
+        // CONSTRUCTOR
         public ShaderRequirement(int _slot, RequirementType _type, String _purpose) {
             slot        = _slot;
             requireType = _type;
@@ -92,7 +101,7 @@ public abstract class QShader {
 
     private static AtomicLong _seedUniquifier = new AtomicLong(0x5EED);
     public static float random( ) {
-        return seededRandom((int)(_seedUniquifier.incrementAndGet() + System.nanoTime()));
+        return seededRandom((int)(_seedUniquifier.incrementAndGet( ) + System.nanoTime( )));
     }
 
     public static float seededRandom(float seed) {
@@ -109,6 +118,16 @@ public abstract class QShader {
         // bound and normalize
         iSeed = (iSeed & RANDOM_GRANULATIRY);
         return (float)iSeed * NORMALIZATION_FACTOR;
+    }
+
+    public static float seededRandom(Object obj) {
+        // generate seed based on object hash
+        return seededRandom(obj.hashCode( ));
+    }
+
+    public static float seededRandom(FragmentShaderContext fctx) {
+        // generate seed based on screen coordinate
+        return seededRandom(fctx.screenX + (fctx.screenY * fctx.target.getWidth( )));
     }
 
     public static QVector3 randomVector( ) {

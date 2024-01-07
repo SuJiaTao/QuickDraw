@@ -303,9 +303,13 @@ public final class QViewer extends QEncoding {
     /////////////////////////////////////////////////////////////////
     // PRIVATE CLASSES
     private static class Vertex {
+        /////////////////////////////////////////////////////////////////
+        // PUBLIC MEMBERS
         public float[]   posn;
         public float[][] shaderOutputs;
 
+        /////////////////////////////////////////////////////////////////
+        // PUBLIC METHODS
         public void project( ) {
             posn[VCTR_INDEX_Z] = 1.0f / posn[VCTR_INDEX_Z];
             QMath.mult2(posn, -posn[VCTR_INDEX_Z]);
@@ -342,6 +346,8 @@ public final class QViewer extends QEncoding {
             shaderOutputs = tempShaderOutputs;
         }
 
+        /////////////////////////////////////////////////////////////////
+        // CONSTRUCTORS
         public Vertex( ) {
             posn = QMath.new3( );
         }
@@ -374,14 +380,20 @@ public final class QViewer extends QEncoding {
     }
 
     private static class Triangle {
+        /////////////////////////////////////////////////////////////////
+        // CONSTANTS
         public static final int VERTS_PER_TRI = 3;
 
+        /////////////////////////////////////////////////////////////////
+        // PUBLIC MEMBERS
         public int      triNum;
         public Vertex[] verts  = new Vertex[] {
             new Vertex( ), new Vertex( ), new Vertex( )
         };
         public float[]  normal = new float[VCTR_NUM_CMPS];
 
+        /////////////////////////////////////////////////////////////////
+        // PUBLIC METHODS
         public void swapVerts(int v0, int v1) {
             Vertex temp = verts[v0];
             verts[v0]   = verts[v1];
@@ -420,6 +432,8 @@ public final class QViewer extends QEncoding {
             return verts[vertNum];
         }
 
+        /////////////////////////////////////////////////////////////////
+        // CONSTRUCTORS
         public Triangle(int _num) {
             triNum = _num;
         }
@@ -434,13 +448,18 @@ public final class QViewer extends QEncoding {
                 verts[i] = new Vertex(toCopy.verts[i]);
             }
         }
+
     }
 
     private static class ClipState {
+        /////////////////////////////////////////////////////////////////
+        // PUBLIC MEMBERS
         public int       numVertsBehind     = 0;
         public boolean[] vertBehindState    = new boolean[VERTS_PER_TRI];
         public int[]     vertBehindIndicies = new int[VERTS_PER_TRI];
 
+        /////////////////////////////////////////////////////////////////
+        // PUBLIC METHODS
         public String toString( ) {
             return String.format(
                 "<numVBehind: %d, vStates: %s vIndicies: %s>",

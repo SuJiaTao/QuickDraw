@@ -3,7 +3,6 @@
 // Mascot.java
 
 import QDraw.*;
-import QDraw.QSampleable.SampleType;
 import QDraw.QViewer.RenderMode;
 
 public final class Mascot {
@@ -231,14 +230,14 @@ public final class Mascot {
         window.setRenderBuffer(frameBuffer);
         eyes        = new QViewer(frameBuffer);
         eyes.setViewBounds(-FB_ASPECT, FB_ASPECT, -1.0f, 1.0f);
-        eyes.setNearClip(-0.3f);
+        eyes.setNearClip(-0.4f);
 
         while (true) {
             // RegularMascot( );
             // MascotAndMetalMascot( );
             // MascotAndHisBoyFriend( );
             // TechMascot( );
-            CustomWobblyMascot( );
+            // CustomWobblyMascot( );
             // UltraGFXMascot( );
         }
 
