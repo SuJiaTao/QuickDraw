@@ -25,6 +25,7 @@ public abstract class QShader {
     public static final class FragmentShaderContext {
         public Object[]   uniforms;
         public QSampleable[] textures;
+        public QRenderBuffer target;
         public int        screenX;
         public int        screenY;
         public float      invDepth;

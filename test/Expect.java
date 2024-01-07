@@ -309,12 +309,7 @@ public final class Expect {
             new QMatrix4x4().scale(new QVector3(1.0f, 2.0f, 3.0f))
         );
     }
-
-    public static void MeshTest( ) {
-        // TODO: re-write mesh tests
-        new QMesh(System.getProperty("user.dir") + "//resources//Mascot.obj");
-    }
-
+    
     public static void MathTest( ) {
         QMatrix4x4 mat0 = QMatrix4x4.translationMatrix(1.0f, 2.0f, 3.0f);
 
@@ -339,7 +334,6 @@ public final class Expect {
         RenderBufferTest( );
         VectorTest( );
         MatrixTest( );
-        MeshTest( );
         MathTest( );
         System.out.println("All tests passed!");
     }

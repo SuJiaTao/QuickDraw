@@ -218,75 +218,13 @@ public final class Mascot {
     public static void UltraGFXMascot( ) {
         eyes.setRenderMode(RenderMode.CustomShader);
         eyes.setCustomShader(
-            new QShader( ) {
-                
-                public QVector3 vertexShader(
-                    VertexShaderContext vctx
-                ) {
-                    QVector3   vertexPos = new QVector3(vctx.attributes[QViewer.DEFAULT_SHADER_POSITION_SLOT]);
-                    QMatrix4x4 transform = (QMatrix4x4)vctx.uniforms[QViewer.DEFAULT_SHADER_MATRIX_SLOT];
-                    QMatrix4x4 rotMtr = transform.extractRotation( );
-                    QMath.mul3_4x4(
-                        vctx.attributes[QViewer.DEFAULT_SHADER_NORMAL_SLOT], 
-                        rotMtr.getComponents( )
-                    );
-                    forwardAttributeToFragShader(vctx, QViewer.DEFAULT_SHADER_POSITION_SLOT);
-                    forwardAttributeToFragShader(vctx, QViewer.DEFAULT_SHADER_UV_SLOT);
-                    forwardAttributeToFragShader(vctx, QViewer.DEFAULT_SHADER_NORMAL_SLOT);
-
-                    return QMatrix4x4.multiply(transform, vertexPos);
-                }
-
-                public QColor fragmentShader(
-                    FragmentShaderContext fragInfo
-                ) {
-                    float[] pos    = new float[3];
-                    float[] uv     = new float[2];
-                    float[] normal = new float[3];
-                    getOutputFromVertShader(fragInfo, QViewer.DEFAULT_SHADER_POSITION_SLOT, pos);
-                    getOutputFromVertShader(fragInfo, QViewer.DEFAULT_SHADER_UV_SLOT, uv);
-                    getOutputFromVertShader(fragInfo, QViewer.DEFAULT_SHADER_NORMAL_SLOT, normal);
-
-                    QSampleable tex = fragInfo.textures[QViewer.DEFAULT_SHADER_TEXTURE_SLOT];
-                    
-                    // WIGGLE UVS
-                    final float wigglemag     = 0.004f;
-                    final float halfwigglemag = wigglemag * 0.5f;
-                    uv[0] += (random() * wigglemag) - halfwigglemag;
-                    uv[1] += (random() * wigglemag) - halfwigglemag;
-
-                    // SAMPLE TEXTURE
-                    QColor texCol = new QColor(tex.sample(uv[0], uv[1], SampleType.Repeat));
-
-                    // GENERATE RANDOM NORMAL OFFSET BASED ON COLOR
-                    QVector3 randOffset = seededRandomVector(texCol.toInt( )).multiply3(0.3f);
-                    
-                    // CALCULATE BRIGHTNESS FACTOR BASED ON POINT LIGHT
-                    QVector3 dFaceLightNormalized = QVector3.sub(
-                        new QVector3(3.0f, 2.4f, 3.0f),
-                        new QVector3(pos)
-                    ).fastNormalize( );
-
-                    float diffuse = Math.max(0.0f, QVector3.dot(
-                        new QVector3(normal).add(randOffset).fastNormalize( ), 
-                        dFaceLightNormalized
-                    ));
-                    
-                    // APPLY SIMPLE PHONG SHADING
-                    float ambient = 0.4f;
-                    float phong   = (float)Math.pow(diffuse, 5.5f);
-                    return multiplyColor(
-                        texCol, 
-                        Math.min(1.0f, ambient + diffuse + phong)
-                    );
-                }
-            }
+            new FuzzShader( )
         );
 
         long t0 = System.currentTimeMillis();
         while ((System.currentTimeMillis() - t0) < CUT_RUNTIME_MS) {
             eyes.clearFrame( );
-            float time = (float)(System.currentTimeMillis() - t0) * 0.10f;
+            float time = (float)(System.currentTimeMillis() - t0) * 0.15f;
 
             QMatrix4x4 m0 = QMatrix4x4.TRS(
                 new QVector3(0.0f, 0.0f, -2.0f), 

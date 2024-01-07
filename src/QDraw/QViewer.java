@@ -500,14 +500,14 @@ public final class QViewer extends QEncoding {
             );
         }
 
-        // TODO: clean up
         for (int triNum = 0; triNum < triCount; triNum++) {
-            // generate tri
+            // GENERATE TRIANGLE
             Triangle tri = new Triangle(triNum);
             internalProcessVertex(tri, 0);
             internalProcessVertex(tri, 1);
             internalProcessVertex(tri, 2);
 
+            // GENERATE TRIANGLE NORMAL
             float[] d01 = new float[VCTR_NUM_CMPS];
             QMath.copy3(d01, tri.getPosn(1));
             QMath.sub3(d01, tri.getPosn(0));
@@ -517,19 +517,17 @@ public final class QViewer extends QEncoding {
             QMath.sub3(d02, tri.getPosn(0));
 
             float[] tempNormal = QMath.cross3(d01, d02);
-            QMath.mult3(tempNormal, 1.0f / QMath.fastmag3(tempNormal));
+            QMath.mult3(tempNormal, 1.0f / QMath.mag3(tempNormal));
             QMath.copy3(tri.normal, tempNormal);
 
-            // TODO: clean this up!!!
-
-            // test for clipping
+            // CULL IF BACKFACING
             if (internalCheckBackfacing(tri)) { continue; }
 
+            // CLIP AND RENDER 
             Triangle[] clipTris = internalClipTri(tri);
             for (Triangle clippedTri : clipTris) {
                 internalDrawTri(clippedTri);
             }
-
         }
 
     }
@@ -540,10 +538,13 @@ public final class QViewer extends QEncoding {
         vctx.textures   = slotTextures;
         vctx.attributes = new float[slotAttribs.length][];
 
+        // POPULATE VERTEX SHADER INPUTS
         for (int slot = 0; slot < slotAttribs.length; slot++) {
+            // skip if slot is unused
             QAttribIndexer indexer = slotAttribs[slot];
             if (indexer == null) { continue; }
 
+            // populate attribute slot using indexer
             vctx.attributes[slot] = new float[indexer.getComponentsPerAttrib( )];
             indexer.index(
                 tri.triNum, 
@@ -553,6 +554,7 @@ public final class QViewer extends QEncoding {
             );
         }
 
+        // CALL SHADER
         QShader  shader         = internalGetRelevantShader( );
         QVector3 vertShaderOut  = shader.vertexShader(vctx);
         tri.verts[triVertNum].posn          = vertShaderOut.getComponents( );
@@ -651,6 +653,9 @@ public final class QViewer extends QEncoding {
         float[] pF,
         float[] pClip
     ) {
+        // NOTE:
+        // takes a starting, ending, and middle position, generates
+        // interpolation factor between pI to pF (0 for pI, 1 for pF)
         float[] temp = QMath.new3( );
         QMath.copy3(temp, pF);
         QMath.sub3(temp, pI);
@@ -726,35 +731,28 @@ public final class QViewer extends QEncoding {
         //   which will be tesselated as (0/2, 0, 1), (0/2, 1, 1/2)
 
         Triangle quadTri0 = new Triangle(shuffledTri);
-
-        // (0 1 2) -> (0 1 0/2)
         quadTri0.getVertex(2).findClippedShaderOutputs(
             shuffledTri.getVertex(0),
             shuffledTri.getVertex(2), 
             fac02
         );
-        quadTri0.setPosn(2, pos02); 
-
-        quadTri0.swapVerts(0, 2); // (0 1 0/2) -> (0/2 1 0)
-        quadTri0.swapVerts(1, 2); // (0/2 1 0) -> (0/2 0 1)
+        quadTri0.setPosn(2, pos02); // (0 1 2) -> (0 1 0/2)
+        quadTri0.swapVerts(0, 2);     // (0 1 0/2) -> (0/2 1 0)
+        quadTri0.swapVerts(1, 2);     // (0/2 1 0) -> (0/2 0 1)
         
         Triangle quadTri1 = new Triangle(shuffledTri); // (0 1 2)
-
-        // (0 1 2)   -> (0/2 1 2)
         quadTri1.getVertex(0).findClippedShaderOutputs(
             shuffledTri.getVertex(0),
             shuffledTri.getVertex(2), 
             fac02
         );
-        quadTri1.setPosn(0, pos02); 
-
-        // (0/2 1 2) -> (0/2 1 1/2)
+        quadTri1.setPosn(0, pos02); // (0 1 2) -> (0/2 1 2)
         quadTri1.getVertex(2).findClippedShaderOutputs(
             shuffledTri.getVertex(1),
             shuffledTri.getVertex(2), 
             fac12
         );
-        quadTri1.setPosn(2, pos12); 
+        quadTri1.setPosn(2, pos12); // (0/2 1 2) -> (0/2 1 1/2)
         
         return new Triangle[] { quadTri0, quadTri1 };
 
@@ -1144,9 +1142,11 @@ public final class QViewer extends QEncoding {
             return;
         }
         
+        // CALL FRAGMENT SHADER
         QShader.FragmentShaderContext fctx = new QShader.FragmentShaderContext();
         fctx.uniforms = slotUniforms;
         fctx.textures = slotTextures;
+        fctx.target   = renderTarget;
         fctx.screenX  = drawX;
         fctx.screenY  = drawY;
         fctx.invDepth = invDepth;
@@ -1156,11 +1156,12 @@ public final class QViewer extends QEncoding {
         QShader shader    = internalGetRelevantShader( );
         QColor  fragColor = shader.fragmentShader(fctx);
 
-        // don't draw on transparent
+        // DISCARD IF FRAGMENT IS TRANSPARENT
         if ((fragColor.getA( )) == 0) {
             return;
         }
 
+        // BLEND FRAGMENT TO BELOW COLOR AND WRITE TO RENDERTARGET
         QColor blendedColor = QShader.blendColor(
             new QColor(renderTarget.getColor(drawX, drawY)), 
             fragColor
