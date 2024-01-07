@@ -3,6 +3,7 @@
 // FuzzShader.java
 
 import QDraw.*;
+import QDraw.QShader.ShaderRequirement.RequirementType;
 
 public class FuzzShader extends QShader {
     public static final int SHADER_POSITION_SLOT = QViewer.DEFAULT_SHADER_POSITION_SLOT;
@@ -11,6 +12,36 @@ public class FuzzShader extends QShader {
     public static final int SHADER_MATRIX_SLOT   = QViewer.DEFAULT_SHADER_MATRIX_SLOT;
     public static final int SHADER_TEXTURE_SLOT  = QViewer.DEFAULT_SHADER_TEXTURE_SLOT;
 
+    public ShaderRequirement[] requirements( ) {
+        return new ShaderRequirement[] {
+            new ShaderRequirement(
+                    SHADER_POSITION_SLOT, 
+                    RequirementType.Attribute, 
+                    "vertex position"
+            ),
+            new ShaderRequirement(
+                    SHADER_UV_SLOT, 
+                    RequirementType.Attribute, 
+                    "vertex uv"
+            ), 
+            new ShaderRequirement(
+                    SHADER_NORMAL_SLOT, 
+                    RequirementType.Attribute, 
+                    "vertex normal"
+            ), 
+            new ShaderRequirement(
+                    SHADER_MATRIX_SLOT, 
+                    RequirementType.Uniform, 
+                    "vertex transform"
+            ),
+            new ShaderRequirement(
+                    SHADER_TEXTURE_SLOT, 
+                    RequirementType.Texture, 
+                    "face texture"
+            )
+        };
+    }
+    
     public QVector3 vertexShader(
         VertexShaderContext vctx
     ) {

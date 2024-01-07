@@ -8,6 +8,8 @@ import java.util.Arrays;
 
 import QDraw.QException.PointOfError;
 import QDraw.QSampleable.SampleType;
+import QDraw.QShader.ShaderRequirement;
+import QDraw.QShader.ShaderRequirement.RequirementType;
 
 public final class QViewer extends QEncoding {
     /////////////////////////////////////////////////////////////////
@@ -38,6 +40,21 @@ public final class QViewer extends QEncoding {
     public static final int DEFAULT_SHADER_TEXTURE_SLOT  = 0;
 
     private final QShader SOLIDFILL_SHADER = new QShader( ) {
+        public ShaderRequirement[] requirements( ) {
+            return new ShaderRequirement[] {
+                new ShaderRequirement(
+                    DEFAULT_SHADER_POSITION_SLOT, 
+                    RequirementType.Attribute, 
+                    "vertex position"
+                ), 
+                new ShaderRequirement(
+                    DEFAULT_SHADER_MATRIX_SLOT, 
+                    RequirementType.Uniform, 
+                    "vertex transform matrix"
+                )
+            };
+        }
+
         public QVector3 vertexShader(
             VertexShaderContext context
         ) {
@@ -56,6 +73,31 @@ public final class QViewer extends QEncoding {
     };
 
     private final QShader TEXTURED_SHADER = new QShader( ) {
+        public ShaderRequirement[] requirements( ) {
+            return new ShaderRequirement[] {
+                new ShaderRequirement(
+                    DEFAULT_SHADER_POSITION_SLOT, 
+                    RequirementType.Attribute, 
+                    "vertex position"
+                ), 
+                new ShaderRequirement(
+                    DEFAULT_SHADER_UV_SLOT, 
+                    RequirementType.Attribute, 
+                    "vertex uv"
+                ), 
+                new ShaderRequirement(
+                    DEFAULT_SHADER_MATRIX_SLOT, 
+                    RequirementType.Uniform, 
+                    "vertex transform matrix"
+                ),
+                new ShaderRequirement(
+                    DEFAULT_SHADER_TEXTURE_SLOT, 
+                    RequirementType.Texture, 
+                    "mesh texture"
+                )
+            };
+        }
+
         public QVector3 vertexShader(
             VertexShaderContext context
         ) {
@@ -82,6 +124,26 @@ public final class QViewer extends QEncoding {
     };
 
     private final QShader NORMAL_SHADER = new QShader( ) {
+        public ShaderRequirement[] requirements( ) {
+            return new ShaderRequirement[] {
+                new ShaderRequirement(
+                    DEFAULT_SHADER_POSITION_SLOT, 
+                    RequirementType.Attribute, 
+                    "vertex position"
+                ), 
+                new ShaderRequirement(
+                    DEFAULT_SHADER_NORMAL_SLOT, 
+                    RequirementType.Attribute, 
+                    "vertex normal"
+                ),
+                new ShaderRequirement(
+                    DEFAULT_SHADER_MATRIX_SLOT, 
+                    RequirementType.Uniform, 
+                    "vertex transform matrix"
+                )
+            };
+        }
+
         public QVector3 vertexShader(
             VertexShaderContext context
         ) {
@@ -395,71 +457,61 @@ public final class QViewer extends QEncoding {
         renderTarget = target;
     }
 
-    private void internalEnsureDefaultShaderRequirements( ) {
-        if (slotAttribs[DEFAULT_SHADER_POSITION_SLOT] == null) {
-            throw new QException(
-                PointOfError.BadState, 
-                "Tried to use a default shader but vertex position " +
-                "slot was not set."
-            );
-        }
-        if (slotUniforms[DEFAULT_SHADER_MATRIX_SLOT] == null) {
-            throw new QException(
-                PointOfError.BadState, 
-                "Tried to use a default shader but matrix uniform " +
-                "slot was not set."
-            );
+    private void internalEnsureShaderRequirements(QShader shader) {
+        QShader.ShaderRequirement[] requirements = shader.requirements( );
+        for (ShaderRequirement require : requirements) {
+            switch (require.requireType) {
+                case Attribute:
+                    if (slotAttribs[require.slot] == null) {
+                        throw new QException(
+                            PointOfError.InvalidData, 
+                            "Shader requires attibute slot " + require.slot +
+                            ". Purpose: " + require.purpose
+                        );
+                    }
+                    break;
+
+                case Uniform:
+                    if (slotUniforms[require.slot] == null) {
+                        throw new QException(
+                            PointOfError.InvalidData, 
+                            "Shader requires uniform slot " + require.slot +
+                            ". Purpose: " + require.purpose
+                        );
+                    }
+                    break;
+
+                case Texture:
+                    if (slotUniforms[require.slot] == null) {
+                        throw new QException(
+                            PointOfError.InvalidData, 
+                            "Shader requires texture slot " + require.slot +
+                            ". Purpose: " + require.purpose
+                        );
+                    }
+                    break;
+            
+                default:
+                    throw new QException(
+                        PointOfError.InvalidData, 
+                        "Unknow requirement type: " + require.requireType.toString( )
+                    );
+            }
         }
     }
 
     private QShader internalGetRelevantShader( ) {
         switch (renderMode) {
             case SolidFill:
-                internalEnsureDefaultShaderRequirements( );
-
                 return SOLIDFILL_SHADER;
 
             case Textured:
-                internalEnsureDefaultShaderRequirements( );
-
-                if (slotAttribs[DEFAULT_SHADER_UV_SLOT] == null) {
-                    throw new QException(
-                        PointOfError.BadState, 
-                        "Tried to use default texture shader but uv " +
-                        "slot was not set."
-                    );
-                }
-
-                if (slotTextures[DEFAULT_SHADER_TEXTURE_SLOT] == null) {
-                    throw new QException(
-                        PointOfError.BadState, 
-                        "Tried to use default texture shader but uv " +
-                        "slot was not set."
-                    );
-                }
-
                 return TEXTURED_SHADER;
 
             case Normal:
-                internalEnsureDefaultShaderRequirements( );
-
-                if (slotAttribs[DEFAULT_SHADER_NORMAL_SLOT] == null) {
-                    throw new QException(
-                        PointOfError.BadState, 
-                        "Tried to use default normal shader but normal " +
-                        "slot was not set."
-                    );
-                }
-
                 return NORMAL_SHADER;
 
             case CustomShader:
-                if (customShader == null) {
-                    throw new QException(
-                        PointOfError.BadState, 
-                        "Tried to use a custom shader but none was set"
-                    );
-                }
                 return customShader;
 
             default:
@@ -555,7 +607,8 @@ public final class QViewer extends QEncoding {
         }
 
         // CALL SHADER
-        QShader  shader         = internalGetRelevantShader( );
+        QShader shader = internalGetRelevantShader( );
+        internalEnsureShaderRequirements(shader);
         QVector3 vertShaderOut  = shader.vertexShader(vctx);
         tri.verts[triVertNum].posn          = vertShaderOut.getComponents( );
         tri.verts[triVertNum].shaderOutputs = vctx.outputsToFragShader; 

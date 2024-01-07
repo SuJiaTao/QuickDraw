@@ -6,15 +6,17 @@ package QDraw;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import QDraw.QShader.ShaderRequirement.RequirementType;
+
 public abstract class QShader {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
     public static final int RANDOM_GRANULATIRY        = 0xFFFF;
     public static final float NORMALIZATION_FACTOR    = 1.0f / (float)RANDOM_GRANULATIRY;
-    public static final int VERTEX_SHADER_MAX_OUTPUTS = 4;
+    public static final int VERTEX_SHADER_MAX_OUTPUTS = 8;
 
     /////////////////////////////////////////////////////////////////
-    // SHADER CONTEXT CLASSES
+    // PUBLIC CLASSES
     public static final class VertexShaderContext {
         public Object[]   uniforms;
         public QSampleable[] textures;
@@ -31,6 +33,23 @@ public abstract class QShader {
         public float      invDepth;
         public QVector3   normal;
         public float[][]  inputsFromVertexShader = new float[VERTEX_SHADER_MAX_OUTPUTS][];
+    }
+
+    public static final class ShaderRequirement {
+        public static enum RequirementType {
+            Attribute,
+            Uniform,
+            Texture
+        }
+        public int             slot;
+        public RequirementType requireType;
+        public String          purpose;
+
+        public ShaderRequirement(int _slot, RequirementType _type, String _purpose) {
+            slot        = _slot;
+            requireType = _type;
+            purpose     = _purpose;
+        }
     }
 
     /////////////////////////////////////////////////////////////////
@@ -145,6 +164,8 @@ public abstract class QShader {
 
     /////////////////////////////////////////////////////////////////
     // ABSTRACT METHODS
+    public abstract ShaderRequirement[] requirements( );
+
     public abstract QVector3 vertexShader(
         VertexShaderContext context
     );
