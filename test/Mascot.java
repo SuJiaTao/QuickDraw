@@ -203,22 +203,6 @@ public final class Mascot {
             eyes.setTexture(MASCOT_TEXTURE);
             eyes.drawMesh(MASCOT_MESH, m0);
 
-            eyes.setTexture(BERRIES_TEXTURE);
-            QMatrix4x4 m1 = QMatrix4x4.TRS(
-                new QVector3(-3.25f, 0.0f, -7.0f), 
-                new QVector3(time * 0.5f, time * 0.5f, time * 0.5f), 
-                QVector3.One().multiply3(1.0f)
-            );
-            eyes.drawMesh(CUBE_MESH, m1);
-
-            eyes.setTexture(TECH_TEXTURE);
-            QMatrix4x4 m2 = QMatrix4x4.TRS(
-                new QVector3(3.25f, 0.0f, -7.0f), 
-                new QVector3(time * 0.5f, time * 0.5f, time * 0.5f), 
-                QVector3.One().multiply3(1.0f)
-            );
-            eyes.drawMesh(CUBE_MESH, m2);
-
             window.updateFrame( );
         }
     }
@@ -233,12 +217,12 @@ public final class Mascot {
         eyes.setNearClip(-0.4f);
 
         while (true) {
-            // RegularMascot( );
-            // MascotAndMetalMascot( );
-            // MascotAndHisBoyFriend( );
-            // TechMascot( );
-            // CustomWobblyMascot( );
-            // UltraGFXMascot( );
+            RegularMascot( );
+            MascotAndMetalMascot( );
+            MascotAndHisBoyFriend( );
+            TechMascot( );
+            CustomWobblyMascot( );
+            UltraGFXMascot( );
         }
 
     }

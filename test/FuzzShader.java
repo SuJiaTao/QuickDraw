@@ -32,7 +32,8 @@ public class FuzzShader extends QShader {
             new ShaderRequirement(
                     SHADER_MATRIX_SLOT, 
                     RequirementType.Uniform, 
-                    "vertex transform"
+                    "vertex transform",
+                    QMatrix4x4.class
             ),
             new ShaderRequirement(
                     SHADER_TEXTURE_SLOT, 
@@ -54,27 +55,29 @@ public class FuzzShader extends QShader {
             rotMtr.getComponents( )
         );
         
-        forwardAttributeToFragShader(vctx, SHADER_POSITION_SLOT);
+        // forwardAttributeToFragShader(vctx, SHADER_POSITION_SLOT);
+        vertexPos = QMatrix4x4.multiply(transform, vertexPos);
+        setOutputToFragShader(vctx, SHADER_POSITION_SLOT, vertexPos.getComponents( ));
         forwardAttributeToFragShader(vctx, SHADER_UV_SLOT);
         forwardAttributeToFragShader(vctx, SHADER_NORMAL_SLOT);
 
-        return QMatrix4x4.multiply(transform, vertexPos);
+        return vertexPos;
     }
 
     public QColor fragmentShader(
-        FragmentShaderContext fragInfo
+        FragmentShaderContext fctx
     ) {
         // RETRIEVE FRAG INFO
         float[] pos    = new float[3];
         float[] uv     = new float[2];
         float[] normal = new float[3];
-        getOutputFromVertShader(fragInfo, SHADER_POSITION_SLOT, pos);
-        getOutputFromVertShader(fragInfo, SHADER_UV_SLOT, uv);
-        getOutputFromVertShader(fragInfo, SHADER_NORMAL_SLOT, normal);
-        QSampleable tex = fragInfo.textures[SHADER_TEXTURE_SLOT];
+        getOutputFromVertShader(fctx, SHADER_POSITION_SLOT, pos);
+        getOutputFromVertShader(fctx, SHADER_UV_SLOT, uv);
+        getOutputFromVertShader(fctx, SHADER_NORMAL_SLOT, normal);
+        QSampleable tex = fctx.textures[SHADER_TEXTURE_SLOT];
         
         // WIGGLE UVS
-        final float randDir       = seededRandom(fragInfo);
+        final float randDir       = seededRandom(fctx);
         final float wigglemag     = 0.004f;
         final float halfwigglemag = wigglemag * 0.5f;
         uv[0] += (randDir * wigglemag) - halfwigglemag;
@@ -87,8 +90,13 @@ public class FuzzShader extends QShader {
         QVector3 randOffset = seededRandomVector(texCol.toInt( )).multiply3(0.3f);
         
         // CALCULATE BRIGHTNESS FACTOR BASED ON POINT LIGHT
+        QVector3 lightPos = QMatrix4x4.multiply(
+            (QMatrix4x4)fctx.uniforms[SHADER_MATRIX_SLOT], 
+            new QVector3(7.0f, 5.0f, 3.5f)
+        );
+
         QVector3 dFaceLightNormalized = QVector3.sub(
-            new QVector3(3.0f, 2.4f, 3.0f),
+            lightPos,
             new QVector3(pos)
         ).fastNormalize( );
 

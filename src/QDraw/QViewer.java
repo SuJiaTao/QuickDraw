@@ -37,6 +37,7 @@ public final class QViewer extends QEncoding {
     public static final int DEFAULT_SHADER_UV_SLOT       = 1;
     public static final int DEFAULT_SHADER_NORMAL_SLOT   = 2;
     public static final int DEFAULT_SHADER_MATRIX_SLOT   = 0;
+    public static final int DEFAULT_SHADER_LIGHTS_SLOT   = 1;
     public static final int DEFAULT_SHADER_TEXTURE_SLOT  = 0;
 
     private final QShader SOLIDFILL_SHADER = new QShader( ) {
@@ -50,7 +51,8 @@ public final class QViewer extends QEncoding {
                 new ShaderRequirement(
                     DEFAULT_SHADER_MATRIX_SLOT, 
                     RequirementType.Uniform, 
-                    "vertex transform matrix"
+                    "vertex transform matrix",
+                    QMatrix4x4.class
                 )
             };
         }
@@ -88,7 +90,8 @@ public final class QViewer extends QEncoding {
                 new ShaderRequirement(
                     DEFAULT_SHADER_MATRIX_SLOT, 
                     RequirementType.Uniform, 
-                    "vertex transform matrix"
+                    "vertex transform matrix",
+                    QMatrix4x4.class
                 ),
                 new ShaderRequirement(
                     DEFAULT_SHADER_TEXTURE_SLOT, 
@@ -102,23 +105,21 @@ public final class QViewer extends QEncoding {
             VertexShaderContext context
         ) {
             QMatrix4x4 mtr = (QMatrix4x4)context.uniforms[DEFAULT_SHADER_MATRIX_SLOT];
-            forwardAttributeToFragShader(context, DEFAULT_SHADER_UV_SLOT);
-            return QMatrix4x4.multiply(
-                mtr, 
-                new QVector3(context.attributes[DEFAULT_SHADER_POSITION_SLOT])
+            QVector3   pos = new QVector3(
+                context.attributes[DEFAULT_SHADER_POSITION_SLOT]
             );
+            forwardAttributeToFragShader(context, DEFAULT_SHADER_UV_SLOT);
+
+            return QMatrix4x4.multiply(mtr, pos);
         }
 
         public QColor fragmentShader(
             FragmentShaderContext context
         ) {
             QSampleable tex = context.textures[DEFAULT_SHADER_TEXTURE_SLOT];
-            float[] uv = new float[2];
-            getOutputFromVertShader(
-                context, 
-                DEFAULT_SHADER_UV_SLOT, 
-                uv
-            );
+            float[] uv      = new float[2];
+            getOutputFromVertShader(context, DEFAULT_SHADER_UV_SLOT, uv);
+
             return new QColor(tex.sample(uv[0], uv[1], sampleType));
         }
     };
@@ -139,7 +140,8 @@ public final class QViewer extends QEncoding {
                 new ShaderRequirement(
                     DEFAULT_SHADER_MATRIX_SLOT, 
                     RequirementType.Uniform, 
-                    "vertex transform matrix"
+                    "vertex transform matrix",
+                    QMatrix4x4.class
                 )
             };
         }
@@ -173,12 +175,101 @@ public final class QViewer extends QEncoding {
         }
     };
 
+    private final QShader LIT_SHADER = new QShader( ) {
+        public ShaderRequirement[] requirements( ) {
+            return new ShaderRequirement[] {
+                new ShaderRequirement(
+                    DEFAULT_SHADER_POSITION_SLOT, 
+                    RequirementType.Attribute, 
+                    "vertex position"
+                ), 
+                new ShaderRequirement(
+                    DEFAULT_SHADER_UV_SLOT, 
+                    RequirementType.Attribute, 
+                    "vertex uv"
+                ), 
+                new ShaderRequirement(
+                    DEFAULT_SHADER_NORMAL_SLOT, 
+                    RequirementType.Attribute, 
+                    "vertex normal"
+                ), 
+                new ShaderRequirement(
+                    DEFAULT_SHADER_MATRIX_SLOT, 
+                    RequirementType.Uniform, 
+                    "vertex transform matrix",
+                    QMatrix4x4.class
+                ),
+                new ShaderRequirement(
+                    DEFAULT_SHADER_LIGHTS_SLOT, 
+                    RequirementType.Uniform, 
+                    "worldspace light position array",
+                    QVector3[].class
+                ),
+                new ShaderRequirement(
+                    DEFAULT_SHADER_TEXTURE_SLOT, 
+                    RequirementType.Texture, 
+                    "mesh texture"
+                )
+            };
+        }
+
+        public QVector3 vertexShader(
+            VertexShaderContext context
+        ) {
+            QMatrix4x4 mtr = (QMatrix4x4)context.uniforms[DEFAULT_SHADER_MATRIX_SLOT];
+            QVector3 pos   = new QVector3(context.attributes[DEFAULT_SHADER_POSITION_SLOT]);
+            pos = QMatrix4x4.multiply(mtr, pos);
+            
+            setOutputToFragShader(context, DEFAULT_SHADER_POSITION_SLOT, pos.getComponents( ));
+            forwardAttributeToFragShader(context, DEFAULT_SHADER_UV_SLOT);
+            forwardAttributeToFragShader(context, DEFAULT_SHADER_NORMAL_SLOT);
+            
+            return pos;
+        }
+
+        public QColor fragmentShader(
+            FragmentShaderContext context
+        ) {
+            QSampleable tex   = context.textures[DEFAULT_SHADER_TEXTURE_SLOT];
+            QVector3[] lights = (QVector3[])context.uniforms[DEFAULT_SHADER_LIGHTS_SLOT];
+
+            float[] pos    = new float[3];
+            float[] uv     = new float[2];
+            float[] normal = new float[3];
+            getOutputFromVertShader(context, DEFAULT_SHADER_POSITION_SLOT, pos);
+            getOutputFromVertShader(context, DEFAULT_SHADER_UV_SLOT, uv);
+            getOutputFromVertShader(context, DEFAULT_SHADER_NORMAL_SLOT, normal);
+
+            float ambient    = 0.3f;
+            float sumDiffuse = 0.0f;
+            for (QVector3 light : lights) {
+                QVector3 dirFaceToLight = QVector3.sub(
+                    light,
+                    new QVector3(pos)
+                ).fastNormalize();
+
+                float diffuse = Math.max(0.0f, QVector3.dot(
+                    new QVector3(normal), 
+                    dirFaceToLight
+                ));
+
+                float phong = (float)Math.pow(diffuse, 4.0f);
+
+                sumDiffuse += (diffuse + phong);
+            }
+
+            QColor texColor = new QColor(tex.sample(uv[0], uv[1], sampleType));
+            return multiplyColor(texColor, Math.min(1.0f, ambient + sumDiffuse));
+        }
+    };
+
     /////////////////////////////////////////////////////////////////
     // PUBLIC ENUMS
     public enum RenderMode {
         SolidFill,
         Textured,
         Normal,
+        Lit,
         CustomShader
     };
 
@@ -237,6 +328,10 @@ public final class QViewer extends QEncoding {
 
     public void setMatrix(QMatrix4x4 matrix) {
         setUniformSlot(DEFAULT_SHADER_MATRIX_SLOT, matrix);
+    }
+
+    public void setLights(QVector3[] lightArray) {
+        setUniformSlot(DEFAULT_SHADER_LIGHTS_SLOT, lightArray);
     }
 
     public void clearUniformSlots( ) {
@@ -498,6 +593,14 @@ public final class QViewer extends QEncoding {
                             ". Purpose: " + require.purpose
                         );
                     }
+                    if (slotUniforms[require.slot].getClass( ) != require.uniformClass) {
+                        throw new QException(
+                            PointOfError.InvalidData, 
+                            "Shader requires uniform slot " + require.slot +
+                            " to be of type: " + require.uniformClass + ". Given was " +
+                            slotUniforms[require.slot].getClass( )
+                        );
+                    }
                     break;
 
                 case Texture:
@@ -529,6 +632,9 @@ public final class QViewer extends QEncoding {
 
             case Normal:
                 return NORMAL_SHADER;
+
+            case Lit:
+                return LIT_SHADER;
 
             case CustomShader:
                 return customShader;

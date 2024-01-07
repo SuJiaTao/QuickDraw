@@ -6,6 +6,8 @@ package QDraw;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import QDraw.QException.PointOfError;
+
 public abstract class QShader {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
@@ -51,6 +53,7 @@ public abstract class QShader {
         public int             slot;
         public RequirementType requireType;
         public String          purpose;
+        public Class<?>        uniformClass;
 
         /////////////////////////////////////////////////////////////////
         // CONSTRUCTOR
@@ -58,6 +61,24 @@ public abstract class QShader {
             slot        = _slot;
             requireType = _type;
             purpose     = _purpose;
+        }
+
+        public ShaderRequirement(
+            int      _slot, 
+            RequirementType _type, 
+            String   _purpose, 
+            Class<?> _uniformClass
+        ) {
+            if (_type != RequirementType.Uniform) {
+                throw new QException(
+                    PointOfError.InvalidParameter, 
+                    "Can ONLY specify uniform class if requirement type is Uniform"
+                );
+            }
+            slot         = _slot;
+            requireType  = _type;
+            purpose      = _purpose;
+            uniformClass = _uniformClass;
         }
     }
 

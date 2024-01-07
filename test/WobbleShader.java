@@ -7,6 +7,8 @@ import QDraw.QSampleable.SampleType;
 import QDraw.QShader.ShaderRequirement.RequirementType;
 
 public final class WobbleShader extends QShader {
+    public static final int SHADER_TIME_SLOT = 1;
+
     public ShaderRequirement[] requirements( ) {
         return new ShaderRequirement[] {
             new ShaderRequirement(
@@ -19,11 +21,17 @@ public final class WobbleShader extends QShader {
                     RequirementType.Attribute, 
                     "vertex uv"
             ), 
-
             new ShaderRequirement(
                     QViewer.DEFAULT_SHADER_MATRIX_SLOT, 
                     RequirementType.Uniform, 
-                    "vertex transform"
+                    "vertex transform",
+                    QMatrix4x4.class
+            ),
+            new ShaderRequirement(
+                    SHADER_TIME_SLOT, 
+                    RequirementType.Uniform, 
+                    "time",
+                    Float.class
             ),
             new ShaderRequirement(
                     QViewer.DEFAULT_SHADER_TEXTURE_SLOT, 
@@ -40,7 +48,7 @@ public final class WobbleShader extends QShader {
         QVector3   vertexPos = new QVector3(vctx.attributes[QViewer.DEFAULT_SHADER_POSITION_SLOT]);
         QMatrix4x4 transform = 
             new QMatrix4x4((QMatrix4x4)vctx.uniforms[QViewer.DEFAULT_SHADER_MATRIX_SLOT]);
-        Float      dt        = ((Float)vctx.uniforms[1]) * 0.35f;
+        Float      dt        = ((Float)vctx.uniforms[SHADER_TIME_SLOT]) * 0.35f;
 
         // FORWARD UV DATA
         forwardAttributeToFragShader(vctx, QViewer.DEFAULT_SHADER_UV_SLOT);

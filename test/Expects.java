@@ -1,45 +1,23 @@
 // Bailey JT Brown
 // 2023-2024
-// Expect.java
+// Expects.java
 
 import QDraw.*;
 import java.util.Arrays;
 import QDraw.QColor.Channel;
 import QDraw.QException.PointOfError;
 
-public final class Expect {
-
-    private static void Expect(int[] val, int[] expected) {
-        if (!(Arrays.equals(val, expected))) {
-                throw new QException(
-                    PointOfError.BadState,
-                    String.format("value \n%s\n differs from expected \n%s",
-                    Arrays.toString(val),
-                    Arrays.toString(expected)
-                ));
-            }
-    }
+public final class Expects {
     
     private static void Expect(float[] val, float[] expected) {
         if (!(Arrays.equals(val, expected))) {
-                throw new QException(
-                    PointOfError.BadState,
-                    String.format("value \n%s\n differs from expected \n%s",
-                    Arrays.toString(val),
-                    Arrays.toString(expected)
-                ));
-            }
-    }
-
-    private static void Expect(Object[] val, Object[] expected) {
-        if (!(Arrays.equals(val, expected))) {
-                throw new QException(
-                    PointOfError.BadState,
-                    String.format("value \n%s\n differs from expected \n%s",
-                    Arrays.toString(val),
-                    Arrays.toString(expected)
-                ));
-            }
+            throw new QException(
+                PointOfError.BadState,
+                String.format("value \n%s\n differs from expected \n%s",
+                Arrays.toString(val),
+                Arrays.toString(expected)
+            ));
+        }
     }
 
     private static void Expect(Object val, Object expected) {
