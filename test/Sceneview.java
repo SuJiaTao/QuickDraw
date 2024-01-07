@@ -35,9 +35,13 @@ public final class Sceneview {
         long initialTimeMsec = System.currentTimeMillis( );
         float lastTime = (float)(System.nanoTime( ) >> 10);
 
+        QVector3[] lights = new QVector3[] {
+            new QVector3(5.0f, 1.0f, 3.0f),
+            new QVector3(-2.0f, 0.0f, -20.0f)
+        };
+
         while (true) {
 
-            float timeMsec = (float)(System.currentTimeMillis() - initialTimeMsec);
             float currentTime = (float)(System.nanoTime( ) >> 10);
             float dt = (currentTime - lastTime) / 6000;
 
@@ -97,10 +101,8 @@ public final class Sceneview {
             // viewer.setCustomShader(new WobbleShader( ));
             viewer.setUniformSlot(
                 QViewer.DEFAULT_SHADER_LIGHTS_SLOT, 
-                new QVector3[] {
-                    new QVector3(5.0f, 1.0f, 5.0f),
-                    new QVector3(-2.0f, 0.0f, -7.0f)
-                });
+                lights
+            );
             viewer.setTexture(tex);
             viewer.clearFrame( );
             viewer.drawMesh(

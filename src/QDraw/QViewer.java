@@ -40,6 +40,10 @@ public final class QViewer extends QEncoding {
     public static final int DEFAULT_SHADER_LIGHTS_SLOT   = 1;
     public static final int DEFAULT_SHADER_TEXTURE_SLOT  = 0;
 
+    public static final float DEFAULT_LIT_AMBIENT_FACTOR = 0.3f;
+    public static final float DEFAULT_LIT_POINT_SIZE     = 3.5f;
+    public static final float DEFAULT_LIT_PHONG_FACTOR   = 7.0f;
+
     private final QShader SOLIDFILL_SHADER = new QShader( ) {
         public ShaderRequirement[] requirements( ) {
             return new ShaderRequirement[] {
@@ -240,25 +244,33 @@ public final class QViewer extends QEncoding {
             getOutputFromVertShader(context, DEFAULT_SHADER_UV_SLOT, uv);
             getOutputFromVertShader(context, DEFAULT_SHADER_NORMAL_SLOT, normal);
 
-            float ambient    = 0.3f;
+            float ambient    = DEFAULT_LIT_AMBIENT_FACTOR;
             float sumDiffuse = 0.0f;
             for (QVector3 light : lights) {
                 QVector3 dirFaceToLight = QVector3.sub(
                     light,
                     new QVector3(pos)
-                ).fastNormalize();
+                );
+
+                float distToLight = dirFaceToLight.fastMagnitude( );
+                dirFaceToLight.multiply3(1.0f / distToLight);
 
                 float diffuse = Math.max(0.0f, QVector3.dot(
                     new QVector3(normal), 
                     dirFaceToLight
                 ));
 
-                float phong = (float)Math.pow(diffuse, 4.0f);
+                float phong = (float)Math.pow(diffuse, DEFAULT_LIT_PHONG_FACTOR);
 
-                sumDiffuse += (diffuse + phong);
+                sumDiffuse += (diffuse + phong) * (DEFAULT_LIT_POINT_SIZE / distToLight);
             }
 
-            QColor texColor = new QColor(tex.sample(uv[0], uv[1], sampleType));
+            QColor texColor = new QColor(
+                tex.sample(
+                    uv[0], 
+                    uv[1], 
+                    sampleType
+            ));
             return multiplyColor(texColor, Math.min(1.0f, ambient + sumDiffuse));
         }
     };
@@ -587,9 +599,15 @@ public final class QViewer extends QEncoding {
 
                 case Uniform:
                     if (slotUniforms[require.slot] == null) {
+                        String typeSpecification = "";
+                        if (require.uniformClass != null) {
+                            typeSpecification = " of type " + require.uniformClass;
+                        }
                         throw new QException(
                             PointOfError.InvalidData, 
-                            "Shader requires uniform slot " + require.slot +
+                            "Shader requires uniform slot " + 
+                            require.slot +
+                            typeSpecification + 
                             ". Purpose: " + require.purpose
                         );
                     }
@@ -597,14 +615,16 @@ public final class QViewer extends QEncoding {
                         throw new QException(
                             PointOfError.InvalidData, 
                             "Shader requires uniform slot " + require.slot +
-                            " to be of type: " + require.uniformClass + ". Given was " +
+                            " to be of type: " + 
+                            require.uniformClass + 
+                            ". Given was " +
                             slotUniforms[require.slot].getClass( )
                         );
                     }
                     break;
 
                 case Texture:
-                    if (slotUniforms[require.slot] == null) {
+                    if (slotTextures[require.slot] == null) {
                         throw new QException(
                             PointOfError.InvalidData, 
                             "Shader requires texture slot " + require.slot +

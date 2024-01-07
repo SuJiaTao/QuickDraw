@@ -65,7 +65,7 @@ public final class Mascot {
         }
     }
 
-    public static void MascotAndMetalMascot( ) {
+    public static void MascotAndHisFriends( ) {
         long t0 = System.currentTimeMillis();
         while ((System.currentTimeMillis() - t0) < CUT_RUNTIME_MS) {
             eyes.clearFrame( );
@@ -82,13 +82,28 @@ public final class Mascot {
             eyes.drawMesh(MASCOT_MESH, m0);
 
             QMatrix4x4 m1 = QMatrix4x4.TRS(
-                new QVector3(1.3f, 0.0f, -2.3f), 
+                new QVector3(0.0f, 0.0f, -2.3f), 
                 new QVector3(0, time, 0), 
                 QVector3.One().multiply3(0.25f)
             );
 
             eyes.setRenderMode(RenderMode.Normal);
             eyes.drawMesh(MASCOT_MESH, m1);
+
+            QMatrix4x4 m2 = QMatrix4x4.TRS(
+                new QVector3(1.3f, 0.0f, -2.3f), 
+                new QVector3(0, time, 0), 
+                QVector3.One().multiply3(0.25f)
+            );
+
+            eyes.setRenderMode(RenderMode.Lit);
+            eyes.setTexture(MASCOT_TEXTURE);
+            eyes.setLights(
+                new QVector3[] {
+                    new QVector3(0.0f, 2.0f, 5.0f)
+                }
+            );
+            eyes.drawMesh(MASCOT_MESH, m2);
 
             window.updateFrame( );
         }
@@ -201,6 +216,11 @@ public final class Mascot {
                 QVector3.One().multiply3(0.25f)
             );
             eyes.setTexture(MASCOT_TEXTURE);
+            eyes.setLights(
+                new QVector3[] {
+                    new QVector3(7.0f, 3.0f, 4.0f)
+                }
+            );
             eyes.drawMesh(MASCOT_MESH, m0);
 
             window.updateFrame( );
@@ -217,8 +237,8 @@ public final class Mascot {
         eyes.setNearClip(-0.4f);
 
         while (true) {
-            RegularMascot( );
-            MascotAndMetalMascot( );
+            // RegularMascot( );
+            MascotAndHisFriends( );
             MascotAndHisBoyFriend( );
             TechMascot( );
             CustomWobblyMascot( );

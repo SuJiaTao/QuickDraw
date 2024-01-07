@@ -10,6 +10,7 @@ public class FuzzShader extends QShader {
     public static final int SHADER_UV_SLOT       = QViewer.DEFAULT_SHADER_UV_SLOT;
     public static final int SHADER_NORMAL_SLOT   = QViewer.DEFAULT_SHADER_NORMAL_SLOT;
     public static final int SHADER_MATRIX_SLOT   = QViewer.DEFAULT_SHADER_MATRIX_SLOT;
+    public static final int SHADER_LIGHTS_SLOT   = QViewer.DEFAULT_SHADER_LIGHTS_SLOT;
     public static final int SHADER_TEXTURE_SLOT  = QViewer.DEFAULT_SHADER_TEXTURE_SLOT;
 
     public ShaderRequirement[] requirements( ) {
@@ -34,6 +35,12 @@ public class FuzzShader extends QShader {
                     RequirementType.Uniform, 
                     "vertex transform",
                     QMatrix4x4.class
+            ),
+            new ShaderRequirement(
+                    SHADER_LIGHTS_SLOT, 
+                    RequirementType.Uniform, 
+                    "point light position array",
+                    QVector3[].class
             ),
             new ShaderRequirement(
                     SHADER_TEXTURE_SLOT, 
@@ -89,28 +96,29 @@ public class FuzzShader extends QShader {
         // GENERATE RANDOM NORMAL OFFSET BASED ON COLOR
         QVector3 randOffset = seededRandomVector(texCol.toInt( )).multiply3(0.3f);
         
-        // CALCULATE BRIGHTNESS FACTOR BASED ON POINT LIGHT
-        QVector3 lightPos = QMatrix4x4.multiply(
-            (QMatrix4x4)fctx.uniforms[SHADER_MATRIX_SLOT], 
-            new QVector3(7.0f, 5.0f, 3.5f)
-        );
-
-        QVector3 dFaceLightNormalized = QVector3.sub(
-            lightPos,
-            new QVector3(pos)
-        ).fastNormalize( );
-
-        float diffuse = Math.max(0.0f, QVector3.dot(
-            new QVector3(normal).add(randOffset).fastNormalize( ), 
-            dFaceLightNormalized
-        ));
-        
         // APPLY SIMPLE PHONG SHADING
-        float ambient = 0.4f;
-        float phong   = (float)Math.pow(diffuse, 10.0f);
+        float ambient      = 0.4f;
+        float diffuseAccum = 0.0f;
+        QVector3[] lights  = (QVector3[])fctx.uniforms[SHADER_LIGHTS_SLOT];
+        for (QVector3 lightPos : lights) {
+            QVector3 dFaceLightNormalized = QVector3.sub(
+                lightPos,
+                new QVector3(pos)
+            ).fastNormalize( );
+
+            float diffuse = Math.max(0.0f, QVector3.dot(
+                new QVector3(normal).add(randOffset).fastNormalize( ), 
+                dFaceLightNormalized
+            ));
+            
+            float phong = (float)Math.pow(diffuse, 10.0f);
+
+            diffuseAccum += (diffuse + phong);
+        }
+        
         return multiplyColor(
             texCol, 
-            Math.min(1.0f, ambient + diffuse + phong)
+            Math.min(1.0f, ambient + diffuseAccum)
         );
     }
 }
