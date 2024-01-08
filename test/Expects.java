@@ -1,45 +1,23 @@
 // Bailey JT Brown
 // 2023-2024
-// Expect.java
+// Expects.java
 
 import QDraw.*;
 import java.util.Arrays;
 import QDraw.QColor.Channel;
 import QDraw.QException.PointOfError;
 
-public final class Expect {
-
-    private static void Expect(int[] val, int[] expected) {
-        if (!(Arrays.equals(val, expected))) {
-                throw new QException(
-                    PointOfError.BadState,
-                    String.format("value \n%s\n differs from expected \n%s",
-                    Arrays.toString(val),
-                    Arrays.toString(expected)
-                ));
-            }
-    }
+public final class Expects {
     
     private static void Expect(float[] val, float[] expected) {
         if (!(Arrays.equals(val, expected))) {
-                throw new QException(
-                    PointOfError.BadState,
-                    String.format("value \n%s\n differs from expected \n%s",
-                    Arrays.toString(val),
-                    Arrays.toString(expected)
-                ));
-            }
-    }
-
-    private static void Expect(Object[] val, Object[] expected) {
-        if (!(Arrays.equals(val, expected))) {
-                throw new QException(
-                    PointOfError.BadState,
-                    String.format("value \n%s\n differs from expected \n%s",
-                    Arrays.toString(val),
-                    Arrays.toString(expected)
-                ));
-            }
+            throw new QException(
+                PointOfError.BadState,
+                String.format("value \n%s\n differs from expected \n%s",
+                Arrays.toString(val),
+                Arrays.toString(expected)
+            ));
+        }
     }
 
     private static void Expect(Object val, Object expected) {
@@ -309,180 +287,7 @@ public final class Expect {
             new QMatrix4x4().scale(new QVector3(1.0f, 2.0f, 3.0f))
         );
     }
-
-    public static void MeshTest( ) {
-        Expect(
-            QMesh.UnitPlane().getTriDataIndicies( ),
-            new int[] { 0, 0, 1, 1, 2, 2, 0, 0, 2, 2, 3, 3 } 
-        );
-
-        Expect(
-            QMesh.UnitPlane().getPos(0), 
-            new float[] { -1.0f, -1.0f, 0.0f }
-        );
-
-        Expect(
-            QMesh.UnitPlane().getPos(1), 
-            new float[] { -1.0f, 1.0f, 0.0f }
-        );
-
-        Expect(
-            QMesh.UnitPlane().getUV(0), 
-            new float[] { 0.0f, 0.0f }
-        );
-
-        Expect(
-            QMesh.UnitPlane().getUV(1), 
-            new float[] { 0.0f, 1.0f }
-        );
-
-        Expect(
-            QMesh.UnitPlane().getPosCount(), 
-            4
-        );
-
-        Expect(
-            QMesh.UnitPlane().getUVCount(), 
-            4
-        );
-
-        Expect(
-            QMesh.UnitPlane().getTriCount(), 
-            2
-        );
-
-        Expect(
-            QMesh.UnitPlane().getTriDataIndicies( ),
-            new int[] { 0, 0, 1, 1, 2, 2, 0, 0, 2, 2, 3, 3 } 
-        );
-
-        Expect(
-            QMesh.UnitPlane().getPos(0), 
-            new float[] { -1.0f, -1.0f, 0.0f }
-        );
-
-        Expect(
-            QMesh.UnitPlane().getPos(1), 
-            new float[] { -1.0f, 1.0f, 0.0f }
-        );
-
-        Expect(
-            QMesh.UnitPlane().getUV(0), 
-            new float[] { 0.0f, 0.0f }
-        );
-
-        Expect(
-            QMesh.UnitPlane().getUV(1), 
-            new float[] { 0.0f, 1.0f }
-        );
-
-        Expect(
-            QMesh.UnitPlane().getPosCount(), 
-            4
-        );
-
-        Expect(
-            QMesh.UnitPlane().getUVCount(), 
-            4
-        );
-
-        Expect(
-            QMesh.UnitPlane().getTriCount(), 
-            2
-        );
-
-        Expect(
-            QMesh.UnitPlane().getTriPos(0, 0), 
-            new float[] { -1.0f, -1.0f, 0.0f }
-        );
-
-        Expect(
-            QMesh.UnitPlane().getTriUV(0, 0), 
-            new float[] { 0.0f, 0.0f}
-        );
-
-        Expect(
-            QMesh.UnitPlane().getTriPos(0, 1), 
-            new float[] { -1.0f, 1.0f, 0.0f }
-        );
-
-        Expect(
-            QMesh.UnitPlane().getTriUV(0, 1), 
-            new float[] { 0.0f, 1.0f}
-        );
-
-        Expect(
-            QMesh.UnitPlane().getTriPos(1, 0), 
-            new float[] { -1.0f, -1.0f, 0.0f }
-        );
-
-        Expect(
-            QMesh.UnitPlane().getTriUV(1, 0), 
-            new float[] { 0.0f, 0.0f}
-        );
-
-        Expect(
-            QMesh.UnitPlane().getTriPos(1, 1), 
-            new float[] { 1.0f, 1.0f, 0.0f }
-        );
-
-        Expect(
-            QMesh.UnitPlane().getTriUV(1, 1), 
-            new float[] { 1.0f, 1.0f}
-        );
-
-        Expect(
-            new QMesh(
-                new float[] {
-                    1.0f, 2.0f, 3.0f,
-                    4.0f, 5.0f, 6.0f,
-                    7.0f, 8.0f, 9.0f,
-                    1.0f, 2.0f, 3.0f,
-                    4.0f, 5.0f, 6.0f,
-                    7.0f, 8.0f, 9.0f,
-                },
-                new float[] {
-                    1.0f, 2.0f,
-                    4.0f, 5.0f,
-                    7.0f, 8.0f,
-                    1.0f, 2.0f,
-                    4.0f, 5.0f,
-                    7.0f, 8.0f,
-                },
-                new int[][] {
-                    { 0, 0, 1, 1, 2, 2, 3, 3 },
-                    { 0, 1, 1, 0, 2, 3 },
-                    { 3, 3, 4, 4, 2, 2, 5, 5, 0, 0 }
-                }
-            ).getTriDataIndicies(), 
-            new int[] {
-                0, 0, 1, 1, 2, 2,
-                0, 0, 2, 2, 3, 3,
-                0, 1, 1, 0, 2, 3,
-                3, 3, 4, 4, 2, 2,
-                3, 3, 2, 2, 5, 5,
-                3, 3, 5, 5, 0, 0
-            }
-        );
-
-        QMesh cube = new QMesh(System.getProperty("user.dir") + "\\Resources\\Cube.obj");
-        Expect(cube.getPosCount(), 8);
-        Expect(cube.getUVCount(), 14);
-        Expect(
-            cube.getPos(0), 
-            new float[] { 1.000000f, 1.000000f, -1.000000f }
-        );
-        Expect(
-            cube.getPos(5), 
-            new float[] { -1.000000f, -1.000000f, -1.000000f }
-        );
-        Expect(
-            cube.getPos(5), 
-            new float[] { -1.000000f, -1.000000f, -1.000000f }
-        );
-        
-    }
-
+    
     public static void MathTest( ) {
         QMatrix4x4 mat0 = QMatrix4x4.translationMatrix(1.0f, 2.0f, 3.0f);
 
@@ -507,7 +312,6 @@ public final class Expect {
         RenderBufferTest( );
         VectorTest( );
         MatrixTest( );
-        MeshTest( );
         MathTest( );
         System.out.println("All tests passed!");
     }

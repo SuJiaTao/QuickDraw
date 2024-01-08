@@ -9,11 +9,11 @@ import QDraw.QTexture;
 import QDraw.QVector3;
 import QDraw.QViewer;
 import QDraw.QWindow;
-import QDraw.QViewer.RenderType;
+import QDraw.QViewer.RenderMode;
 
 public final class Profile {
-    public static final int WINDOW_WIDTH  = 1200;
-    public static final int WINDOW_HEIGHT = 960; 
+    public static final int WINDOW_WIDTH  = 1600;
+    public static final int WINDOW_HEIGHT = 1000; 
     public static final int FB_WIDTH      = WINDOW_WIDTH;
     public static final int FB_HEIGHT     = WINDOW_HEIGHT;
     public static final float FB_ASPECT   = (float)FB_WIDTH / (float)FB_HEIGHT;
@@ -26,7 +26,6 @@ public final class Profile {
             String texPath,
             String meshPath
         ) {
-        viewer.setRenderType(RenderType.Textured);
 
         QRenderBuffer rbTex = new QTexture(texPath).toRenderBuffer( );
         QTexture      tTex  = new QTexture(texPath);
@@ -61,7 +60,7 @@ public final class Profile {
 
                     // PROFILE TEX
                     viewer.clearFrame( );
-                    viewer.setTexture(tTex);
+                    viewer.setTextureSlot(0, tTex);
 
                     texTimer.beginTime();
                     viewer.drawMesh(mesh, tMatrix);
@@ -71,7 +70,7 @@ public final class Profile {
 
                     // PROFILE RB
                     viewer.clearFrame( );
-                    viewer.setTexture(rbTex);
+                    viewer.setTextureSlot(0, rbTex);
 
                     rbTimer.beginTime();
                     viewer.drawMesh(mesh, tMatrix);
@@ -83,7 +82,7 @@ public final class Profile {
 
                     // PROFILE RB
                     viewer.clearFrame( );
-                    viewer.setTexture(rbTex);
+                    viewer.setTextureSlot(0, rbTex);
 
                     rbTimer.beginTime();
                     viewer.drawMesh(mesh, tMatrix);
@@ -93,7 +92,7 @@ public final class Profile {
 
                     // PROFILE TEX
                     viewer.clearFrame( );
-                    viewer.setTexture(tTex);
+                    viewer.setTextureSlot(0, tTex);
 
                     texTimer.beginTime();
                     viewer.drawMesh(mesh, tMatrix);
@@ -119,6 +118,7 @@ public final class Profile {
         window.setRenderBuffer(frameBuffer);
         viewer      = new QViewer(frameBuffer);
         viewer.setViewBounds(-FB_ASPECT, FB_ASPECT, -1.0f, 1.0f);
+        viewer.setRenderMode(RenderMode.Textured);
 
         String basePath = System.getProperty("user.dir") + "\\resources\\";
         String meshPath = basePath + "Mascot.obj";

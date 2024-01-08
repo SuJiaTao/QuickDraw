@@ -69,48 +69,4 @@ public class QEncoding {
     protected static final int   MTR_NUM_ROWS    = 4;
     protected static final int   MTR_NUM_COLUMNS = 4;
     protected static final int   MTR_NUM_CMPS    = MTR_NUM_ROWS * MTR_NUM_COLUMNS;
-
-    /////////////////////////////////////////////////////////////////
-    // QMESH ENCODINGS
-    // QMesh is
-    //   (posData, uvData, triDataIndicies)
-    // posData is
-    //   | <x1 y1 z1> <x2 y2 z2> ... | : float[]
-    //   groups of 3-space positions for each vertex
-    // uvData is
-    //   | <u1 v1> <u2 v2> ... | : float[]
-    //   groups of 2-space UV coordinates for each vertex
-    // triDataIndicies is
-    //   | <<p0 uv0> <p1 uv1> <p2 uv2>> ... | : int[]
-    //   groups of indicies into posData and uvData for each triangle
-    //   group <p uv> is an "attribute"
-    //   each indicie will point to first element in each grouping
-    protected static final int MESH_POSN_NUM_CMPS = 3;
-    protected static final int MESH_POSN_OFST_X   = 0;
-    protected static final int MESH_POSN_OFST_Y   = 1;
-    protected static final int MESH_POSN_OFST_Z   = 2;
-
-    protected static final int MESH_UV_NUM_CMPS = 2;
-    protected static final int MESH_UV_OFST_U   = 0;
-    protected static final int MESH_UV_OFST_V   = 1;
-
-    protected static final int MESH_ATRB_NUM_CMPS  = 2;
-    protected static final int MESH_FACE_MIN_ATRBS = 3;
-    protected static final int MESH_ATRS_OFST_POS  = 0;
-    protected static final int MESH_ATRS_OFST_UV   = 1;
-
-    protected static final int MESH_VERTS_PER_TRI = 3;    
-    protected static final int MESH_TDI_NUM_CMPS  = MESH_VERTS_PER_TRI * MESH_ATRB_NUM_CMPS;
-    protected static final int MESH_TDI_OFST_POS0 = 0;
-    protected static final int MESH_TDI_OFST_POS1 = 2;
-    protected static final int MESH_TDI_OFST_POS2 = 4;
-    protected static final int MESH_TDI_OFST_UV0  = 1;
-    protected static final int MESH_TDI_OFST_UV1  = 3;
-    protected static final int MESH_TDI_OFST_UV2  = 5;
-
-    /////////////////////////////////////////////////////////////////
-    // QVIWERER.TRI ENCODINGS
-    protected static final int VTRI_POSDAT_NUM_CMPS = MESH_POSN_NUM_CMPS * MESH_VERTS_PER_TRI;
-    protected static final int VTRI_UVDAT_NUM_CMPS   = MESH_UV_NUM_CMPS * MESH_VERTS_PER_TRI;
-
 }

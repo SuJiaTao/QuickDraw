@@ -4,21 +4,125 @@
 
 package QDraw;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import QDraw.QException.PointOfError;
 
 public abstract class QShader {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
-    public static final QColor NO_TEXTURE_COLOR    = new QColor(0xFF, 0x00, 0xFF);
-    public static final QColor NO_SAMPLE_COLOR     = new QColor(0x00, 0x00, 0x00, 0x00); 
-    public static final int RANDOM_GRANULATIRY     = 0xFFFF;
-    public static final float NORMALIZATION_FACTOR = 1.0f / (float)RANDOM_GRANULATIRY;
+    public static final int RANDOM_GRANULATIRY        = 0xFFFF;
+    public static final float NORMALIZATION_FACTOR    = 1.0f / (float)RANDOM_GRANULATIRY;
+    public static final int VERTEX_SHADER_MAX_OUTPUTS = 8;
 
     /////////////////////////////////////////////////////////////////
-    // BUILT IN SHADER METHODS
-    private static int _seedUniquifier = 0;
+    // PUBLIC CLASSES
+    public static final class VertexShaderContext {
+        /////////////////////////////////////////////////////////////////
+        // PUBLIC MEMBERS
+        public Object[]   uniforms;
+        public QSampleable[] textures;
+        public float[][]  attributes;
+        public float[][]  outputsToFragShader = new float[VERTEX_SHADER_MAX_OUTPUTS][];
+    }
+
+    public static final class FragmentShaderContext {
+        /////////////////////////////////////////////////////////////////
+        // PUBLIC MEMBERS
+        public Object[]   uniforms;
+        public QSampleable[] textures;
+        public QRenderBuffer target;
+        public int        screenX;
+        public int        screenY;
+        public float      invDepth;
+        public QVector3   normal;
+        public float[][]  inputsFromVertexShader = new float[VERTEX_SHADER_MAX_OUTPUTS][];
+    }
+
+    public static final class ShaderRequirement {
+        /////////////////////////////////////////////////////////////////
+        // PUBLIC ENUMS
+        public static enum RequirementType {
+            Attribute,
+            Uniform,
+            Texture
+        }
+
+        /////////////////////////////////////////////////////////////////
+        // PUBLIC MEMBERS
+        public int             slot;
+        public RequirementType requireType;
+        public String          purpose;
+        public Class<?>        uniformClass;
+
+        /////////////////////////////////////////////////////////////////
+        // CONSTRUCTOR
+        public ShaderRequirement(int _slot, RequirementType _type, String _purpose) {
+            slot        = _slot;
+            requireType = _type;
+            purpose     = _purpose;
+        }
+
+        public ShaderRequirement(
+            int      _slot, 
+            RequirementType _type, 
+            String   _purpose, 
+            Class<?> _uniformClass
+        ) {
+            if (_type != RequirementType.Uniform) {
+                throw new QException(
+                    PointOfError.InvalidParameter, 
+                    "Can ONLY specify uniform class if requirement type is Uniform"
+                );
+            }
+            slot         = _slot;
+            requireType  = _type;
+            purpose      = _purpose;
+            uniformClass = _uniformClass;
+        }
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // BUILT IN SHADER FUNCTIONS
+    public static void setOutputToFragShader(
+        VertexShaderContext vertCtx,
+        int outputSlot, 
+        float[] inBuffer
+    ) {
+        vertCtx.outputsToFragShader[outputSlot] = new float[inBuffer.length];
+        System.arraycopy(
+            inBuffer, 
+            0, 
+            vertCtx.outputsToFragShader[outputSlot], 
+            0, 
+            inBuffer.length
+        );
+    }
+
+    public static void forwardAttributeToFragShader(
+        VertexShaderContext vertCtx,
+        int attribSlot
+    ) {
+        setOutputToFragShader(vertCtx, attribSlot, vertCtx.attributes[attribSlot]);
+    }
+
+    public static void getOutputFromVertShader(
+        FragmentShaderContext fragCtx,
+        int inputSlot, 
+        float[] outBuffer
+    ) {
+        System.arraycopy(
+            fragCtx.inputsFromVertexShader[inputSlot], 
+            0, 
+            outBuffer, 
+            0, 
+            fragCtx.inputsFromVertexShader[inputSlot].length
+        );
+    }
+
+    private static AtomicLong _seedUniquifier = new AtomicLong(0x5EED);
     public static float random( ) {
-        return seededRandom((_seedUniquifier++) + (int)System.nanoTime());
+        return seededRandom((int)(_seedUniquifier.incrementAndGet( ) + System.nanoTime( )));
     }
 
     public static float seededRandom(float seed) {
@@ -35,6 +139,32 @@ public abstract class QShader {
         // bound and normalize
         iSeed = (iSeed & RANDOM_GRANULATIRY);
         return (float)iSeed * NORMALIZATION_FACTOR;
+    }
+
+    public static float seededRandom(Object obj) {
+        // generate seed based on object hash
+        return seededRandom(obj.hashCode( ));
+    }
+
+    public static float seededRandom(FragmentShaderContext fctx) {
+        // generate seed based on screen coordinate
+        return seededRandom(fctx.screenX + (fctx.screenY * fctx.target.getWidth( )));
+    }
+
+    public static QVector3 randomVector( ) {
+        return new QVector3(random( ), random( ), random( ));
+    }
+
+    public static QVector3 seededRandomVector(float flt) {
+        return seededRandomVector(Float.floatToRawIntBits(flt));
+    }
+
+    public static QVector3 seededRandomVector(int seed) {
+        return new QVector3(
+            seededRandom((seed << 2) + 1),
+            seededRandom((seed << 2) + 2),
+            seededRandom((seed << 2) + 3)
+        );
     }
 
     public static QColor blendColor(QColor bottom, QColor top) {
@@ -72,64 +202,15 @@ public abstract class QShader {
         );
     }
 
-    public static QColor sampleTexture(
-        float u,
-        float v,
-        QSampleable texture,
-        QViewer.SampleType sampleType
-    ) {
-        // refer to
-        // https://github.com/SuJiaTao/Caesium/blob/master/csm_fragment.h
-
-        if (texture == null) {
-            return NO_TEXTURE_COLOR;
-        }
-        
-        switch (sampleType) {
-            case Cutoff:
-                if (u < 0.0f || u >= 1.0f || v < 0.0f || v >= 1.0f) {
-                    return NO_SAMPLE_COLOR;
-                }
-                break;
-
-            case Clamp:
-                u = Math.min(1.0f, Math.max(u, 0.0f));
-                v = Math.min(1.0f, Math.max(v, 0.0f));
-                break;
-
-            case Repeat:
-                u = u - (float)Math.floor((float)u);
-                v = v - (float)Math.floor((float)v);
-                if (u < 0.0f) {
-                    u = 1.0f + u;
-                }
-                if (v > 1.0f) {
-                    v = 1.0f + v;
-                }
-                break;
-        
-            default:
-                throw new QException(
-                    PointOfError.BadState, 
-                    "bad sample type: " + sampleType.toString()
-                );
-        }
-
-        int texCoordX = (int)((float)texture.getWidth() * u);
-        int texCoordY = (int)((float)texture.getHeight() * v);
-        texCoordX = Math.max(0, Math.min(texCoordX, texture.getWidth() - 1));
-        texCoordY = Math.max(0, Math.min(texCoordY, texture.getHeight() - 1));
-
-        return new QColor(texture.getColor(texCoordX, texCoordY));
-    }
-
     /////////////////////////////////////////////////////////////////
     // ABSTRACT METHODS
+    public abstract ShaderRequirement[] requirements( );
+
     public abstract QVector3 vertexShader(
-        QViewer.VertexDrawInfo infoIn, Object userIn
+        VertexShaderContext context
     );
 
     public abstract QColor fragmentShader(
-        QViewer.FragmentDrawInfo infoIn, Object userIn
+        FragmentShaderContext context
     );
 }

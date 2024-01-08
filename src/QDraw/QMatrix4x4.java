@@ -215,6 +215,76 @@ public final class QMatrix4x4 extends QEncoding {
         return translate(rotate(scale(Identity(), scale), rotation), translation);
     }
 
+    // NOTE:
+    // for the extract family of methods, refer to
+    // https://math.stackexchange.com/questions/237369/given-this-transformation-matrix-how-do-i-decompose-it-into-translation-rotati
+    
+    public QVector3 extractTranslation( ) {
+        return new QVector3(getValue(3, 0), getValue(3, 1), getValue(3, 2));
+    }
+
+    public QVector3 extractScale( ) {
+        float sx = new QVector3(
+            getValue(0, 0), getValue(0, 1), getValue(0, 2)
+        ).magnitude( );
+        float sy = new QVector3(
+            getValue(1, 0), getValue(1, 1), getValue(1, 2)
+        ).magnitude( );
+        float sz = new QVector3(
+            getValue(2, 0), getValue(2, 1), getValue(2, 2)
+        ).magnitude( );
+        return new QVector3(sx, sy, sz);
+    }
+
+    public QVector3 extractScaleFast( ) {
+        float sx = new QVector3(
+            getValue(0, 0), getValue(0, 1), getValue(0, 2)
+        ).fastMagnitude( );
+        float sy = new QVector3(
+            getValue(1, 0), getValue(1, 1), getValue(1, 2)
+        ).fastMagnitude( );
+        float sz = new QVector3(
+            getValue(2, 0), getValue(2, 1), getValue(2, 2)
+        ).fastMagnitude( );
+        return new QVector3(sx, sy, sz);
+    }
+
+    public QMatrix4x4 extractRotation( ) {
+        // clear translation
+        QMatrix4x4 rotMat = new QMatrix4x4(this);
+        QVector3 scale    = extractScale( );
+
+        rotMat.setValue(3, 0, 0.0f);
+        rotMat.setValue(3, 1, 0.0f);
+        rotMat.setValue(3, 2, 0.0f);
+
+        for (int y = 0; y < VCTR_NUM_CMPS; y++) {
+            rotMat.setValue(0, y, rotMat.getValue(0, y) / scale.getX( ));
+            rotMat.setValue(1, y, rotMat.getValue(1, y) / scale.getY( ));
+            rotMat.setValue(2, y, rotMat.getValue(2, y) / scale.getZ( ));
+        }
+
+        return rotMat;
+    }
+
+    public QMatrix4x4 extractRotationFast( ) {
+        // clear translation
+        QMatrix4x4 rotMat = new QMatrix4x4(this);
+        QVector3 scale    = extractScaleFast( );
+
+        rotMat.setValue(3, 0, 0.0f);
+        rotMat.setValue(3, 1, 0.0f);
+        rotMat.setValue(3, 2, 0.0f);
+
+        for (int y = 0; y < VCTR_NUM_CMPS; y++) {
+            rotMat.setValue(0, y, rotMat.getValue(0, y) / scale.getX( ));
+            rotMat.setValue(1, y, rotMat.getValue(1, y) / scale.getY( ));
+            rotMat.setValue(2, y, rotMat.getValue(2, y) / scale.getZ( ));
+        }
+
+        return rotMat;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof QMatrix4x4)) {

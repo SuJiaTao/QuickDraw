@@ -97,11 +97,13 @@ public final class QVector3 extends QEncoding {
 
     public QVector3 fastNormalize( ) {
         float fmag3 = fastMagnitude( );
+        if (fmag3 == 0.0f) return this;
         return multiply3(1.0f / fmag3);
     }
 
     public QVector3 normalize( ) {
         float mag3 = magnitude( );
+        if (mag3 == 0.0f) return this;
         return multiply3(1.0f / mag3);
     }
 
