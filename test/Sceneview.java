@@ -125,10 +125,8 @@ public final class Sceneview {
             );
 
             viewer.setTexture(tex0);
-            viewer.drawMesh(
-                mesh0, 
-                QMatrix4x4.multiply(modelMatrix0, viewMatrix)
-            );
+            viewer.setMatrix(QMatrix4x4.multiply(modelMatrix0, viewMatrix));
+            viewer.drawMesh(mesh0);
 
             // RENDER MODEL1
             QMatrix4x4 modelMatrix1 = QMatrix4x4.TRS(
@@ -144,10 +142,8 @@ public final class Sceneview {
             );
 
             viewer.setTexture(tex1);
-            viewer.drawMesh(
-                mesh1, 
-                QMatrix4x4.multiply(modelMatrix1, viewMatrix)
-            );
+            viewer.setMatrix(QMatrix4x4.multiply(modelMatrix1, viewMatrix));
+            viewer.drawMesh(mesh1);
             
             window.updateFrame( );
         }

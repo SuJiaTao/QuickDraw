@@ -63,7 +63,8 @@ public final class Profile {
                     viewer.setTextureSlot(0, tTex);
 
                     texTimer.beginTime();
-                    viewer.drawMesh(mesh, tMatrix);
+                    viewer.setMatrix(tMatrix);
+                    viewer.drawMesh(mesh);
                     texTimer.endTime();
 
                     window.updateFrame( );
@@ -73,7 +74,8 @@ public final class Profile {
                     viewer.setTextureSlot(0, rbTex);
 
                     rbTimer.beginTime();
-                    viewer.drawMesh(mesh, tMatrix);
+                    viewer.setMatrix(tMatrix);
+                    viewer.drawMesh(mesh);
                     rbTimer.endTime();
 
                     window.updateFrame( );
@@ -85,7 +87,8 @@ public final class Profile {
                     viewer.setTextureSlot(0, rbTex);
 
                     rbTimer.beginTime();
-                    viewer.drawMesh(mesh, tMatrix);
+                    viewer.setMatrix(tMatrix);
+                    viewer.drawMesh(mesh);
                     rbTimer.endTime();
 
                     window.updateFrame( );
@@ -95,7 +98,8 @@ public final class Profile {
                     viewer.setTextureSlot(0, tTex);
 
                     texTimer.beginTime();
-                    viewer.drawMesh(mesh, tMatrix);
+                    viewer.setMatrix(tMatrix);
+                    viewer.drawMesh(mesh);
                     texTimer.endTime();
 
                     window.updateFrame( );

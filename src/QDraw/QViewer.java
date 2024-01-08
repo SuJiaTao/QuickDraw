@@ -398,10 +398,8 @@ public final class QViewer extends QEncoding {
     }
 
     public void drawMesh(
-        QMesh      mesh,
-        QMatrix4x4 meshTransform
+        QMesh      mesh
     ) {
-        setMatrix(meshTransform);
         setVertexAttribSlot(DEFAULT_SHADER_POSITION_SLOT, mesh.getPosIndexer( ));
         setVertexAttribSlot(DEFAULT_SHADER_UV_SLOT, mesh.getUVIndexer( ));
         setVertexAttribSlot(DEFAULT_SHADER_NORMAL_SLOT, mesh.getNormalIndexer( ));

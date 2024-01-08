@@ -59,7 +59,8 @@ public final class Mascot {
 
             eyes.setRenderMode(RenderMode.Textured);
             eyes.setTexture(MASCOT_TEXTURE);
-            eyes.drawMesh(MASCOT_MESH, m0);
+            eyes.setMatrix(m0);
+            eyes.drawMesh(MASCOT_MESH);
 
             window.updateFrame( );
         }
@@ -79,7 +80,8 @@ public final class Mascot {
 
             eyes.setRenderMode(RenderMode.Textured);
             eyes.setTexture(MASCOT_TEXTURE);
-            eyes.drawMesh(MASCOT_MESH, m0);
+            eyes.setMatrix(m0);
+            eyes.drawMesh(MASCOT_MESH);
 
             QMatrix4x4 m1 = QMatrix4x4.TRS(
                 new QVector3(0.0f, 0.0f, -1.9f), 
@@ -95,7 +97,8 @@ public final class Mascot {
                     new QVector3(3.0f, -2.0f, -5.0f)
                 }
             );
-            eyes.drawMesh(MASCOT_MESH, m1);
+            eyes.setMatrix(m1);
+            eyes.drawMesh(MASCOT_MESH);
 
             QMatrix4x4 m2 = QMatrix4x4.TRS(
                 new QVector3(2.0f, 0.0f, -3.2f), 
@@ -104,7 +107,8 @@ public final class Mascot {
             );
 
             eyes.setRenderMode(RenderMode.Normal);
-            eyes.drawMesh(MASCOT_MESH, m2);
+            eyes.setMatrix(m2);
+            eyes.drawMesh(MASCOT_MESH);
 
             
 
@@ -126,7 +130,8 @@ public final class Mascot {
 
             eyes.setRenderMode(RenderMode.Textured);
             eyes.setTexture(MASCOT_TEXTURE);
-            eyes.drawMesh(MASCOT_MESH, m0);
+            eyes.setMatrix(m0);
+            eyes.drawMesh(MASCOT_MESH);
 
             QMatrix4x4 m1 = QMatrix4x4.TRS(
                 new QVector3(0.8f, 0.0f, -2.0f), 
@@ -136,7 +141,8 @@ public final class Mascot {
 
             eyes.setRenderMode(RenderMode.Textured);
             eyes.setTexture(MASCOTS_BOYFRIEND_TEXTURE);
-            eyes.drawMesh(MASCOT_MESH, m1);
+            eyes.setMatrix(m1);
+            eyes.drawMesh(MASCOT_MESH);
 
             window.updateFrame( );
         }
@@ -168,7 +174,8 @@ public final class Mascot {
 
                     eyes.setRenderMode(RenderMode.Textured);
                     eyes.setTexture(TECH_TEXTURE);
-                    eyes.drawMesh(MASCOT_MESH, m0);
+                    eyes.setMatrix(m0);
+                    eyes.drawMesh(MASCOT_MESH);
 
                 }
             }
@@ -196,7 +203,8 @@ public final class Mascot {
 
             eyes.setUniformSlot(1, dt);
             eyes.setTexture(MASCOT_TEXTURE);
-            eyes.drawMesh(MASCOT_MESH, m0);
+            eyes.setMatrix(m0);
+            eyes.drawMesh(MASCOT_MESH);
 
             window.updateFrame( );
         }
@@ -224,7 +232,8 @@ public final class Mascot {
                     new QVector3(7.0f, 3.0f, 4.0f)
                 }
             );
-            eyes.drawMesh(MASCOT_MESH, m0);
+            eyes.setMatrix(m0);
+            eyes.drawMesh(MASCOT_MESH);
 
             window.updateFrame( );
         }
