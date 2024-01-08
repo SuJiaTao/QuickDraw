@@ -983,7 +983,7 @@ public final class QViewer extends QEncoding {
                 float fac20 = internalFindClipInterpolationFactor(
                     tri.getPosn(2), 
                     tri.getPosn(0), 
-                    pos10
+                    pos20
                 );
                 
                 tri.getVertex(1).findClippedShaderOutputs(

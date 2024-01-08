@@ -9,8 +9,8 @@ public final class Sceneview {
     public static final String RESOURCE_PATH = System.getProperty("user.dir") + "//resources//";
     public static final int WINDOW_WIDTH  = 1300;
     public static final int WINDOW_HEIGHT = 1000;
-    public static final int RESOLUTION_X  = WINDOW_WIDTH >> 1;
-    public static final int RESOLUTION_Y  = WINDOW_HEIGHT >> 1;
+    public static final int RESOLUTION_X  = WINDOW_WIDTH / 2;
+    public static final int RESOLUTION_Y  = WINDOW_HEIGHT / 2;
     public static final float ASPECT      = (float)RESOLUTION_X / (float)RESOLUTION_Y; 
     public static void main(String[] args) {
         QVector3 viewPos    = new QVector3( );
@@ -26,8 +26,10 @@ public final class Sceneview {
         viewer.setNearClip(-0.05f);
         viewer.setViewBounds(-ASPECT, ASPECT, -1.0f, 1.0f);
 
-        QMesh    mesh = new QMesh(RESOURCE_PATH + "Mascot_Smooth.obj");
-        QTexture tex  = new QTexture(RESOURCE_PATH + "MascotFuzzy256.png");
+        QMesh    mesh0 = new QMesh(RESOURCE_PATH + "Mascot_Smooth.obj");
+        QMesh    mesh1 = new QMesh(RESOURCE_PATH + "Cube.obj");
+        QTexture tex0  = new QTexture(RESOURCE_PATH + "MascotFuzzy256.png");
+        QTexture tex1  = new QTexture(RESOURCE_PATH + "Texture_Medium.jpg");
 
         float lastTime = (float)(System.nanoTime( ) >> 10);
 
@@ -64,11 +66,8 @@ public final class Sceneview {
             
             viewVel.multiply3(0.8f);
 
-            // System.out.print(viewVel);
-            // System.out.println(viewPos);
-
             QVector3 lookInput = window.getInputArrowKeysVector( ).multiply3(2.0f);
-            viewLookVel.add(new QVector3(-lookInput.getY(), lookInput.getX()));
+            viewLookVel.add(new QVector3(-lookInput.getY( ), lookInput.getX()));
             final float maxLookVel = 4.5f;
             if (viewLookVel.magnitude( ) > maxLookVel) {
                 viewLookVel.normalize( );
@@ -77,33 +76,64 @@ public final class Sceneview {
             viewLook.add(viewLookVel);
             viewLookVel.multiply3(0.85f);
 
-            // System.out.println(viewDir);
-
             // SETUP VIEWMATRIX
             QMatrix4x4 viewMatrix = QMatrix4x4.Identity( );
             viewMatrix.translate(viewPos);
             viewMatrix.rotate(0.0f, -viewLook.getY( ), 0.0f);
             viewMatrix.rotate(-viewLook.getX( ), 0.0f, 0.0f);
 
-            // SETUP MODEL MATRIX
-            QMatrix4x4 modelMatrix = QMatrix4x4.TRS(
+            // RENDER MODEL0
+            viewer.clearFrame( );
+
+            QMatrix4x4 modelMatrix0 = QMatrix4x4.TRS(
                 new QVector3(0.0f, -.0f, -3.0f),
                 QVector3.Zero( ),
                 QVector3.One( ).multiply3(0.35f)
             );
 
-            // RENDER AND REFRESH SCREEN
-            viewer.setRenderMode(RenderMode.Lit);
-            // viewer.setCustomShader(new WobbleShader( ));
+            viewer.setRenderMode(RenderMode.CustomShader);
+            viewer.setCustomShader(new FuzzShader( ));
+
+            // generate new light pos based on view transform
+            QVector3[] transformedLights = new QVector3[lights.length];
+            for (int i = 0 ; i < transformedLights.length; i++) {
+                transformedLights[i] = QMatrix4x4.multiply(viewMatrix, lights[i]);
+            }
             viewer.setUniformSlot(
                 QViewer.DEFAULT_SHADER_LIGHTS_SLOT, 
-                lights
+                transformedLights
             );
-            viewer.setTexture(tex);
-            viewer.clearFrame( );
+
+            viewer.setRenderMode(RenderMode.CustomShader);
+            viewer.setCustomShader(new FuzzShader( ));
+            viewer.setUniformSlot(
+                QViewer.DEFAULT_SHADER_LIGHTS_SLOT, 
+                transformedLights
+            );
+
+            viewer.setTexture(tex0);
             viewer.drawMesh(
-                mesh, 
-                QMatrix4x4.multiply(modelMatrix, viewMatrix)
+                mesh0, 
+                QMatrix4x4.multiply(modelMatrix0, viewMatrix)
+            );
+
+            // RENDER MODEL1
+            QMatrix4x4 modelMatrix1 = QMatrix4x4.TRS(
+                new QVector3(-3.0f, -1.3f, -3.0f),
+                QVector3.Zero( ),
+                QVector3.One( ).multiply3(0.35f)
+            );
+
+            viewer.setRenderMode(RenderMode.Lit);
+            viewer.setUniformSlot(
+                QViewer.DEFAULT_SHADER_LIGHTS_SLOT, 
+                transformedLights
+            );
+
+            viewer.setTexture(tex1);
+            viewer.drawMesh(
+                mesh1, 
+                QMatrix4x4.multiply(modelMatrix1, viewMatrix)
             );
             
             window.updateFrame( );

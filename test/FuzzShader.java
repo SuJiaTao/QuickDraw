@@ -100,19 +100,22 @@ public class FuzzShader extends QShader {
         float diffuseAccum = 0.0f;
         QVector3[] lights  = (QVector3[])fctx.uniforms[SHADER_LIGHTS_SLOT];
         for (QVector3 lightPos : lights) {
-            QVector3 dFaceLightNormalized = QVector3.sub(
+            QVector3 dFaceLight = QVector3.sub(
                 lightPos,
                 new QVector3(pos)
-            ).fastNormalize( );
+            );
+
+            float dist = dFaceLight.fastMagnitude( );
+            dFaceLight.multiply3(1.0f / dist);
 
             float diffuse = Math.max(0.0f, QVector3.dot(
-                new QVector3(normal).add(randOffset).fastNormalize( ), 
-                dFaceLightNormalized
+                new QVector3(normal).add(randOffset), 
+                dFaceLight
             ));
             
             float phong = (float)Math.pow(diffuse, 10.0f);
 
-            diffuseAccum += (diffuse + phong);
+            diffuseAccum += (diffuse + phong) * (QViewer.DEFAULT_LIT_POINT_SIZE / dist);
         }
         
         return multiplyColor(
