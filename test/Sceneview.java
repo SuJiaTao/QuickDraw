@@ -5,9 +5,6 @@
 import QDraw.*;
 import QDraw.QViewer.RenderMode;
 
-import java.awt.*;
-import javax.swing.*;
-
 public final class Sceneview {
     public static final String RESOURCE_PATH = System.getProperty("user.dir") + "//resources//";
     public static final int WINDOW_WIDTH  = 1300;
@@ -32,7 +29,6 @@ public final class Sceneview {
         QMesh    mesh = new QMesh(RESOURCE_PATH + "Mascot_Smooth.obj");
         QTexture tex  = new QTexture(RESOURCE_PATH + "MascotFuzzy256.png");
 
-        long initialTimeMsec = System.currentTimeMillis( );
         float lastTime = (float)(System.nanoTime( ) >> 10);
 
         QVector3[] lights = new QVector3[] {

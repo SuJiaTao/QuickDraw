@@ -223,6 +223,12 @@ public final class QViewer extends QEncoding {
             QMatrix4x4 mtr = (QMatrix4x4)context.uniforms[DEFAULT_SHADER_MATRIX_SLOT];
             QVector3 pos   = new QVector3(context.attributes[DEFAULT_SHADER_POSITION_SLOT]);
             pos = QMatrix4x4.multiply(mtr, pos);
+
+            QMatrix4x4 rotMtr = mtr.extractRotation( );
+            QMath.mul3_4x4(
+                context.attributes[DEFAULT_SHADER_NORMAL_SLOT], 
+                rotMtr.getComponents( )
+            );
             
             setOutputToFragShader(context, DEFAULT_SHADER_POSITION_SLOT, pos.getComponents( ));
             forwardAttributeToFragShader(context, DEFAULT_SHADER_UV_SLOT);

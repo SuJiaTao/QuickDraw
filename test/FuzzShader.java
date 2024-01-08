@@ -62,7 +62,6 @@ public class FuzzShader extends QShader {
             rotMtr.getComponents( )
         );
         
-        // forwardAttributeToFragShader(vctx, SHADER_POSITION_SLOT);
         vertexPos = QMatrix4x4.multiply(transform, vertexPos);
         setOutputToFragShader(vctx, SHADER_POSITION_SLOT, vertexPos.getComponents( ));
         forwardAttributeToFragShader(vctx, SHADER_UV_SLOT);

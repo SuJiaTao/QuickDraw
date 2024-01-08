@@ -72,7 +72,7 @@ public final class Mascot {
             float time = (float)(System.currentTimeMillis() - t0) * 0.15f;
 
             QMatrix4x4 m0 = QMatrix4x4.TRS(
-                new QVector3(-1.3f, 0.0f, -2.3f), 
+                new QVector3(-2.0f, 0.0f, -3.2f), 
                 new QVector3(0, time, 0), 
                 QVector3.One().multiply3(0.25f)
             );
@@ -82,16 +82,7 @@ public final class Mascot {
             eyes.drawMesh(MASCOT_MESH, m0);
 
             QMatrix4x4 m1 = QMatrix4x4.TRS(
-                new QVector3(0.0f, 0.0f, -2.3f), 
-                new QVector3(0, time, 0), 
-                QVector3.One().multiply3(0.25f)
-            );
-
-            eyes.setRenderMode(RenderMode.Normal);
-            eyes.drawMesh(MASCOT_MESH, m1);
-
-            QMatrix4x4 m2 = QMatrix4x4.TRS(
-                new QVector3(1.3f, 0.0f, -2.3f), 
+                new QVector3(0.0f, 0.0f, -1.9f), 
                 new QVector3(0, time, 0), 
                 QVector3.One().multiply3(0.25f)
             );
@@ -100,10 +91,22 @@ public final class Mascot {
             eyes.setTexture(MASCOT_TEXTURE);
             eyes.setLights(
                 new QVector3[] {
-                    new QVector3(0.0f, 2.0f, 5.0f)
+                    new QVector3(3.0f, 2.0f, 3.0f),
+                    new QVector3(3.0f, -2.0f, -5.0f)
                 }
             );
+            eyes.drawMesh(MASCOT_MESH, m1);
+
+            QMatrix4x4 m2 = QMatrix4x4.TRS(
+                new QVector3(2.0f, 0.0f, -3.2f), 
+                new QVector3(0, time, 0), 
+                QVector3.One().multiply3(0.25f)
+            );
+
+            eyes.setRenderMode(RenderMode.Normal);
             eyes.drawMesh(MASCOT_MESH, m2);
+
+            
 
             window.updateFrame( );
         }
@@ -237,7 +240,7 @@ public final class Mascot {
         eyes.setNearClip(-0.4f);
 
         while (true) {
-            // RegularMascot( );
+            RegularMascot( );
             MascotAndHisFriends( );
             MascotAndHisBoyFriend( );
             TechMascot( );
