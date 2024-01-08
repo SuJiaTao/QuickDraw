@@ -38,6 +38,8 @@ public final class Sceneview {
             new QVector3(-2.0f, 0.0f, -20.0f)
         };
 
+        RenderMode rMode = RenderMode.CustomShader;
+
         while (true) {
 
             float currentTime = (float)(System.nanoTime( ) >> 10);
@@ -47,6 +49,20 @@ public final class Sceneview {
             if (dt < sleepMSecs) continue;
 
             lastTime = currentTime;
+
+            // UPDATE RENDER MODE BASED ON INPUTS
+            if (window.isCharDownIgnoreCase('U')) {
+                rMode = RenderMode.CustomShader;
+            }
+            if (window.isCharDownIgnoreCase('I')) {
+                rMode = RenderMode.Lit;
+            }
+            if (window.isCharDownIgnoreCase('O')) {
+                rMode = RenderMode.Normal;
+            }
+            if (window.isCharDownIgnoreCase('P')) {
+                rMode = RenderMode.Textured;
+            }
 
             // UPDATE VIEW
             QVector3 moveInput = (window.getInputWASDVector( ).multiply3(0.05f));
@@ -91,9 +107,6 @@ public final class Sceneview {
                 QVector3.One( ).multiply3(0.35f)
             );
 
-            viewer.setRenderMode(RenderMode.CustomShader);
-            viewer.setCustomShader(new FuzzShader( ));
-
             // generate new light pos based on view transform
             QVector3[] transformedLights = new QVector3[lights.length];
             for (int i = 0 ; i < transformedLights.length; i++) {
@@ -104,7 +117,7 @@ public final class Sceneview {
                 transformedLights
             );
 
-            viewer.setRenderMode(RenderMode.CustomShader);
+            viewer.setRenderMode(rMode);
             viewer.setCustomShader(new FuzzShader( ));
             viewer.setUniformSlot(
                 QViewer.DEFAULT_SHADER_LIGHTS_SLOT, 
