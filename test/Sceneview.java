@@ -33,9 +33,9 @@ public final class Sceneview {
 
         float lastTime = (float)(System.nanoTime( ) >> 10);
 
-        QVector3[] lights = new QVector3[] {
-            new QVector3(5.0f, 1.0f, 3.0f),
-            new QVector3(-2.0f, 0.0f, -20.0f)
+        QLight[] lights = new QLight[] {
+            new QLight(new QVector3(5.0f, 1.0f, 3.0f), 5.0f),
+            new QLight(new QVector3(-2.0f, 0.0f, -20.0f), 0.3f)
         };
 
         RenderMode rMode = RenderMode.CustomShader;
@@ -65,7 +65,7 @@ public final class Sceneview {
             }
 
             // UPDATE VIEW
-            QVector3 moveInput = (window.getInputWASDVector( ).multiply3(0.05f));
+            QVector3 moveInput = (window.getInputWASDVector( ).multiply3(0.02f));
             viewVel.add(new QVector3(-moveInput.getX( ), 0.0f, moveInput.getY( )));
             final float maxViewVel = 1.0f;
             if (viewVel.magnitude( ) > maxViewVel) {
@@ -82,7 +82,7 @@ public final class Sceneview {
             
             viewVel.multiply3(0.8f);
 
-            QVector3 lookInput = window.getInputArrowKeysVector( ).multiply3(2.0f);
+            QVector3 lookInput = window.getInputArrowKeysVector( ).multiply3(0.8f);
             viewLookVel.add(new QVector3(-lookInput.getY( ), lookInput.getX()));
             final float maxLookVel = 4.5f;
             if (viewLookVel.magnitude( ) > maxLookVel) {
@@ -108,10 +108,13 @@ public final class Sceneview {
             );
 
             // generate new light pos based on view transform
-            QVector3[] transformedLights = new QVector3[lights.length];
+            QLight[] transformedLights = new QLight[lights.length];
             for (int i = 0 ; i < transformedLights.length; i++) {
-                transformedLights[i] = QMatrix4x4.multiply(viewMatrix, lights[i]);
+                transformedLights[i] = new QLight(lights[i]);
+                transformedLights[i].position = 
+                    QMatrix4x4.multiply(viewMatrix, lights[i].position);
             }
+
             viewer.setUniformSlot(
                 QViewer.DEFAULT_SHADER_LIGHTS_SLOT, 
                 transformedLights

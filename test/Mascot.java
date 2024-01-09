@@ -92,9 +92,9 @@ public final class Mascot {
             eyes.setRenderMode(RenderMode.Lit);
             eyes.setTexture(MASCOT_TEXTURE);
             eyes.setLights(
-                new QVector3[] {
-                    new QVector3(3.0f, 2.0f, 3.0f),
-                    new QVector3(3.0f, -2.0f, -5.0f)
+                new QLight[] {
+                    new QLight(new QVector3(3.0f, 2.0f, 3.0f), 3.5f),
+                    new QLight(new QVector3(3.0f, -2.0f, -5.0f), 1.0f)
                 }
             );
             eyes.setMatrix(m1);
@@ -228,8 +228,8 @@ public final class Mascot {
             );
             eyes.setTexture(MASCOT_TEXTURE);
             eyes.setLights(
-                new QVector3[] {
-                    new QVector3(7.0f, 3.0f, 4.0f)
+                new QLight[] {
+                    new QLight(new QVector3(7.0f, 3.0f, 4.0f), 3.4f)
                 }
             );
             eyes.setMatrix(m0);

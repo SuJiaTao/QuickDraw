@@ -40,7 +40,7 @@ public class FuzzShader extends QShader {
                     SHADER_LIGHTS_SLOT, 
                     RequirementType.Uniform, 
                     "point light position array",
-                    QVector3[].class
+                    QLight[].class
             ),
             new ShaderRequirement(
                     SHADER_TEXTURE_SLOT, 
@@ -98,10 +98,10 @@ public class FuzzShader extends QShader {
         // APPLY SIMPLE PHONG SHADING
         float ambient      = 0.4f;
         float diffuseAccum = 0.0f;
-        QVector3[] lights  = (QVector3[])fctx.uniforms[SHADER_LIGHTS_SLOT];
-        for (QVector3 lightPos : lights) {
+        QLight[] lights  = (QLight[])fctx.uniforms[SHADER_LIGHTS_SLOT];
+        for (QLight light : lights) {
             QVector3 dFaceLight = QVector3.sub(
-                lightPos,
+                light.position,
                 new QVector3(pos)
             );
 
@@ -115,7 +115,7 @@ public class FuzzShader extends QShader {
             
             float phong = (float)Math.pow(diffuse, 10.0f);
 
-            diffuseAccum += (diffuse + phong) * (QViewer.DEFAULT_LIT_POINT_SIZE / dist);
+            diffuseAccum += (diffuse + phong) * (light.strength / dist);
         }
         
         return multiplyColor(

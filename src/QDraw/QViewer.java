@@ -41,7 +41,6 @@ public final class QViewer extends QEncoding {
     public static final int DEFAULT_SHADER_TEXTURE_SLOT  = 0;
 
     public static final float DEFAULT_LIT_AMBIENT_FACTOR = 0.3f;
-    public static final float DEFAULT_LIT_POINT_SIZE     = 3.5f;
     public static final float DEFAULT_LIT_PHONG_FACTOR   = 7.0f;
 
     private final QShader SOLIDFILL_SHADER = new QShader( ) {
@@ -207,7 +206,7 @@ public final class QViewer extends QEncoding {
                     DEFAULT_SHADER_LIGHTS_SLOT, 
                     RequirementType.Uniform, 
                     "worldspace light position array",
-                    QVector3[].class
+                    QLight[].class
                 ),
                 new ShaderRequirement(
                     DEFAULT_SHADER_TEXTURE_SLOT, 
@@ -240,8 +239,8 @@ public final class QViewer extends QEncoding {
         public QColor fragmentShader(
             FragmentShaderContext context
         ) {
-            QSampleable tex   = context.textures[DEFAULT_SHADER_TEXTURE_SLOT];
-            QVector3[] lights = (QVector3[])context.uniforms[DEFAULT_SHADER_LIGHTS_SLOT];
+            QSampleable tex = context.textures[DEFAULT_SHADER_TEXTURE_SLOT];
+            QLight[] lights = (QLight[])context.uniforms[DEFAULT_SHADER_LIGHTS_SLOT];
 
             float[] pos    = new float[3];
             float[] uv     = new float[2];
@@ -252,9 +251,9 @@ public final class QViewer extends QEncoding {
 
             float ambient    = DEFAULT_LIT_AMBIENT_FACTOR;
             float sumDiffuse = 0.0f;
-            for (QVector3 light : lights) {
+            for (QLight light : lights) {
                 QVector3 dirFaceToLight = QVector3.sub(
-                    light,
+                    light.position,
                     new QVector3(pos)
                 );
 
@@ -267,8 +266,7 @@ public final class QViewer extends QEncoding {
                 ));
 
                 float phong = (float)Math.pow(diffuse, DEFAULT_LIT_PHONG_FACTOR);
-
-                sumDiffuse += (diffuse + phong) * (DEFAULT_LIT_POINT_SIZE / distToLight);
+                sumDiffuse += (diffuse + phong) * (light.strength / distToLight);
             }
 
             QColor texColor = new QColor(
@@ -348,7 +346,7 @@ public final class QViewer extends QEncoding {
         setUniformSlot(DEFAULT_SHADER_MATRIX_SLOT, matrix);
     }
 
-    public void setLights(QVector3[] lightArray) {
+    public void setLights(QLight[] lightArray) {
         setUniformSlot(DEFAULT_SHADER_LIGHTS_SLOT, lightArray);
     }
 
