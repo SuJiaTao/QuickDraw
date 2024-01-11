@@ -1,10 +1,10 @@
 // Bailey JT Brown
 // 2024
-// App.java
+// MakeFuzzTexture.java
 
 import QDraw.*;
 
-public final class App {
+public final class MakeFuzzTexture {
     public static void MakeFuzzyTexture( ) {
         QTexture tex = new QTexture(System.getProperty("user.dir") + "\\resources\\Mascot256_AltEyes.png");
         

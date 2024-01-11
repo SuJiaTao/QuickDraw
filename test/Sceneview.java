@@ -55,7 +55,7 @@ public final class Sceneview {
                 rMode = RenderMode.CustomShader;
             }
             if (window.isCharDownIgnoreCase('I')) {
-                rMode = RenderMode.Lit;
+                rMode = RenderMode.Material;
             }
             if (window.isCharDownIgnoreCase('O')) {
                 rMode = RenderMode.Normal;
@@ -138,7 +138,7 @@ public final class Sceneview {
                 QVector3.One( ).multiply3(0.35f)
             );
 
-            viewer.setRenderMode(RenderMode.Lit);
+            viewer.setRenderMode(RenderMode.Material);
             viewer.setUniformSlot(
                 QViewer.DEFAULT_SHADER_LIGHTS_SLOT, 
                 transformedLights

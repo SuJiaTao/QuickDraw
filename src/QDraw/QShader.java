@@ -182,6 +182,22 @@ public abstract class QShader {
         );
     }
 
+    public static QColor addColor(QColor color1, QColor color2) {
+        return new QColor(
+            (color1.getR() + color1.getR()),
+            (color1.getG() + color2.getG()),
+            (color1.getB() + color2.getB())
+        );
+    }
+
+    public static QColor multiplyColor(QColor color1, QColor color2) {
+        return new QColor(
+            (color1.getR() * color1.getR()) >>> 8,
+            (color1.getG() * color2.getG()) >>> 8,
+            (color1.getB() * color2.getB()) >>> 8
+        );
+    }
+
     public static QColor multiplyColor(QColor color, float factor) {
         int iFac = (int)(factor * 255.0f);
         return new QColor(

@@ -89,7 +89,7 @@ public final class Mascot {
                 QVector3.One().multiply3(0.25f)
             );
 
-            eyes.setRenderMode(RenderMode.Lit);
+            eyes.setRenderMode(RenderMode.Material);
             eyes.setTexture(MASCOT_TEXTURE);
             eyes.setLights(
                 new QLight[] {

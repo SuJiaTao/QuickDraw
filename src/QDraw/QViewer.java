@@ -13,6 +13,16 @@ import QDraw.QShader.ShaderRequirement.RequirementType;
 
 public final class QViewer extends QEncoding {
     /////////////////////////////////////////////////////////////////
+    // PUBLIC ENUMS
+    public enum RenderMode {
+        SolidFill,
+        Textured,
+        Normal,
+        Material,
+        CustomShader
+    };
+
+    /////////////////////////////////////////////////////////////////
     // CONSTANTS
     public static final float MIN_NEAR_CLIP     = -0.005f;
     public static final float DEFAULT_NEAR_CLIP = MIN_NEAR_CLIP;
@@ -22,7 +32,7 @@ public final class QViewer extends QEncoding {
     public static final float DEFAULT_VIEWBOUND_BOTTOM = -1.0f;
     public static final float DEFAULT_VIEWBOUND_TOP    = 1.0f;
 
-    private static final float BACKFACE_CULL_MIN_DOT  = 0.5f;
+    private static final float BACKFACE_CULL_MIN_DOT  = 0.0f;
     private static final float DEPTH_TEST_EPSILON     = 0.002f;
     private static final int   VERTS_PER_TRI = 3;
 
@@ -39,9 +49,7 @@ public final class QViewer extends QEncoding {
     public static final int DEFAULT_SHADER_MATRIX_SLOT   = 0;
     public static final int DEFAULT_SHADER_LIGHTS_SLOT   = 1;
     public static final int DEFAULT_SHADER_TEXTURE_SLOT  = 0;
-
-    public static final float DEFAULT_LIT_AMBIENT_FACTOR = 0.3f;
-    public static final float DEFAULT_LIT_PHONG_FACTOR   = 7.0f;
+    public static final int DEFAULT_SHADER_MATERIAL_SLOT = 2;
 
     private final QShader SOLIDFILL_SHADER = new QShader( ) {
         public ShaderRequirement[] requirements( ) {
@@ -249,7 +257,7 @@ public final class QViewer extends QEncoding {
             getOutputFromVertShader(context, DEFAULT_SHADER_UV_SLOT, uv);
             getOutputFromVertShader(context, DEFAULT_SHADER_NORMAL_SLOT, normal);
 
-            float ambient    = DEFAULT_LIT_AMBIENT_FACTOR;
+            float ambient    = 0.3f;
             float sumDiffuse = 0.0f;
             for (QLight light : lights) {
                 QVector3 dirFaceToLight = QVector3.sub(
@@ -265,7 +273,7 @@ public final class QViewer extends QEncoding {
                     dirFaceToLight
                 ));
 
-                float phong = (float)Math.pow(diffuse, DEFAULT_LIT_PHONG_FACTOR);
+                float phong = (float)Math.pow(diffuse, 5.0f);
                 sumDiffuse += (diffuse + phong) * (light.strength / distToLight);
             }
 
@@ -277,16 +285,6 @@ public final class QViewer extends QEncoding {
             ));
             return multiplyColor(texColor, Math.min(1.0f, ambient + sumDiffuse));
         }
-    };
-
-    /////////////////////////////////////////////////////////////////
-    // PUBLIC ENUMS
-    public enum RenderMode {
-        SolidFill,
-        Textured,
-        Normal,
-        Lit,
-        CustomShader
     };
 
     /////////////////////////////////////////////////////////////////
@@ -655,7 +653,7 @@ public final class QViewer extends QEncoding {
             case Normal:
                 return NORMAL_SHADER;
 
-            case Lit:
+            case Material:
                 return LIT_SHADER;
 
             case CustomShader:
@@ -762,8 +760,16 @@ public final class QViewer extends QEncoding {
     }
 
     private boolean internalCheckBackfacing(Triangle tri) {
-        float[] awayAxis = { 0.0f, 0.0f, -1.0f };
-        return (QMath.dot3(tri.normal, awayAxis) > BACKFACE_CULL_MIN_DOT);
+        // NOTE
+        //  if the dot product between the normal is > 0 for the ray
+        //  from the camera to the center of the tri, then it's backfacing
+        float[] rayToCenter = QMath.new3( );
+        QMath.add3(rayToCenter, tri.getPosn(0));
+        QMath.add3(rayToCenter, tri.getPosn(1));
+        QMath.add3(rayToCenter, tri.getPosn(2));
+        QMath.mult3(rayToCenter, 0.3333333333333333333f);
+        QMath.mult3(rayToCenter, 1.0f / QMath.fastmag3(rayToCenter));
+        return (QMath.dot3(tri.normal, rayToCenter) > BACKFACE_CULL_MIN_DOT);
     }
 
     private Triangle[] internalClipTri(Triangle tri) {
