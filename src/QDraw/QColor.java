@@ -99,6 +99,11 @@ public final class QColor extends QEncoding {
     public QColor setB(int b) { return setChannel(b, Channel.B); };
     public QColor setA(int a) { return setChannel(a, Channel.A); };
 
+    public QColor set(int argb) {
+        colorData = argb;
+        return this;
+    }
+
     public QColor set(int r, int g, int b) {
         set(r, g, b, 0xFF);
         return this;

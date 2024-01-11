@@ -6,7 +6,7 @@ import QDraw.*;
 import QDraw.QViewer.RenderMode;
 
 public final class Sceneview {
-    public static final String RESOURCE_PATH = System.getProperty("user.dir") + "//resources//";
+    public static final String RESOURCE_PATH = System.getProperty("user.dir") + "\\resources\\";
     public static final int WINDOW_WIDTH  = 1300;
     public static final int WINDOW_HEIGHT = 1000;
     public static final int RESOLUTION_X  = WINDOW_WIDTH / 2;

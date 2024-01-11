@@ -186,8 +186,11 @@ public final class QViewer extends QEncoding {
         }
     };
 
-    private final QShader LIT_SHADER = new QShader( ) {
+    private final QShader MATERIAL_SHADER = new QShader( ) {
         public ShaderRequirement[] requirements( ) {
+            // NOTE:
+            //  texture is optional for this shader as material uniform will 
+            //  provide the base color
             return new ShaderRequirement[] {
                 new ShaderRequirement(
                     DEFAULT_SHADER_POSITION_SLOT, 
@@ -217,9 +220,10 @@ public final class QViewer extends QEncoding {
                     QLight[].class
                 ),
                 new ShaderRequirement(
-                    DEFAULT_SHADER_TEXTURE_SLOT, 
-                    RequirementType.Texture, 
-                    "mesh texture"
+                    DEFAULT_SHADER_MATERIAL_SLOT, 
+                    RequirementType.Uniform, 
+                    "mesh material",
+                    QMaterial.class
                 )
             };
         }
@@ -228,7 +232,7 @@ public final class QViewer extends QEncoding {
             VertexShaderContext context
         ) {
             QMatrix4x4 mtr = (QMatrix4x4)context.uniforms[DEFAULT_SHADER_MATRIX_SLOT];
-            QVector3 pos   = new QVector3(context.attributes[DEFAULT_SHADER_POSITION_SLOT]);
+            QVector3   pos = new QVector3(context.attributes[DEFAULT_SHADER_POSITION_SLOT]);
             pos = QMatrix4x4.multiply(mtr, pos);
 
             QMatrix4x4 rotMtr = mtr.extractRotation( );
@@ -248,6 +252,7 @@ public final class QViewer extends QEncoding {
             FragmentShaderContext context
         ) {
             QSampleable tex = context.textures[DEFAULT_SHADER_TEXTURE_SLOT];
+            QMaterial   mat = (QMaterial)context.uniforms[DEFAULT_SHADER_MATERIAL_SLOT];
             QLight[] lights = (QLight[])context.uniforms[DEFAULT_SHADER_LIGHTS_SLOT];
 
             float[] pos    = new float[3];
@@ -257,8 +262,11 @@ public final class QViewer extends QEncoding {
             getOutputFromVertShader(context, DEFAULT_SHADER_UV_SLOT, uv);
             getOutputFromVertShader(context, DEFAULT_SHADER_NORMAL_SLOT, normal);
 
-            float ambient    = 0.3f;
-            float sumDiffuse = 0.0f;
+            QColor texSampleColor = QColor.White( );
+            if (tex != null) {
+                texSampleColor.set(tex.sample(uv[0], uv[1], sampleType));
+            }
+
             for (QLight light : lights) {
                 QVector3 dirFaceToLight = QVector3.sub(
                     light.position,
@@ -268,22 +276,9 @@ public final class QViewer extends QEncoding {
                 float distToLight = dirFaceToLight.fastMagnitude( );
                 dirFaceToLight.multiply3(1.0f / distToLight);
 
-                float diffuse = Math.max(0.0f, QVector3.dot(
-                    new QVector3(normal), 
-                    dirFaceToLight
-                ));
-
-                float phong = (float)Math.pow(diffuse, 5.0f);
-                sumDiffuse += (diffuse + phong) * (light.strength / distToLight);
+                // TODO: finish
             }
 
-            QColor texColor = new QColor(
-                tex.sample(
-                    uv[0], 
-                    uv[1], 
-                    sampleType
-            ));
-            return multiplyColor(texColor, Math.min(1.0f, ambient + sumDiffuse));
         }
     };
 
@@ -654,7 +649,7 @@ public final class QViewer extends QEncoding {
                 return NORMAL_SHADER;
 
             case Material:
-                return LIT_SHADER;
+                return MATERIAL_SHADER;
 
             case CustomShader:
                 return customShader;
@@ -760,14 +755,15 @@ public final class QViewer extends QEncoding {
     }
 
     private boolean internalCheckBackfacing(Triangle tri) {
-        // NOTE
+        // NOTE:
         //  if the dot product between the normal is > 0 for the ray
         //  from the camera to the center of the tri, then it's backfacing
         float[] rayToCenter = QMath.new3( );
         QMath.add3(rayToCenter, tri.getPosn(0));
         QMath.add3(rayToCenter, tri.getPosn(1));
         QMath.add3(rayToCenter, tri.getPosn(2));
-        QMath.mult3(rayToCenter, 0.3333333333333333333f);
+        final float inv3 = 1.0f / 3.0f;
+        QMath.mult3(rayToCenter, inv3);
         QMath.mult3(rayToCenter, 1.0f / QMath.fastmag3(rayToCenter));
         return (QMath.dot3(tri.normal, rayToCenter) > BACKFACE_CULL_MIN_DOT);
     }
