@@ -1,12 +1,14 @@
 // Bailey JT Brown
 // 2024
 // MakeFuzzTexture.java
+import java.nio.file.Path;
 
 import QDraw.*;
 
 public final class MakeFuzzTexture {
     public static void MakeFuzzyTexture( ) {
-        QTexture tex = new QTexture(System.getProperty("user.dir") + "\\resources\\Mascot256_AltEyes.png");
+        final Path OUT_FILE = Path.of(System.getProperty("user.dir"), "resources","Mascot256_AltEyes.png");
+        QTexture tex = new QTexture(OUT_FILE.toString());
         
         QSampleable.ColorMapSpacialFunction mapping = new QSampleable.ColorMapSpacialFunction() {
             public int mapFunc(int col, int x, int y) {
@@ -48,7 +50,7 @@ public final class MakeFuzzTexture {
         };
 
         tex.mapColorSpacial(mapping);
-        tex.save(System.getProperty("user.dir") + "\\resources\\MascotFuzzy256_AltEyes.png");
+        tex.save(OUT_FILE.toString());
     }
 
     public static void main(String[] args) {
