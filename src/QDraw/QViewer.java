@@ -266,7 +266,7 @@ public final class QViewer extends QEncoding {
             if (tex != null) {
                 texSampleColor.set(tex.sample(uv[0], uv[1], sampleType));
             }
-
+            float diffuseIntensity = 0f;
             for (QLight light : lights) {
                 QVector3 dirFaceToLight = QVector3.sub(
                     light.position,
@@ -277,7 +277,16 @@ public final class QViewer extends QEncoding {
                 dirFaceToLight.multiply3(1.0f / distToLight);
 
                 // TODO: finish
+                diffuseIntensity += Math.max(0f, QMath.dot3(dirFaceToLight.getComponents(), normal));
+                // do we clamp intensity?
+                
             }
+
+            texSampleColor.set( Math.round(texSampleColor.getR()*diffuseIntensity), 
+                                Math.round(texSampleColor.getG()*diffuseIntensity), 
+                                Math.round(texSampleColor.getB()*diffuseIntensity));
+            
+            return texSampleColor;
 
         }
     };
