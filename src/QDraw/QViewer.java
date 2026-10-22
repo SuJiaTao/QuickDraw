@@ -276,9 +276,10 @@ public final class QViewer extends QEncoding {
                 float distToLight = dirFaceToLight.fastMagnitude( );
                 dirFaceToLight.multiply3(1.0f / distToLight);
 
-                // TODO: finish
                 diffuseIntensity += Math.max(0f, QMath.dot3(dirFaceToLight.getComponents(), normal));
                 // do we clamp intensity?
+                // TODO: add Specular component calculation 
+                // TODO: what the hell are QMaterials...
                 
             }
 
