@@ -33,23 +33,23 @@ public final class Expects {
 
     private static void ColorTest( ) {
         Expect(
-            new Integer(new QColor().toInt()), 
-            new Integer(0)
+            Integer.valueOf(new QColor().toInt()), 
+            Integer.valueOf(0)
         );
         Expect(
-            new Integer(new QColor(0x12, 0x34, 0x56).toInt()), 
-            new Integer(0xFF123456)
+            Integer.valueOf(new QColor(0x12, 0x34, 0x56).toInt()), 
+            Integer.valueOf(0xFF123456)
         );
         Expect(
-            new Integer(new QColor(0x12, 0x34, 0x56, 0x78).toInt()), 
-            new Integer(0x78123456)
+            Integer.valueOf(new QColor(0x12, 0x34, 0x56, 0x78).toInt()), 
+            Integer.valueOf(0x78123456)
         );
         Expect(
-            new Integer(
+            Integer.valueOf(
                 new QColor(0x12, 0x34, 0x56, 0x78)
                     .setChannel(0x00, Channel.A)
                     .toInt()), 
-            new Integer(0x00123456)
+            Integer.valueOf(0x00123456)
         );
         Expect(
             new QColor(0x12, 0x34, 0x56, 0x78).getChannel(Channel.R),
