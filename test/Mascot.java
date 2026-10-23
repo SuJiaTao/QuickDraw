@@ -84,7 +84,8 @@ public final class Mascot {
                     QVector3.One().multiply3(0.25f));
 
             eyes.setRenderMode(RenderMode.Material);
-            eyes.setTexture(MASCOT_TEXTURE);
+            // eyes.setTexture(null); //set null to see the materialled mascot look white
+            eyes.setTexture(MASCOT_TEXTURE); //set texture to see the materialled mascot look, textured
             eyes.setUniformSlot(2, new QMaterial(QColor.Black(),
                                         QColor.White(), 
                                         QColor.White(),
