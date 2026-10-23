@@ -233,7 +233,6 @@ public final class QViewer extends QEncoding {
 
                 diffuseIntensity += Math.max(0f, QMath.dot3(dirFaceToLight.getComponents(), normal));
                 // do we clamp intensity?
-                // TODO: add Blinn Specular component calculation 
                 // reflect = dirFaceToLight.sub(new QVector3(normal).multiply3(2f * QMath.dot3(normal, dirFaceToLight.getComponents()))); 
                 halfVec = dirFaceToLight.add(viewDir).fastNormalize();
                 specularIntensity += Math.pow(Math.max(0f, QMath.dot3(halfVec.getComponents(), normal)), shininess);
