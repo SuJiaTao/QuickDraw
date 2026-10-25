@@ -65,11 +65,11 @@ public final class QWindow {
 
         public void keyReleased(KeyEvent arg0) {
             if (keyCodesDown.contains(arg0.getKeyCode( ))) {
-                keyCodesDown.remove(new Integer(arg0.getKeyCode( )));
+                keyCodesDown.remove(Integer.valueOf(arg0.getKeyCode( )));
             }
             
             if (charsDown.contains(arg0.getKeyChar( ))) {
-                charsDown.remove(new Character(arg0.getKeyChar( )));
+                charsDown.remove(Character.valueOf(arg0.getKeyChar( )));
             }
         }
 
