@@ -6,7 +6,6 @@ import ca.bael.QDraw.*;
 import ca.bael.QDraw.QViewer.RenderMode;
 
 public final class Sceneview {
-    public static final String RESOURCE_PATH = System.getProperty("user.dir") + "\\resources\\";
     public static final int WINDOW_WIDTH  = 1300;
     public static final int WINDOW_HEIGHT = 1000;
     public static final int RESOLUTION_X  = WINDOW_WIDTH / 2;
@@ -26,10 +25,10 @@ public final class Sceneview {
         viewer.setNearClip(-0.05f);
         viewer.setViewBounds(-ASPECT, ASPECT, -1.0f, 1.0f);
 
-        QMesh    mesh0 = new QMesh(RESOURCE_PATH + "Mascot_Smooth.obj");
-        QMesh    mesh1 = new QMesh(RESOURCE_PATH + "Cube.obj");
-        QTexture tex0  = new QTexture(RESOURCE_PATH + "MascotFuzzy256.png");
-        QTexture tex1  = new QTexture(RESOURCE_PATH + "Texture_Medium.jpg");
+        QMesh    mesh0 = new QMesh(Sceneview.class.getResource("/Mascot_Smooth.obj").getPath());
+        QMesh    mesh1 = new QMesh(Sceneview.class.getResource("/Cube.obj").getPath());
+        QTexture tex0  = new QTexture(Sceneview.class.getResource("/MascotFuzzy256.png").getPath());
+        QTexture tex1  = new QTexture(Sceneview.class.getResource("/Texture_Medium.jpg").getPath());
 
         float lastTime = (float)(System.nanoTime( ) >> 10);
 
@@ -142,6 +141,11 @@ public final class Sceneview {
             viewer.setUniformSlot(
                 QViewer.DEFAULT_SHADER_LIGHTS_SLOT, 
                 transformedLights
+            );
+            // add material
+            viewer.setUniformSlot(
+                QViewer.DEFAULT_SHADER_MATERIAL_SLOT,
+                new QMaterial(QColor.Black(), QColor.White(), QColor.White(), 8192)
             );
 
             viewer.setTexture(tex1);

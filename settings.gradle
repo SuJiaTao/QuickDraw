@@ -12,3 +12,6 @@ plugins {
 
 rootProject.name = 'QuickDraw'
 include('lib')
+include('demos:make-fuzz-texture')
+include('demos:mascot')
+include('demos:sceneview')

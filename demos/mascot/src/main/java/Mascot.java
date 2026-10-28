@@ -2,8 +2,6 @@
 // 2024
 // Mascot.java
 
-import java.nio.file.Path;
-
 import ca.bael.QDraw.*;
 import ca.bael.QDraw.QViewer.RenderMode;
 
@@ -15,14 +13,13 @@ public final class Mascot {
     public static final float FB_ASPECT = (float) FB_WIDTH / (float) FB_HEIGHT;
     public static final int CUT_RUNTIME_SEC = 15;
     public static final int CUT_RUNTIME_MS = 1000 * CUT_RUNTIME_SEC;
-    public static final Path RESOURCE_PATH = Path.of(System.getProperty("user.dir"), "resources");
-    public static final QMesh MASCOT_MESH = new QMesh(RESOURCE_PATH.resolve("Mascot_Smooth.obj").toString());
-    public static final QMesh CUBE_MESH = new QMesh(RESOURCE_PATH.resolve("Cube.obj").toString());
-    public static final QTexture MASCOT_TEXTURE = new QTexture(RESOURCE_PATH.resolve("MascotFuzzy256.png").toString());
-    public static final QTexture BERRIES_TEXTURE = new QTexture(RESOURCE_PATH.resolve("Texture_Medium.jpg").toString());
-    public static final QTexture TECH_TEXTURE = new QTexture(RESOURCE_PATH.resolve("Tech.jpg").toString());
+    public static final QMesh MASCOT_MESH = new QMesh(Mascot.class.getResource("/Mascot_Smooth.obj").getPath());
+    public static final QMesh CUBE_MESH = new QMesh(Mascot.class.getResource("/Cube.obj").getPath());
+    public static final QTexture MASCOT_TEXTURE = new QTexture(Mascot.class.getResource("/MascotFuzzy256.png").getPath());
+    public static final QTexture BERRIES_TEXTURE = new QTexture(Mascot.class.getResource("/Texture_Medium.jpg").getPath());
+    public static final QTexture TECH_TEXTURE = new QTexture(Mascot.class.getResource("/Tech.jpg").getPath());
     public static final QTexture MASCOTS_BOYFRIEND_TEXTURE = flipBRInplace(
-            new QTexture(RESOURCE_PATH.resolve("MascotFuzzy256_AltEyes.png").toString()));
+            new QTexture(Mascot.class.getResource("/MascotFuzzy256_AltEyes.png").getPath()));
 
     public static QWindow window;
     public static QRenderBuffer frameBuffer;
@@ -157,9 +154,9 @@ public final class Mascot {
                     float z = -5.0f + (osc1 * 2.0f * j);
                     QMatrix4x4 m0 = QMatrix4x4.TRS(
                             new QVector3(
-                                    x,
-                                    y,
-                                    z),
+                                     x,
+                                     y,
+                                     z),
                             new QVector3(time * i, time, time * j),
                             QVector3.One().multiply3(0.2f));
 
