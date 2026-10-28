@@ -3,7 +3,6 @@
 // MakeFuzzTexture.java
 
 import ca.bael.QDraw.*;
-import java.io.File;
 import java.nio.file.Path;
 
 public final class MakeFuzzTexture {
