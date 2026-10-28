@@ -2,8 +2,6 @@
 // 2024
 // Profile.java
 
-import java.nio.file.Path;
-
 import ca.bael.QDraw.QMatrix4x4;
 import ca.bael.QDraw.QMesh;
 import ca.bael.QDraw.QRenderBuffer;
@@ -126,12 +124,11 @@ public final class Profile {
         viewer.setViewBounds(-FB_ASPECT, FB_ASPECT, -1.0f, 1.0f);
         viewer.setRenderMode(RenderMode.Textured);
 
-        Path basePath = Path.of(System.getProperty("user.dir"), "resources");
-        String meshPath = basePath.resolve("Mascot.obj").toString();
-        String hugeTexPath = basePath.resolve("Texture_Huge.jpg").toString();
-        String largeTexPath = basePath.resolve("Texture_Large.jpg").toString();
-        String medTexPath = basePath.resolve("Texture_Medium.jpg").toString();
-        String smallTexPath = basePath.resolve("Texture_Small.jpg").toString();
+        String meshPath = Profile.class.getResource("/Mascot.obj").getPath();
+        String hugeTexPath = Profile.class.getResource("/Texture_Huge.jpg").getPath();
+        String largeTexPath = Profile.class.getResource("/Texture_Large.jpg").getPath();
+        String medTexPath = Profile.class.getResource("/Texture_Medium.jpg").getPath();
+        String smallTexPath = Profile.class.getResource("/Texture_Small.jpg").getPath();
         System.out.println("PROFILE HUGE");
         ProfileTextureVSRenderBuffer(2, hugeTexPath, meshPath);
         System.out.println("PROFILE LARGE");
@@ -140,5 +137,6 @@ public final class Profile {
         ProfileTextureVSRenderBuffer(2, medTexPath, meshPath);
         System.out.println("PROFILE SMALL");
         ProfileTextureVSRenderBuffer(2, smallTexPath, meshPath);
+        window.getFrame().dispose();
     }
 }
