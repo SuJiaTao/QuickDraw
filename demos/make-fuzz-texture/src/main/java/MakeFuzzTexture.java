@@ -4,6 +4,7 @@
 
 import ca.bael.QDraw.*;
 import java.io.File;
+import java.nio.file.Path;
 
 public final class MakeFuzzTexture {
     public static void MakeFuzzyTexture( ) {
@@ -50,9 +51,8 @@ public final class MakeFuzzTexture {
         };
 
         tex.mapColorSpacial(mapping);
-        final File outFile = new File(System.getProperty("user.dir") + "/out/Mascot256_AltEyes.png");
-        outFile.getParentFile().mkdirs();
-        tex.save(outFile.getAbsolutePath());
+        Path outFile = Path.of(System.getProperty("user.dir"), "out", "Mascot256_AltEyes.png");
+        tex.save(outFile.toAbsolutePath().toString());
     }
 
     public static void main(String[] args) {
