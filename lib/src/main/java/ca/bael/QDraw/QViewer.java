@@ -327,7 +327,9 @@ public final class QViewer extends QEncoding {
     private Object[] slotUniforms = new Object[SHADER_UNIFORM_SLOTS];
     private QSampleable[] slotTextures = new QSampleable[SHADER_TEXTURE_SLOTS];
     private QAttribIndexer[] slotAttribs = new QAttribIndexer[SHADER_VERTEX_ATTRIB_SLOTS];
-    private QShader.OutputLayout outputLayout = null;
+    private final QShader.VertexShaderContext vctx = new QShader.VertexShaderContext();
+    private final QShader.FragmentShaderContext fctx = new QShader.FragmentShaderContext();
+    private final float[] baryWeights = new float[VERTS_PER_TRI];
 
     ////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
@@ -689,7 +691,23 @@ public final class QViewer extends QEncoding {
         QShader shader = internalGetRelevantShader();
         ShaderRequirement[] requirements = shader.requirements();
         internalEnsureShaderRequirements(requirements);
-        outputLayout = new QShader.OutputLayout(requirements);
+        QShader.OutputLayout outputLayout = new QShader.OutputLayout(requirements);
+
+        vctx.uniforms = slotUniforms;
+        vctx.textures = slotTextures;
+        vctx.layout = outputLayout;
+        vctx.attributes = new float[slotAttribs.length][];
+        for (int slot = 0; slot < slotAttribs.length; slot++) {
+            if (slotAttribs[slot] != null) {
+                vctx.attributes[slot] = new float[slotAttribs[slot].getComponentsPerAttrib()];
+            }
+        }
+
+        fctx.uniforms = slotUniforms;
+        fctx.textures = slotTextures;
+        fctx.target = renderTarget;
+        fctx.layout = outputLayout;
+        fctx.inputs = new float[outputLayout.total];
 
         for (int triNum = 0; triNum < triCount; triNum++) {
             // GENERATE TRIANGLE
@@ -726,12 +744,7 @@ public final class QViewer extends QEncoding {
     }
 
     private void internalProcessVertex(Triangle tri, int triVertNum) {
-        QShader.VertexShaderContext vctx = new QShader.VertexShaderContext();
-        vctx.uniforms = slotUniforms;
-        vctx.textures = slotTextures;
-        vctx.attributes = new float[slotAttribs.length][];
-        vctx.layout = outputLayout;
-        vctx.outputs = new float[outputLayout.total];
+        vctx.outputs = new float[vctx.layout.total];
 
         // POPULATE VERTEX SHADER INPUTS
         for (int slot = 0; slot < slotAttribs.length; slot++) {
@@ -742,7 +755,6 @@ public final class QViewer extends QEncoding {
             }
 
             // populate attribute slot using indexer
-            vctx.attributes[slot] = new float[indexer.getComponentsPerAttrib()];
             indexer.index(
                     tri.triNum,
                     triVertNum,
@@ -1259,13 +1271,13 @@ public final class QViewer extends QEncoding {
         out[2] = 1.0f - out[1] - out[0];
     }
 
-    private float[] internalInterpolateFragmentInputs(
+    private void internalInterpolateFragmentInputs(
             float[] baryWeights,
-            Triangle tri) {
+            Triangle tri,
+            float[] buffer) {
         float[] output0 = tri.getVertex(0).shaderOutputs;
         float[] output1 = tri.getVertex(1).shaderOutputs;
         float[] output2 = tri.getVertex(2).shaderOutputs;
-        float[] buffer  = new float[output0.length];
 
         // refer to
         // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_rasterizetri.c
@@ -1276,8 +1288,6 @@ public final class QViewer extends QEncoding {
         for (int i = 0; i < buffer.length; i++) {
             buffer[i] = (w0 * output0[i] + w1 * output1[i] + w2 * output2[i]) * invWSum;
         }
-
-        return buffer;
     }
 
     private void internalDrawFragment(
@@ -1285,12 +1295,11 @@ public final class QViewer extends QEncoding {
             int drawY,
             Triangle triangle) {
 
-        float[] weights = new float[VERTS_PER_TRI];
-        internalFindBaryWeights(drawX, drawY, triangle, weights);
+        internalFindBaryWeights(drawX, drawY, triangle, baryWeights);
 
-        float invDepth = triangle.getPosnZ(0) * weights[0] +
-                triangle.getPosnZ(1) * weights[1] +
-                triangle.getPosnZ(2) * weights[2];
+        float invDepth = triangle.getPosnZ(0) * baryWeights[0] +
+                triangle.getPosnZ(1) * baryWeights[1] +
+                triangle.getPosnZ(2) * baryWeights[2];
 
         // NOTE:
         // since all depths are negative and inverted, the further value
@@ -1301,16 +1310,11 @@ public final class QViewer extends QEncoding {
         }
 
         // CALL FRAGMENT SHADER
-        QShader.FragmentShaderContext fctx = new QShader.FragmentShaderContext();
-        fctx.uniforms = slotUniforms;
-        fctx.textures = slotTextures;
-        fctx.target = renderTarget;
         fctx.screenX = drawX;
         fctx.screenY = drawY;
         fctx.invDepth = invDepth;
         fctx.normal = triangle.normal;
-        fctx.layout = outputLayout;
-        fctx.inputs = internalInterpolateFragmentInputs(weights, triangle);
+        internalInterpolateFragmentInputs(baryWeights, triangle, fctx.inputs);
 
         QShader shader = internalGetRelevantShader();
         QColor fragColor = shader.fragmentShader(fctx);
