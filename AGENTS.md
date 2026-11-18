@@ -73,9 +73,9 @@ Defined in [`settings.gradle`](settings.gradle):
 
 ### Shaders, Lighting, and Rendering Pipeline
 - **[`QShader.java`](lib/src/main/java/ca/bael/QDraw/QShader.java)**: Abstract base class for shaders. Subclasses implement:
-  - `ShaderRequirement[] requirements()` declaring required `Attribute`, `Uniform` (with expected `Class<?>`), and `Texture` slots.
-  - `QVector3 vertexShader(VertexShaderContext context)` returning transformed vertex position and writing varyings via `setOutputToFragShader` / `forwardAttributeToFragShader`.
-  - `QColor fragmentShader(FragmentShaderContext context)` reading interpolated varyings via `getOutputFromVertShader` and returning fragment `QColor`.
+  - `ShaderRequirement[] requirements()` declaring required `Attribute`, `Uniform` (with expected `Class<?>`), `Texture` slots, and `Output` slots (with component count). Every slot written by `output`/`forward` must be declared as an `Output`; the pipeline packs declared outputs into one flat per-vertex array.
+  - `QVector3 vertexShader(VertexShaderContext context)` reading inputs via `attribVec3`/`attrib`/`uniform`/`texture`, writing outputs via `output`/`forward`, and returning the transformed vertex position.
+  - `QColor fragmentShader(FragmentShaderContext context)` reading interpolated outputs via `inputVec3`/`input`, plus `uniform`/`texture`/`screenX`/`screenY`/`invDepth`/`faceNormal`, and returning the fragment `QColor`.
   - Also provides fast XORSHIFT deterministic PRNG (`seededRandom`, `seededRandomVector`).
 - **[`QLight.java`](lib/src/main/java/ca/bael/QDraw/QLight.java)** & **[`QMaterial.java`](lib/src/main/java/ca/bael/QDraw/QMaterial.java)**: Data structures for point/directional lights and Blinn-Phong material properties (`ambient`, `diffuse`, `specular`, `shininess`).
 - **[`QViewer.java`](lib/src/main/java/ca/bael/QDraw/QViewer.java)**: The software rendering pipeline.

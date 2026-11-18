@@ -7,6 +7,7 @@ package ca.bael.QDraw;
 import java.util.concurrent.atomic.AtomicLong;
 
 import ca.bael.QDraw.QException.PointOfError;
+import ca.bael.QDraw.QShader.ShaderRequirement.RequirementType;
 
 public abstract class QShader {
     /////////////////////////////////////////////////////////////////
@@ -19,24 +20,149 @@ public abstract class QShader {
     // PUBLIC CLASSES
     public static final class VertexShaderContext {
         /////////////////////////////////////////////////////////////////
-        // PUBLIC MEMBERS
-        public Object[]   uniforms;
-        public QSampleable[] textures;
-        public float[][]  attributes;
-        public float[][]  outputsToFragShader = new float[VERTEX_SHADER_MAX_OUTPUTS][];
+        // PACKAGE MEMBERS
+        Object[]      uniforms;
+        QSampleable[] textures;
+        float[][]     attributes;
+        OutputLayout  layout;
+        float[]       outputs;
+
+        /////////////////////////////////////////////////////////////////
+        // PUBLIC METHODS
+        public QVector3 attribVec3(int slot) {
+            return new QVector3(attributes[slot]);
+        }
+
+        public float[] attrib(int slot, float[] out) {
+            System.arraycopy(attributes[slot], 0, out, 0, attributes[slot].length);
+            return out;
+        }
+
+        public <T> T uniform(int slot, Class<T> type) {
+            return type.cast(uniforms[slot]);
+        }
+
+        public QSampleable texture(int slot) {
+            return textures[slot];
+        }
+
+        public void output(int slot, QVector3 v) {
+            output(slot, v.getComponents( ));
+        }
+
+        public void output(int slot, float... v) {
+            int offset = layout.checkedOffset(slot);
+            if (v.length != layout.sizes[slot]) {
+                throw new QException(
+                    PointOfError.InvalidParameter,
+                    "Output slot " + slot + " declared " + layout.sizes[slot] +
+                    " components. Given was " + v.length
+                );
+            }
+            System.arraycopy(v, 0, outputs, offset, v.length);
+        }
+
+        public void forward(int attribSlot) {
+            output(attribSlot, attributes[attribSlot]);
+        }
     }
 
     public static final class FragmentShaderContext {
         /////////////////////////////////////////////////////////////////
-        // PUBLIC MEMBERS
-        public Object[]   uniforms;
-        public QSampleable[] textures;
-        public QRenderBuffer target;
-        public int        screenX;
-        public int        screenY;
-        public float      invDepth;
-        public QVector3   normal;
-        public float[][]  inputsFromVertexShader = new float[VERTEX_SHADER_MAX_OUTPUTS][];
+        // PACKAGE MEMBERS
+        Object[]      uniforms;
+        QSampleable[] textures;
+        QRenderBuffer target;
+        int           screenX;
+        int           screenY;
+        float         invDepth;
+        float[]       normal;
+        OutputLayout  layout;
+        float[]       inputs;
+
+        /////////////////////////////////////////////////////////////////
+        // PUBLIC METHODS
+        public QVector3 inputVec3(int slot) {
+            return inputVec3(slot, new QVector3( ));
+        }
+
+        public QVector3 inputVec3(int slot, QVector3 out) {
+            int offset = layout.checkedOffset(slot);
+            out.set(
+                inputs[offset],
+                inputs[offset + 1],
+                layout.sizes[slot] > 2 ? inputs[offset + 2] : 0.0f
+            );
+            return out;
+        }
+
+        public float input(int slot, int comp) {
+            return inputs[layout.checkedOffset(slot) + comp];
+        }
+
+        public float[] input(int slot, float[] out) {
+            System.arraycopy(inputs, layout.checkedOffset(slot), out, 0, layout.sizes[slot]);
+            return out;
+        }
+
+        public <T> T uniform(int slot, Class<T> type) {
+            return type.cast(uniforms[slot]);
+        }
+
+        public QSampleable texture(int slot) {
+            return textures[slot];
+        }
+
+        public int screenX( ) {
+            return screenX;
+        }
+
+        public int screenY( ) {
+            return screenY;
+        }
+
+        public float invDepth( ) {
+            return invDepth;
+        }
+
+        public QVector3 faceNormal( ) {
+            return new QVector3(normal);
+        }
+    }
+
+    static final class OutputLayout {
+        /////////////////////////////////////////////////////////////////
+        // PACKAGE MEMBERS
+        final int[] offsets = new int[VERTEX_SHADER_MAX_OUTPUTS];
+        final int[] sizes   = new int[VERTEX_SHADER_MAX_OUTPUTS];
+        final int   total;
+
+        /////////////////////////////////////////////////////////////////
+        // PACKAGE METHODS
+        int checkedOffset(int slot) {
+            if (sizes[slot] == 0) {
+                throw new QException(
+                    PointOfError.InvalidParameter,
+                    "Output slot " + slot + " was not declared in requirements()"
+                );
+            }
+            return offsets[slot];
+        }
+
+        /////////////////////////////////////////////////////////////////
+        // CONSTRUCTOR
+        OutputLayout(ShaderRequirement[] requirements) {
+            int offset = 0;
+            for (ShaderRequirement require : requirements) {
+                if (require.requireType != RequirementType.Output) {
+                    continue;
+                }
+                offsets[require.slot] = offset;
+                sizes[require.slot]   = require.components;
+                offset += require.components;
+            }
+            total = offset;
+        }
     }
 
     public static final class ShaderRequirement {
@@ -45,7 +171,8 @@ public abstract class QShader {
         public static enum RequirementType {
             Attribute,
             Uniform,
-            Texture
+            Texture,
+            Output
         }
 
         /////////////////////////////////////////////////////////////////
@@ -54,6 +181,7 @@ public abstract class QShader {
         public RequirementType requireType;
         public String          purpose;
         public Class<?>        uniformClass;
+        public int             components;
 
         /////////////////////////////////////////////////////////////////
         // CONSTRUCTOR
@@ -80,46 +208,28 @@ public abstract class QShader {
             purpose      = _purpose;
             uniformClass = _uniformClass;
         }
+
+        public ShaderRequirement(
+            int      _slot,
+            RequirementType _type,
+            String   _purpose,
+            int      _components
+        ) {
+            if (_type != RequirementType.Output) {
+                throw new QException(
+                    PointOfError.InvalidParameter,
+                    "Can ONLY specify component count if requirement type is Output"
+                );
+            }
+            slot        = _slot;
+            requireType = _type;
+            purpose     = _purpose;
+            components  = _components;
+        }
     }
 
     /////////////////////////////////////////////////////////////////
     // BUILT IN SHADER FUNCTIONS
-    public static void setOutputToFragShader(
-        VertexShaderContext vertCtx,
-        int outputSlot, 
-        float[] inBuffer
-    ) {
-        vertCtx.outputsToFragShader[outputSlot] = new float[inBuffer.length];
-        System.arraycopy(
-            inBuffer, 
-            0, 
-            vertCtx.outputsToFragShader[outputSlot], 
-            0, 
-            inBuffer.length
-        );
-    }
-
-    public static void forwardAttributeToFragShader(
-        VertexShaderContext vertCtx,
-        int attribSlot
-    ) {
-        setOutputToFragShader(vertCtx, attribSlot, vertCtx.attributes[attribSlot]);
-    }
-
-    public static void getOutputFromVertShader(
-        FragmentShaderContext fragCtx,
-        int inputSlot, 
-        float[] outBuffer
-    ) {
-        System.arraycopy(
-            fragCtx.inputsFromVertexShader[inputSlot], 
-            0, 
-            outBuffer, 
-            0, 
-            fragCtx.inputsFromVertexShader[inputSlot].length
-        );
-    }
-
     private static AtomicLong _seedUniquifier = new AtomicLong(0x5EED);
     public static float random( ) {
         return seededRandom((int)(_seedUniquifier.incrementAndGet( ) + System.nanoTime( )));

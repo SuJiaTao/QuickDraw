@@ -71,11 +71,8 @@ public final class QViewer extends QEncoding {
         public QVector3 vertexShader(
             VertexShaderContext context
         ) {
-            QMatrix4x4 mtr = (QMatrix4x4)context.uniforms[DEFAULT_SHADER_MATRIX_SLOT];
-            return QMatrix4x4.multiply(
-                mtr,
-                new QVector3(context.attributes[DEFAULT_SHADER_POSITION_SLOT])
-            );
+            QMatrix4x4 mtr = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class);
+            return mtr.transformPoint(context.attribVec3(DEFAULT_SHADER_POSITION_SLOT));
         }
 
         public QColor fragmentShader(
@@ -108,6 +105,12 @@ public final class QViewer extends QEncoding {
                     DEFAULT_SHADER_TEXTURE_SLOT, 
                     RequirementType.Texture, 
                     "mesh texture"
+                ),
+                new ShaderRequirement(
+                    DEFAULT_SHADER_UV_SLOT,
+                    RequirementType.Output,
+                    "uv",
+                    2
                 )
             };
         }
@@ -115,21 +118,20 @@ public final class QViewer extends QEncoding {
         public QVector3 vertexShader(
             VertexShaderContext context
         ) {
-            QMatrix4x4 mtr = (QMatrix4x4)context.uniforms[DEFAULT_SHADER_MATRIX_SLOT];
-            QVector3   pos = new QVector3(context.attributes[DEFAULT_SHADER_POSITION_SLOT]);
-            forwardAttributeToFragShader(context, DEFAULT_SHADER_UV_SLOT);
+            QMatrix4x4 mtr = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class);
+            context.forward(DEFAULT_SHADER_UV_SLOT);
 
-            return QMatrix4x4.multiply(mtr, pos);
+            return mtr.transformPoint(context.attribVec3(DEFAULT_SHADER_POSITION_SLOT));
         }
 
         public QColor fragmentShader(
             FragmentShaderContext context
         ) {
-            QSampleable tex = context.textures[DEFAULT_SHADER_TEXTURE_SLOT];
-            float[]     uv  = new float[2];
-            getOutputFromVertShader(context, DEFAULT_SHADER_UV_SLOT, uv);
-
-            return new QColor(tex.sample(uv[0], uv[1], sampleType));
+            return new QColor(context.texture(DEFAULT_SHADER_TEXTURE_SLOT).sample(
+                context.input(DEFAULT_SHADER_UV_SLOT, 0),
+                context.input(DEFAULT_SHADER_UV_SLOT, 1),
+                sampleType
+            ));
         }
     };
 
@@ -151,6 +153,12 @@ public final class QViewer extends QEncoding {
                     RequirementType.Uniform, 
                     "vertex transform matrix",
                     QMatrix4x4.class
+                ),
+                new ShaderRequirement(
+                    DEFAULT_SHADER_NORMAL_SLOT,
+                    RequirementType.Output,
+                    "normal",
+                    3
                 )
             };
         }
@@ -158,27 +166,24 @@ public final class QViewer extends QEncoding {
         public QVector3 vertexShader(
             VertexShaderContext context
         ) {
-            QMatrix4x4 mtr    = (QMatrix4x4)context.uniforms[DEFAULT_SHADER_MATRIX_SLOT];
-            QMatrix4x4 rotMtr = mtr.extractRotation( );
-            rotMtr.transformDir(context.attributes[DEFAULT_SHADER_NORMAL_SLOT]);
-            forwardAttributeToFragShader(context, DEFAULT_SHADER_NORMAL_SLOT);
-
-            return QMatrix4x4.multiply(
-                mtr,
-                new QVector3(context.attributes[DEFAULT_SHADER_POSITION_SLOT])
+            QMatrix4x4 mtr = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class);
+            context.output(
+                DEFAULT_SHADER_NORMAL_SLOT,
+                mtr.extractRotation( ).transformDir(context.attribVec3(DEFAULT_SHADER_NORMAL_SLOT))
             );
+
+            return mtr.transformPoint(context.attribVec3(DEFAULT_SHADER_POSITION_SLOT));
         }
 
         public QColor fragmentShader(
             FragmentShaderContext context
         ) {
-            float[] normal = new float[VCTR_NUM_CMPS];
-            getOutputFromVertShader(context, DEFAULT_SHADER_NORMAL_SLOT, normal);
+            QVector3 normal = context.inputVec3(DEFAULT_SHADER_NORMAL_SLOT);
 
             return new QColor(
-                (int)((1.0f + normal[VCTR_INDEX_X]) * 127.0f),
-                (int)((1.0f + normal[VCTR_INDEX_Y]) * 127.0f),
-                (int)((1.0f + normal[VCTR_INDEX_Z]) * 127.0f)
+                (int)((1.0f + normal.getX( )) * 127.0f),
+                (int)((1.0f + normal.getY( )) * 127.0f),
+                (int)((1.0f + normal.getZ( )) * 127.0f)
             );
         }
     };
@@ -221,6 +226,24 @@ public final class QViewer extends QEncoding {
                     RequirementType.Uniform, 
                     "mesh material",
                     QMaterial.class
+                ),
+                new ShaderRequirement(
+                    DEFAULT_SHADER_POSITION_SLOT,
+                    RequirementType.Output,
+                    "view-space position",
+                    3
+                ),
+                new ShaderRequirement(
+                    DEFAULT_SHADER_UV_SLOT,
+                    RequirementType.Output,
+                    "uv",
+                    2
+                ),
+                new ShaderRequirement(
+                    DEFAULT_SHADER_NORMAL_SLOT,
+                    RequirementType.Output,
+                    "normal",
+                    3
                 )
             };
         }
@@ -228,35 +251,26 @@ public final class QViewer extends QEncoding {
         public QVector3 vertexShader(
             VertexShaderContext context
         ) {
-            QMatrix4x4 mtr = (QMatrix4x4)context.uniforms[DEFAULT_SHADER_MATRIX_SLOT];
-            QVector3   pos = new QVector3(context.attributes[DEFAULT_SHADER_POSITION_SLOT]);
-            pos = QMatrix4x4.multiply(mtr, pos);
+            QMatrix4x4 mtr    = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class);
+            QVector3   pos    = mtr.transformPoint(context.attribVec3(DEFAULT_SHADER_POSITION_SLOT));
+            QVector3   normal = mtr.extractRotation( ).transformDir(context.attribVec3(DEFAULT_SHADER_NORMAL_SLOT));
 
-            QMatrix4x4 rotMtr = mtr.extractRotation( );
-            rotMtr.transformDir(context.attributes[DEFAULT_SHADER_NORMAL_SLOT]);
-            
-            setOutputToFragShader(context, DEFAULT_SHADER_POSITION_SLOT, pos.getComponents( ));
-            forwardAttributeToFragShader(context, DEFAULT_SHADER_UV_SLOT);
-            forwardAttributeToFragShader(context, DEFAULT_SHADER_NORMAL_SLOT);
-            
+            context.output(DEFAULT_SHADER_POSITION_SLOT, pos);
+            context.forward(DEFAULT_SHADER_UV_SLOT);
+            context.output(DEFAULT_SHADER_NORMAL_SLOT, normal);
+
             return pos;
         }
 
         public QColor fragmentShader(
             FragmentShaderContext context
         ) {
-            QSampleable tex = context.textures[DEFAULT_SHADER_TEXTURE_SLOT];
-            QMaterial   mat = (QMaterial)context.uniforms[DEFAULT_SHADER_MATERIAL_SLOT];
-            QLight[] lights = (QLight[])context.uniforms[DEFAULT_SHADER_LIGHTS_SLOT];
+            QSampleable tex = context.texture(DEFAULT_SHADER_TEXTURE_SLOT);
+            QMaterial   mat = context.uniform(DEFAULT_SHADER_MATERIAL_SLOT, QMaterial.class);
+            QLight[] lights = context.uniform(DEFAULT_SHADER_LIGHTS_SLOT, QLight[].class);
 
-            float[] pos    = new float[3];
-            float[] uv     = new float[2];
-            float[] normal = new float[3];
-            getOutputFromVertShader(context, DEFAULT_SHADER_POSITION_SLOT, pos);
-            getOutputFromVertShader(context, DEFAULT_SHADER_UV_SLOT, uv);
-            getOutputFromVertShader(context, DEFAULT_SHADER_NORMAL_SLOT, normal);
-            float normMag = QVector3.fastMagnitude(normal);
-            QVector3.scale(normal, 1/normMag);
+            float[] uv     = context.input(DEFAULT_SHADER_UV_SLOT, new float[2]);
+            float[] normal = context.inputVec3(DEFAULT_SHADER_NORMAL_SLOT).fastNormalize( ).getComponents( );
             QColor texSampleColor = tex == null ? QColor.White() : new QColor(tex.sample(uv[0], uv[1], sampleType));
             QColor ambientColor = mat == null? QColor.Black() : mat.ambient;
             QColor diffuseColor = mat == null? QColor.White() : mat.diffuse;
@@ -266,9 +280,9 @@ public final class QViewer extends QEncoding {
             float diffuseIntensity = 0f;
             float specularIntensity = 0f;
 
-            final QVector3 POS_VEC = new QVector3(pos);
+            final QVector3 POS_VEC = context.inputVec3(DEFAULT_SHADER_POSITION_SLOT);
 
-            QVector3 viewDir = POS_VEC.multiply3(-1).fastNormalize();
+            QVector3 viewDir = POS_VEC.copy().multiply3(-1).fastNormalize();
             QVector3 dirFaceToLight, halfVec;
             
             for (QLight light : lights) {
@@ -313,6 +327,7 @@ public final class QViewer extends QEncoding {
     private Object[] slotUniforms = new Object[SHADER_UNIFORM_SLOTS];
     private QSampleable[] slotTextures = new QSampleable[SHADER_TEXTURE_SLOTS];
     private QAttribIndexer[] slotAttribs = new QAttribIndexer[SHADER_VERTEX_ATTRIB_SLOTS];
+    private QShader.OutputLayout outputLayout = null;
 
     ////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
@@ -419,7 +434,7 @@ public final class QViewer extends QEncoding {
         ////////////////////////////////////////////////////////////////
         // PUBLIC MEMBERS
         public float[] posn;
-        public float[][] shaderOutputs;
+        public float[] shaderOutputs;
 
         ////////////////////////////////////////////////////////////////
         // PUBLIC METHODS
@@ -440,21 +455,13 @@ public final class QViewer extends QEncoding {
             // as a reference
             // - vISrc or vFSrc might actually be THIS vertex, so we calculate everything
             // to an auxillary buffer before updating shaderOutputs
-            float[][] tempShaderOutputs = new float[vISrc.shaderOutputs.length][];
+            float[] tempShaderOutputs = new float[vISrc.shaderOutputs.length];
             float facI = 1.0f - factor;
             float facF = factor;
 
             for (int i = 0; i < tempShaderOutputs.length; i++) {
-
-                if (vISrc.shaderOutputs[i] == null) {
-                    continue;
-                }
-                tempShaderOutputs[i] = new float[vISrc.shaderOutputs[i].length];
-
-                for (int comp = 0; comp < tempShaderOutputs[i].length; comp++) {
-                    tempShaderOutputs[i][comp] = vISrc.shaderOutputs[i][comp] * facI +
-                            vFSrc.shaderOutputs[i][comp] * facF;
-                }
+                tempShaderOutputs[i] = vISrc.shaderOutputs[i] * facI +
+                        vFSrc.shaderOutputs[i] * facF;
             }
 
             shaderOutputs = tempShaderOutputs;
@@ -471,25 +478,7 @@ public final class QViewer extends QEncoding {
             QVector3.copy(
                     posn,
                     toCopy.posn);
-
-            // NOTE:
-            // toCopy could be THIS vertex, so create a temp before assinging
-            float[][] tempShaderOutputs = new float[toCopy.shaderOutputs.length][];
-            for (int i = 0; i < tempShaderOutputs.length; i++) {
-                if (toCopy.shaderOutputs[i] == null) {
-                    continue;
-                }
-
-                tempShaderOutputs[i] = new float[toCopy.shaderOutputs[i].length];
-                System.arraycopy(
-                        toCopy.shaderOutputs[i],
-                        0,
-                        tempShaderOutputs[i],
-                        0,
-                        toCopy.shaderOutputs[i].length);
-            }
-
-            shaderOutputs = tempShaderOutputs;
+            shaderOutputs = toCopy.shaderOutputs.clone( );
         }
     }
 
@@ -589,8 +578,7 @@ public final class QViewer extends QEncoding {
         renderTarget = target;
     }
 
-    private void internalEnsureShaderRequirements(QShader shader) {
-        QShader.ShaderRequirement[] requirements = shader.requirements();
+    private void internalEnsureShaderRequirements(ShaderRequirement[] requirements) {
         for (ShaderRequirement require : requirements) {
             switch (require.requireType) {
                 case Attribute:
@@ -633,6 +621,9 @@ public final class QViewer extends QEncoding {
                                 "Shader requires texture slot " + require.slot +
                                         ". Purpose: " + require.purpose);
                     }
+                    break;
+
+                case Output:
                     break;
 
                 default:
@@ -695,6 +686,11 @@ public final class QViewer extends QEncoding {
                     "No vertex attribute slots set!");
         }
 
+        QShader shader = internalGetRelevantShader();
+        ShaderRequirement[] requirements = shader.requirements();
+        internalEnsureShaderRequirements(requirements);
+        outputLayout = new QShader.OutputLayout(requirements);
+
         for (int triNum = 0; triNum < triCount; triNum++) {
             // GENERATE TRIANGLE
             Triangle tri = new Triangle(triNum);
@@ -734,6 +730,8 @@ public final class QViewer extends QEncoding {
         vctx.uniforms = slotUniforms;
         vctx.textures = slotTextures;
         vctx.attributes = new float[slotAttribs.length][];
+        vctx.layout = outputLayout;
+        vctx.outputs = new float[outputLayout.total];
 
         // POPULATE VERTEX SHADER INPUTS
         for (int slot = 0; slot < slotAttribs.length; slot++) {
@@ -754,10 +752,9 @@ public final class QViewer extends QEncoding {
 
         // CALL SHADER
         QShader shader = internalGetRelevantShader();
-        internalEnsureShaderRequirements(shader);
         QVector3 vertShaderOut = shader.vertexShader(vctx);
         tri.verts[triVertNum].posn = vertShaderOut.getComponents();
-        tri.verts[triVertNum].shaderOutputs = vctx.outputsToFragShader;
+        tri.verts[triVertNum].shaderOutputs = vctx.outputs;
     }
 
     private boolean internalCheckBackfacing(Triangle tri) {
@@ -1262,41 +1259,22 @@ public final class QViewer extends QEncoding {
         out[2] = 1.0f - out[1] - out[0];
     }
 
-    private float[][] internalInterpolateFragmentInputs(
+    private float[] internalInterpolateFragmentInputs(
             float[] baryWeights,
             Triangle tri) {
-        // NOTE:
-        // in principle, all vertex outputs/fragment inputs should be formatted
-        // the same, so we will use v0 as a reference
-        Vertex v0 = tri.getVertex(0);
-        float[][] buffer = new float[v0.shaderOutputs.length][];
+        float[] output0 = tri.getVertex(0).shaderOutputs;
+        float[] output1 = tri.getVertex(1).shaderOutputs;
+        float[] output2 = tri.getVertex(2).shaderOutputs;
+        float[] buffer  = new float[output0.length];
 
-        for (int slot = 0; slot < buffer.length; slot++) {
-
-            float[] outputSlot = v0.shaderOutputs[slot];
-            if (outputSlot == null) {
-                continue;
-            }
-            buffer[slot] = new float[outputSlot.length];
-
-            // NOTE:
-            // do a perspective-correct interpolation of each vertex output
-            float[] output0 = tri.getVertex(0).shaderOutputs[slot];
-            float[] output1 = tri.getVertex(1).shaderOutputs[slot];
-            float[] output2 = tri.getVertex(2).shaderOutputs[slot];
-
-            // refer to
-            // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_rasterizetri.c
-            int compCount = outputSlot.length;
-            float w0 = tri.getPosnZ(0) * baryWeights[0];
-            float w1 = tri.getPosnZ(1) * baryWeights[1];
-            float w2 = tri.getPosnZ(2) * baryWeights[2];
-            float invWSum = 1.0f / (w0 + w1 + w2);
-            for (int comp = 0; comp < compCount; comp++) {
-                buffer[slot][comp] = (w0 * output0[comp] +
-                        w1 * output1[comp] +
-                        w2 * output2[comp]) * invWSum;
-            }
+        // refer to
+        // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_rasterizetri.c
+        float w0 = tri.getPosnZ(0) * baryWeights[0];
+        float w1 = tri.getPosnZ(1) * baryWeights[1];
+        float w2 = tri.getPosnZ(2) * baryWeights[2];
+        float invWSum = 1.0f / (w0 + w1 + w2);
+        for (int i = 0; i < buffer.length; i++) {
+            buffer[i] = (w0 * output0[i] + w1 * output1[i] + w2 * output2[i]) * invWSum;
         }
 
         return buffer;
@@ -1330,8 +1308,9 @@ public final class QViewer extends QEncoding {
         fctx.screenX = drawX;
         fctx.screenY = drawY;
         fctx.invDepth = invDepth;
-        fctx.normal = new QVector3(triangle.normal);
-        fctx.inputsFromVertexShader = internalInterpolateFragmentInputs(weights, triangle);
+        fctx.normal = triangle.normal;
+        fctx.layout = outputLayout;
+        fctx.inputs = internalInterpolateFragmentInputs(weights, triangle);
 
         QShader shader = internalGetRelevantShader();
         QColor fragColor = shader.fragmentShader(fctx);
