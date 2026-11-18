@@ -341,7 +341,7 @@ public final class QViewer extends QEncoding {
     private QAttribIndexer[] slotAttribs = new QAttribIndexer[SHADER_VERTEX_ATTRIB_SLOTS];
     private final QShader.VertexShaderContext vctx = new QShader.VertexShaderContext();
     private final QShader.FragmentShaderContext fctx = new QShader.FragmentShaderContext();
-    private final float[] baryWeights = new float[VERTS_PER_TRI];
+    private final RasterSetup raster = new RasterSetup();
     private final float[] edge01 = new float[VCTR_NUM_CMPS];
     private final float[] edge02 = new float[VCTR_NUM_CMPS];
     private final float[] rayToCenter = new float[VCTR_NUM_CMPS];
@@ -585,6 +585,49 @@ public final class QViewer extends QEncoding {
                     numVertsBehind,
                     Arrays.toString(vertBehindState),
                     Arrays.toString(vertBehindIndicies));
+        }
+    }
+
+    private static final class RasterSetup {
+        ////////////////////////////////////////////////////////////////
+        // PUBLIC MEMBERS
+        public float[] out0, out1, out2;
+        public float[] normal;
+        public float z0, z1, z2;
+        public float p2x, p2y;
+        public float db0dx, db0dy, db1dx, db1dy;
+
+        ////////////////////////////////////////////////////////////////
+        // PUBLIC METHODS
+        public void set(Triangle tri) {
+            // refer to
+            // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_rasterizetri.c
+            float p0x = tri.getPosnX(0);
+            float p0y = tri.getPosnY(0);
+            float p1x = tri.getPosnX(1);
+            float p1y = tri.getPosnY(1);
+            p2x = tri.getPosnX(2);
+            p2y = tri.getPosnY(2);
+            float invDenom = 1.0f / ((p1y - p2y) * (p0x - p2x) + (p2x - p1x) * (p0y - p2y));
+            db0dx = (p1y - p2y) * invDenom;
+            db0dy = (p2x - p1x) * invDenom;
+            db1dx = (p2y - p0y) * invDenom;
+            db1dy = (p0x - p2x) * invDenom;
+            z0 = tri.getPosnZ(0);
+            z1 = tri.getPosnZ(1);
+            z2 = tri.getPosnZ(2);
+            out0 = tri.getVertex(0).shaderOutputs;
+            out1 = tri.getVertex(1).shaderOutputs;
+            out2 = tri.getVertex(2).shaderOutputs;
+            normal = tri.normal;
+        }
+
+        public float b0At(float x, float y) {
+            return db0dx * (x - p2x) + db0dy * (y - p2y);
+        }
+
+        public float b1At(float x, float y) {
+            return db1dx * (x - p2x) + db1dy * (y - p2y);
         }
     }
 
@@ -1118,6 +1161,7 @@ public final class QViewer extends QEncoding {
         // - after being cut, the top two verticies will be sorted from left to right
 
         Triangle sortedTri = internalSortTriVertsByHeight(tri);
+        raster.set(sortedTri);
 
         float invSlope20 = (sortedTri.getPosnX(0) - sortedTri.getPosnX(2)) /
                 (sortedTri.getPosnY(0) - sortedTri.getPosnY(2));
@@ -1128,10 +1172,10 @@ public final class QViewer extends QEncoding {
 
         internalDrawFlatTopTri(
                 flatXL, flatXR, sortedTri.getPosnY(1),
-                sortedTri.getPosnX(2), sortedTri.getPosnY(2), sortedTri);
+                sortedTri.getPosnX(2), sortedTri.getPosnY(2));
         internalDrawFlatBottomTri(
                 flatXL, flatXR, sortedTri.getPosnY(1),
-                sortedTri.getPosnX(0), sortedTri.getPosnY(0), sortedTri);
+                sortedTri.getPosnX(0), sortedTri.getPosnY(0));
 
     }
 
@@ -1153,7 +1197,7 @@ public final class QViewer extends QEncoding {
 
     private void internalDrawFlatTopTri(
             float flatXL, float flatXR, float flatY,
-            float apexX, float apexY, Triangle sortedTri) {
+            float apexX, float apexY) {
 
         // NOTE:
         // - flattop triangle is drawn from the bottom apex up to the flat edge
@@ -1166,22 +1210,20 @@ public final class QViewer extends QEncoding {
         float invSlopeLeft  = (flatXL - apexX) * invDY;
         float invSlopeRight = (flatXR - apexX) * invDY;
 
-        int Y_START = Math.max((int) apexY, 0);
-        int Y_END = Math.min((int) flatY, renderTarget.getHeight() - 1);
+        int Y_START = Math.max((int) Math.ceil(apexY - 0.5f), 0);
+        int Y_END = Math.min((int) Math.ceil(flatY - 0.5f), renderTarget.getHeight());
 
-        for (int drawY = Y_START; drawY <= Y_END; drawY++) {
+        for (int drawY = Y_START; drawY < Y_END; drawY++) {
 
-            float distY = Math.max(0.0f, drawY - apexY);
+            float distY = (drawY + 0.5f) - apexY;
             int X_START = Math.max(
-                    (int) (apexX + (invSlopeLeft * distY)),
+                    (int) Math.ceil(apexX + (invSlopeLeft * distY) - 0.5f),
                     0);
             int X_END = Math.min(
-                    (int) (apexX + (invSlopeRight * distY)),
-                    renderTarget.getWidth() - 1);
+                    (int) Math.ceil(apexX + (invSlopeRight * distY) - 0.5f),
+                    renderTarget.getWidth());
 
-            for (int drawX = X_START; drawX <= X_END; drawX++) {
-                internalDrawFragment(drawX, drawY, sortedTri);
-            }
+            internalDrawSpan(X_START, X_END, drawY);
 
         }
 
@@ -1189,7 +1231,7 @@ public final class QViewer extends QEncoding {
 
     private void internalDrawFlatBottomTri(
             float flatXL, float flatXR, float flatY,
-            float apexX, float apexY, Triangle sortedTri) {
+            float apexX, float apexY) {
 
         // NOTE:
         // - flatbottom triangle is drawn from the flat edge up to the top apex
@@ -1202,95 +1244,64 @@ public final class QViewer extends QEncoding {
         float invSlopeLeft  = (apexX - flatXL) * invDY;
         float invSlopeRight = (apexX - flatXR) * invDY;
 
-        int Y_START = Math.max((int) flatY, 0);
-        int Y_END = Math.min((int) apexY, renderTarget.getHeight() - 1);
+        int Y_START = Math.max((int) Math.ceil(flatY - 0.5f), 0);
+        int Y_END = Math.min((int) Math.ceil(apexY - 0.5f), renderTarget.getHeight());
 
-        for (int drawY = Y_START; drawY <= Y_END; drawY++) {
+        for (int drawY = Y_START; drawY < Y_END; drawY++) {
 
-            float distY = Math.max(0.0f, drawY - flatY);
+            float distY = (drawY + 0.5f) - flatY;
             int X_START = Math.max(
-                    (int) (flatXL + (invSlopeLeft * distY)),
+                    (int) Math.ceil(flatXL + (invSlopeLeft * distY) - 0.5f),
                     0);
             int X_END = Math.min(
-                    (int) (flatXR + (invSlopeRight * distY)),
-                    renderTarget.getWidth() - 1);
+                    (int) Math.ceil(flatXR + (invSlopeRight * distY) - 0.5f),
+                    renderTarget.getWidth());
 
-            for (int drawX = X_START; drawX <= X_END; drawX++) {
-                internalDrawFragment(drawX, drawY, sortedTri);
-            }
+            internalDrawSpan(X_START, X_END, drawY);
 
         }
 
     }
 
-    private void internalFindBaryWeights(
-            int drawX,
-            int drawY,
-            Triangle tri,
-            float[] out) {
-        // refer to
-        // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_rasterizetri.c
-
-        float p0x = tri.getPosnX(0);
-        float p0y = tri.getPosnY(0);
-        float p1x = tri.getPosnX(1);
-        float p1y = tri.getPosnY(1);
-        float p2x = tri.getPosnX(2);
-        float p2y = tri.getPosnY(2);
-        float invDenom = 1.0f /
-                (((p1y - p2y) *
-                        (p0x - p2x)) +
-                        ((p2x - p1x) *
-                                (p0y - p2y)));
-        float d3x = (float) drawX - p2x;
-        float d3y = (float) drawY - p2y;
-
-        out[0] = ((p1y - p2y) * (d3x) +
-                (p2x - p1x) * (d3y)) *
-                invDenom;
-        out[0] = Math.min(1.0f, Math.max(0.0f, out[0])); // clamp
-
-        out[1] = ((p2y - p0y) * (d3x) +
-                (p0x - p2x) * (d3y)) *
-                invDenom;
-        out[1] = Math.min(1.0f, Math.max(0.0f, out[1])); // clamp
-
-        out[2] = 1.0f - out[1] - out[0];
+    private void internalDrawSpan(int xStart, int xEnd, int drawY) {
+        float centerX = xStart + 0.5f;
+        float centerY = drawY + 0.5f;
+        float b0 = raster.b0At(centerX, centerY);
+        float b1 = raster.b1At(centerX, centerY);
+        for (int drawX = xStart; drawX < xEnd; drawX++) {
+            internalDrawFragment(drawX, drawY, b0, b1);
+            b0 += raster.db0dx;
+            b1 += raster.db1dx;
+        }
     }
 
     private void internalInterpolateFragmentInputs(
-            float[] baryWeights,
-            Triangle tri,
+            float a0,
+            float a1,
+            float a2,
             float[] buffer) {
-        float[] output0 = tri.getVertex(0).shaderOutputs;
-        float[] output1 = tri.getVertex(1).shaderOutputs;
-        float[] output2 = tri.getVertex(2).shaderOutputs;
-
-        // refer to
-        // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_rasterizetri.c
-        float w0 = tri.getPosnZ(0) * baryWeights[0];
-        float w1 = tri.getPosnZ(1) * baryWeights[1];
-        float w2 = tri.getPosnZ(2) * baryWeights[2];
-        float invWSum = 1.0f / (w0 + w1 + w2);
+        float[] output0 = raster.out0;
+        float[] output1 = raster.out1;
+        float[] output2 = raster.out2;
         for (int i = 0; i < buffer.length; i++) {
-            buffer[i] = (w0 * output0[i] + w1 * output1[i] + w2 * output2[i]) * invWSum;
+            buffer[i] = a0 * output0[i] + a1 * output1[i] + a2 * output2[i];
         }
     }
 
     private void internalDrawFragment(
             int drawX,
             int drawY,
-            Triangle triangle) {
-
-        internalFindBaryWeights(drawX, drawY, triangle, baryWeights);
+            float b0,
+            float b1) {
 
         float[] depthData = renderTarget.getDepthData();
         int[]   colorData = renderTarget.getColorData();
         int     pixel     = renderTarget.coordToDataIndex(drawX, drawY);
 
-        float invDepth = triangle.getPosnZ(0) * baryWeights[0] +
-                triangle.getPosnZ(1) * baryWeights[1] +
-                triangle.getPosnZ(2) * baryWeights[2];
+        float w0 = raster.z0 * b0;
+        float w1 = raster.z1 * b1;
+        float w2 = raster.z2 * (1.0f - b0 - b1);
+        float invDepth = w0 + w1 + w2;
 
         // NOTE:
         // since all depths are negative and inverted, the further value
@@ -1304,8 +1315,9 @@ public final class QViewer extends QEncoding {
         fctx.screenX = drawX;
         fctx.screenY = drawY;
         fctx.invDepth = invDepth;
-        fctx.normal = triangle.normal;
-        internalInterpolateFragmentInputs(baryWeights, triangle, fctx.inputs);
+        fctx.normal = raster.normal;
+        float invW = 1.0f / invDepth;
+        internalInterpolateFragmentInputs(w0 * invW, w1 * invW, w2 * invW, fctx.inputs);
 
         QShader shader = internalGetRelevantShader();
         QColor fragColor = shader.fragmentShader(fctx);
