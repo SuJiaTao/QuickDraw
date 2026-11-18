@@ -330,6 +330,8 @@ public final class QViewer extends QEncoding {
     private final QShader.VertexShaderContext vctx = new QShader.VertexShaderContext();
     private final QShader.FragmentShaderContext fctx = new QShader.FragmentShaderContext();
     private final float[] baryWeights = new float[VERTS_PER_TRI];
+    private final float[] edge01 = new float[VCTR_NUM_CMPS];
+    private final float[] edge02 = new float[VCTR_NUM_CMPS];
 
     ////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
@@ -472,7 +474,6 @@ public final class QViewer extends QEncoding {
         ////////////////////////////////////////////////////////////////
         // CONSTRUCTORS
         public Vertex() {
-            posn = new float[VCTR_NUM_CMPS];
         }
 
         public Vertex(Vertex toCopy) {
@@ -492,10 +493,8 @@ public final class QViewer extends QEncoding {
         ////////////////////////////////////////////////////////////////
         // PUBLIC MEMBERS
         public int triNum;
-        public Vertex[] verts = new Vertex[] {
-                new Vertex(), new Vertex(), new Vertex()
-        };
-        public float[] normal = new float[VCTR_NUM_CMPS];
+        public Vertex[] verts;
+        public float[] normal;
 
         ////////////////////////////////////////////////////////////////
         // PUBLIC METHODS
@@ -541,6 +540,8 @@ public final class QViewer extends QEncoding {
         // CONSTRUCTORS
         public Triangle(int _num) {
             triNum = _num;
+            verts = new Vertex[] { new Vertex(), new Vertex(), new Vertex() };
+            normal = new float[VCTR_NUM_CMPS];
         }
 
         public Triangle(Triangle toCopy) {
@@ -717,17 +718,12 @@ public final class QViewer extends QEncoding {
             internalProcessVertex(tri, 2);
 
             // GENERATE TRIANGLE NORMAL
-            float[] d01 = new float[VCTR_NUM_CMPS];
-            QVector3.copy(d01, tri.getPosn(1));
-            QVector3.sub(d01, tri.getPosn(0));
-
-            float[] d02 = new float[VCTR_NUM_CMPS];
-            QVector3.copy(d02, tri.getPosn(2));
-            QVector3.sub(d02, tri.getPosn(0));
-
-            float[] tempNormal = QVector3.cross(d01, d02);
-            QVector3.scale(tempNormal, 1.0f / QVector3.magnitude(tempNormal));
-            QVector3.copy(tri.normal, tempNormal);
+            QVector3.copy(edge01, tri.getPosn(1));
+            QVector3.sub(edge01, tri.getPosn(0));
+            QVector3.copy(edge02, tri.getPosn(2));
+            QVector3.sub(edge02, tri.getPosn(0));
+            QVector3.cross(tri.normal, edge01, edge02);
+            QVector3.scale(tri.normal, 1.0f / QVector3.magnitude(tri.normal));
 
             // CULL IF BACKFACING
             if (internalCheckBackfacing(tri)) {
@@ -735,6 +731,13 @@ public final class QViewer extends QEncoding {
             }
 
             // CLIP AND RENDER
+            if (tri.getPosnZ(0) <= nearClip &&
+                tri.getPosnZ(1) <= nearClip &&
+                tri.getPosnZ(2) <= nearClip) {
+                internalDrawTri(tri);
+                continue;
+            }
+
             Triangle[] clipTris = internalClipTri(tri);
             for (Triangle clippedTri : clipTris) {
                 internalDrawTri(clippedTri);
@@ -1115,26 +1118,16 @@ public final class QViewer extends QEncoding {
         float invSlope20 = (sortedTri.getPosnX(0) - sortedTri.getPosnX(2)) /
                 (sortedTri.getPosnY(0) - sortedTri.getPosnY(2));
         float dY21 = sortedTri.getPosnY(1) - sortedTri.getPosnY(2);
+        float midX = sortedTri.getPosnX(2) + (invSlope20 * dY21);
+        float flatXL = Math.min(sortedTri.getPosnX(1), midX);
+        float flatXR = Math.max(sortedTri.getPosnX(1), midX);
 
-        float[] midPoint = new float[] {
-                sortedTri.getPosnX(2) + (invSlope20 * dY21),
-                sortedTri.getPosnY(1),
-                0.0f // Z value can be ignored as interpolation uses unsplit tri
-        };
-
-        // flatTopTri is (1, mid, 2)
-        Triangle flatTopTri = new Triangle(sortedTri);
-        flatTopTri.swapVerts(0, 1); // (0 1 2) -> (1 0 2)
-        flatTopTri.setPosn(1, midPoint); // (1 0 2) -> (1 mid 2)
-
-        // flatBottomTri is (1, mid, 0)
-        Triangle flatBottomTri = new Triangle(sortedTri);
-        flatBottomTri.swapVerts(0, 1); // (0 1 2) -> (1 0 2)
-        flatBottomTri.swapVerts(1, 2); // (1 0 2) -> (1 2 0)
-        flatBottomTri.setPosn(1, midPoint); // (1 2 0) -> (1 mid 0)
-
-        internalDrawFlatTopTri(flatTopTri, sortedTri);
-        internalDrawFlatBottomTri(flatBottomTri, sortedTri);
+        internalDrawFlatTopTri(
+                flatXL, flatXR, sortedTri.getPosnY(1),
+                sortedTri.getPosnX(2), sortedTri.getPosnY(2), sortedTri);
+        internalDrawFlatBottomTri(
+                flatXL, flatXR, sortedTri.getPosnY(1),
+                sortedTri.getPosnX(0), sortedTri.getPosnY(0), sortedTri);
 
     }
 
@@ -1154,37 +1147,32 @@ public final class QViewer extends QEncoding {
 
     }
 
-    private void internalDrawFlatTopTri(Triangle flatTri, Triangle sortedTri) {
+    private void internalDrawFlatTopTri(
+            float flatXL, float flatXR, float flatY,
+            float apexX, float apexY, Triangle sortedTri) {
 
         // NOTE:
-        // - vertex arrangement is as follows:
-        // 0 -> LEFT, 1 -> RIGHT, 2 -> BOTTOM POINT
-        // - flattop triangle is drawn from bottom to top
+        // - flattop triangle is drawn from the bottom apex up to the flat edge
 
-        // sort top 2 verticies from left to right
-        if (flatTri.getPosnX(0) > flatTri.getPosnX(1)) {
-            flatTri.swapVerts(1, 0);
-        }
-
-        float invDY = 1.0f / (flatTri.getPosnY(0) - flatTri.getPosnY(2));
+        float invDY = 1.0f / (flatY - apexY);
         if (Float.isNaN(invDY)) {
             return;
         }
 
-        float invSlope20 = (flatTri.getPosnX(0) - flatTri.getPosnX(2)) * invDY;
-        float invSlope21 = (flatTri.getPosnX(1) - flatTri.getPosnX(2)) * invDY;
+        float invSlopeLeft  = (flatXL - apexX) * invDY;
+        float invSlopeRight = (flatXR - apexX) * invDY;
 
-        int Y_START = Math.max((int) flatTri.getPosnY(2), 0);
-        int Y_END = Math.min((int) flatTri.getPosnY(0), renderTarget.getHeight() - 1);
+        int Y_START = Math.max((int) apexY, 0);
+        int Y_END = Math.min((int) flatY, renderTarget.getHeight() - 1);
 
         for (int drawY = Y_START; drawY <= Y_END; drawY++) {
 
-            float distY = Math.max(0.0f, drawY - flatTri.getPosnY(2));
+            float distY = Math.max(0.0f, drawY - apexY);
             int X_START = Math.max(
-                    (int) (flatTri.getPosnX(2) + (invSlope20 * distY)),
+                    (int) (apexX + (invSlopeLeft * distY)),
                     0);
             int X_END = Math.min(
-                    (int) (flatTri.getPosnX(2) + (invSlope21 * distY)),
+                    (int) (apexX + (invSlopeRight * distY)),
                     renderTarget.getWidth() - 1);
 
             for (int drawX = X_START; drawX <= X_END; drawX++) {
@@ -1195,37 +1183,32 @@ public final class QViewer extends QEncoding {
 
     }
 
-    private void internalDrawFlatBottomTri(Triangle flatTri, Triangle sortedTri) {
+    private void internalDrawFlatBottomTri(
+            float flatXL, float flatXR, float flatY,
+            float apexX, float apexY, Triangle sortedTri) {
 
         // NOTE:
-        // - vertex arrangement is as follows:
-        // 0 -> LEFT, 1 -> RIGHT, 2 -> TOP POINT
-        // - flatbottom triangle is drawn from bottom to top
+        // - flatbottom triangle is drawn from the flat edge up to the top apex
 
-        // sort bottom 2 verticies from left to right
-        if (flatTri.getPosnX(0) > flatTri.getPosnX(1)) {
-            flatTri.swapVerts(1, 0);
-        }
-
-        float invDY = 1.0f / (flatTri.getPosnY(2) - flatTri.getPosnY(0));
+        float invDY = 1.0f / (apexY - flatY);
         if (Float.isNaN(invDY)) {
             return;
         }
 
-        float invSlope02 = (flatTri.getPosnX(2) - flatTri.getPosnX(0)) * invDY;
-        float invSlope12 = (flatTri.getPosnX(2) - flatTri.getPosnX(1)) * invDY;
+        float invSlopeLeft  = (apexX - flatXL) * invDY;
+        float invSlopeRight = (apexX - flatXR) * invDY;
 
-        int Y_START = Math.max((int) flatTri.getPosnY(0), 0);
-        int Y_END = Math.min((int) flatTri.getPosnY(2), renderTarget.getHeight() - 1);
+        int Y_START = Math.max((int) flatY, 0);
+        int Y_END = Math.min((int) apexY, renderTarget.getHeight() - 1);
 
         for (int drawY = Y_START; drawY <= Y_END; drawY++) {
 
-            float distY = Math.max(0.0f, drawY - flatTri.getPosnY(0));
+            float distY = Math.max(0.0f, drawY - flatY);
             int X_START = Math.max(
-                    (int) (flatTri.getPosnX(0) + (invSlope02 * distY)),
+                    (int) (flatXL + (invSlopeLeft * distY)),
                     0);
             int X_END = Math.min(
-                    (int) (flatTri.getPosnX(1) + (invSlope12 * distY)),
+                    (int) (flatXR + (invSlopeRight * distY)),
                     renderTarget.getWidth() - 1);
 
             for (int drawX = X_START; drawX <= X_END; drawX++) {

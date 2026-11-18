@@ -219,11 +219,17 @@ public final class QVector3 extends QEncoding {
     }
 
     static float[] cross(float[] l, float[] r) {
-        return new float[] {
-            l[VCTR_INDEX_Y] * r[VCTR_INDEX_Z] - l[VCTR_INDEX_Z] * r[VCTR_INDEX_Y],
-            l[VCTR_INDEX_Z] * r[VCTR_INDEX_X] - l[VCTR_INDEX_X] * r[VCTR_INDEX_Z],
-            l[VCTR_INDEX_X] * r[VCTR_INDEX_Y] - l[VCTR_INDEX_Y] * r[VCTR_INDEX_X]
-        };
+        return cross(new float[VCTR_NUM_CMPS], l, r);
+    }
+
+    static float[] cross(float[] out, float[] l, float[] r) {
+        float x = l[VCTR_INDEX_Y] * r[VCTR_INDEX_Z] - l[VCTR_INDEX_Z] * r[VCTR_INDEX_Y];
+        float y = l[VCTR_INDEX_Z] * r[VCTR_INDEX_X] - l[VCTR_INDEX_X] * r[VCTR_INDEX_Z];
+        float z = l[VCTR_INDEX_X] * r[VCTR_INDEX_Y] - l[VCTR_INDEX_Y] * r[VCTR_INDEX_X];
+        out[VCTR_INDEX_X] = x;
+        out[VCTR_INDEX_Y] = y;
+        out[VCTR_INDEX_Z] = z;
+        return out;
     }
 
     static float sqrMagnitude(float[] v) {
