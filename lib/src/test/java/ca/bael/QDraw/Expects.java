@@ -157,12 +157,12 @@ public final class Expects {
     public void MathTest() {
         QMatrix4x4 mat0 = QMatrix4x4.translationMatrix(1.0f, 2.0f, 3.0f);
 
-        float[] temp0 = { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f };
-        QMath.mul3_4x4(temp0, mat0.getComponents());
-        assertArrayEquals(new float[] { 2.0f, 4.0f, 6.0f, 4.0f, 5.0f, 6.0f }, temp0);
+        float[] temp0 = { 1.0f, 2.0f, 3.0f };
+        mat0.transformPoint(temp0);
+        assertArrayEquals(new float[] { 2.0f, 4.0f, 6.0f }, temp0);
 
-        float[] temp1 = { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f };
-        QMath.mul3_4x4(3, temp1, 0, mat0.getComponents());
-        assertArrayEquals(new float[] { 1.0f, 2.0f, 3.0f, 5.0f, 7.0f, 9.0f }, temp1);
+        float[] temp1 = { 1.0f, 2.0f, 3.0f };
+        mat0.transformDir(temp1);
+        assertArrayEquals(new float[] { 1.0f, 2.0f, 3.0f }, temp1);
     }
 }

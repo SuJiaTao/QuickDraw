@@ -7,6 +7,8 @@ package ca.bael.QDraw;
 public final class QMatrix4x4 extends QEncoding {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
+    private static final float DEG_TO_RAD = (float)Math.PI / 180.0f;
+
     private static final float[] COMPONENTS_IDENTITY = {
         1.0f, 0.0f, 0.0f, 0.0f,
         0.0f, 1.0f, 0.0f, 0.0f,
@@ -35,39 +37,91 @@ public final class QMatrix4x4 extends QEncoding {
     private float[] components = new float[MTR_NUM_CMPS];
 
     /////////////////////////////////////////////////////////////////
+    // PRIVATE METHODS
+    private static float[] multiplyComponents(float[] m1, float[] m2) {
+        // refer to
+        // https://github.com/SuJiaTao/Caesium/blob/master/csm_matrix.c
+        float[] r = new float[MTR_NUM_CMPS];
+        for (int row = 0; row < MTR_NUM_ROWS; row++) {
+            int rowStart = MTR_NUM_COLUMNS * row;
+            float b0 = m2[rowStart];
+            float b1 = m2[rowStart + 1];
+            float b2 = m2[rowStart + 2];
+            float b3 = m2[rowStart + 3];
+            for (int col = 0; col < MTR_NUM_COLUMNS; col++) {
+                r[rowStart + col] =
+                    b0 * m1[col] + b1 * m1[col + 4] + b2 * m1[col + 8] + b3 * m1[col + 12];
+            }
+        }
+        return r;
+    }
+
+    /////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
+    public static float cosDeg(float degrees) {
+        return (float)Math.cos(degrees * DEG_TO_RAD);
+    }
+
+    public static float sinDeg(float degrees) {
+        return (float)Math.sin(degrees * DEG_TO_RAD);
+    }
+
     public float getValue(int col, int row) {
-        return QMath.get4x4(components, col, row);
+        return components[col + MTR_NUM_ROWS * row];
     }
 
     public void setValue(int col, int row, float val) {
-        QMath.set4x4(0, components, col, row, val);
+        components[col + MTR_NUM_ROWS * row] = val;
     }
 
     public void set(float[] vec) {
-        QMath.copy4x4(components, vec);
+        System.arraycopy(vec, 0, components, 0, MTR_NUM_CMPS);
     }
 
     public void set(QMatrix4x4 m2) {
-        QMath.copy4x4(0, components, 0, m2.components);
+        set(m2.components);
     }
 
     public float[] getComponents( ) {
         return components;
     }
 
+    public void transformDir(float[] v) {
+        float x = v[VCTR_INDEX_X];
+        float y = v[VCTR_INDEX_Y];
+        float z = v[VCTR_INDEX_Z];
+        v[VCTR_INDEX_X] = components[0] * x + components[1] * y + components[2]  * z;
+        v[VCTR_INDEX_Y] = components[4] * x + components[5] * y + components[6]  * z;
+        v[VCTR_INDEX_Z] = components[8] * x + components[9] * y + components[10] * z;
+    }
+
+    public void transformPoint(float[] v) {
+        transformDir(v);
+        v[VCTR_INDEX_X] += components[3];
+        v[VCTR_INDEX_Y] += components[7];
+        v[VCTR_INDEX_Z] += components[11];
+    }
+
+    public QVector3 transformDir(QVector3 v) {
+        transformDir(v.getComponents());
+        return v;
+    }
+
+    public QVector3 transformPoint(QVector3 v) {
+        transformPoint(v.getComponents());
+        return v;
+    }
+
     public static QVector3 multiply(QMatrix4x4 m, QVector3 v) {
-        QVector3 temp = v.copy();
-        QMath.mul3_4x4(temp.getComponents(), m.components);
-        return temp;
+        return m.transformPoint(v.copy());
     }
 
     public static QMatrix4x4 multiply(QMatrix4x4 m1, QMatrix4x4 m2) {
-        return new QMatrix4x4(QMath.mul4x4(m1.components, m2.components));
+        return new QMatrix4x4(multiplyComponents(m1.components, m2.components));
     }
 
     public void multiply(QMatrix4x4 m2) {
-        set(QMath.mul4x4(this.components, m2.components));
+        set(multiplyComponents(this.components, m2.components));
     }
 
     public static QMatrix4x4 scaleMatrix(float s) {
@@ -110,12 +164,12 @@ public final class QMatrix4x4 extends QEncoding {
         // references:
         // https://github.com/SuJiaTao/Caesium/blob/master/csm_matrix.c
         // https://math.stackexchange.com/questions/1882276/combining-all-three-rotation-matrices
-        float cosX = QMath.cosf(x);
-        float cosY = QMath.cosf(y);
-        float cosZ = QMath.cosf(z);
-        float sinX = QMath.sinf(x);
-        float sinY = QMath.sinf(y);
-        float sinZ = QMath.sinf(z);
+        float cosX = cosDeg(x);
+        float cosY = cosDeg(y);
+        float cosZ = cosDeg(z);
+        float sinX = sinDeg(x);
+        float sinY = sinDeg(y);
+        float sinZ = sinDeg(z);
         float sinXsinY = sinX * sinY;
         float cosXsinY = cosX * sinY;
 

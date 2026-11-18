@@ -84,15 +84,15 @@ public final class QVector3 extends QEncoding {
     }
 
     public float sqrMagnitude( ) {
-        return QMath.sqrmag3(components);
+        return sqrMagnitude(components);
     }
 
     public float fastMagnitude( ) {
-        return QMath.fastmag3(components);
+        return fastMagnitude(components);
     }
 
     public float magnitude( ) {
-        return QMath.mag3(components);
+        return magnitude(components);
     }
 
     public QVector3 fastNormalize( ) {
@@ -108,15 +108,15 @@ public final class QVector3 extends QEncoding {
     }
 
     public static float dot(QVector3 v1, QVector3 v2) {
-        return QMath.dot3(v1.components, v2.components);
+        return dot(v1.components, v2.components);
     }
 
     public float dot(QVector3 other) {
-        return QMath.dot3(components, other.components);
+        return dot(components, other.components);
     }
 
     public static QVector3 cross(QVector3 v1, QVector3 v2) {
-        return new QVector3(QMath.cross3(v1.components, v2.components));
+        return new QVector3(cross(v1.components, v2.components));
     }
 
     public static QVector3 sub(QVector3 v1, QVector3 v2) {
@@ -126,7 +126,7 @@ public final class QVector3 extends QEncoding {
     }
 
     public QVector3 sub(QVector3 other) {
-        QMath.sub3(components, other.components);
+        sub(components, other.components);
         return this;
     }
 
@@ -137,7 +137,7 @@ public final class QVector3 extends QEncoding {
     }
 
     public QVector3 add(QVector3 other) {
-        QMath.add3(components, other.components);
+        add(components, other.components);
         return this;
     }
 
@@ -148,7 +148,7 @@ public final class QVector3 extends QEncoding {
     }
 
     public QVector3 multiply3(float factor) {
-        QMath.mult3(components, factor);
+        scale(components, factor);
         return this;
     }
 
@@ -157,7 +157,7 @@ public final class QVector3 extends QEncoding {
     }
 
     public void set(float[] comps) {
-        QMath.copy3(0, components, 0, comps);
+        copy(components, comps);
     }
 
     public void set(float x, float y, float z) {
@@ -186,6 +186,64 @@ public final class QVector3 extends QEncoding {
                 components[VCTR_INDEX_Y],
                 components[VCTR_INDEX_Z]
             );
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // PACKAGE METHODS (in-place float[] operations)
+    static void copy(float[] trg, float[] src) {
+        System.arraycopy(src, 0, trg, 0, VCTR_NUM_CMPS);
+    }
+
+    static void add(float[] v1, float[] v2) {
+        v1[VCTR_INDEX_X] += v2[VCTR_INDEX_X];
+        v1[VCTR_INDEX_Y] += v2[VCTR_INDEX_Y];
+        v1[VCTR_INDEX_Z] += v2[VCTR_INDEX_Z];
+    }
+
+    static void sub(float[] v1, float[] v2) {
+        v1[VCTR_INDEX_X] -= v2[VCTR_INDEX_X];
+        v1[VCTR_INDEX_Y] -= v2[VCTR_INDEX_Y];
+        v1[VCTR_INDEX_Z] -= v2[VCTR_INDEX_Z];
+    }
+
+    static void scale(float[] v, float fac) {
+        v[VCTR_INDEX_X] *= fac;
+        v[VCTR_INDEX_Y] *= fac;
+        v[VCTR_INDEX_Z] *= fac;
+    }
+
+    static float dot(float[] v1, float[] v2) {
+        return v1[VCTR_INDEX_X] * v2[VCTR_INDEX_X] +
+               v1[VCTR_INDEX_Y] * v2[VCTR_INDEX_Y] +
+               v1[VCTR_INDEX_Z] * v2[VCTR_INDEX_Z];
+    }
+
+    static float[] cross(float[] l, float[] r) {
+        return new float[] {
+            l[VCTR_INDEX_Y] * r[VCTR_INDEX_Z] - l[VCTR_INDEX_Z] * r[VCTR_INDEX_Y],
+            l[VCTR_INDEX_Z] * r[VCTR_INDEX_X] - l[VCTR_INDEX_X] * r[VCTR_INDEX_Z],
+            l[VCTR_INDEX_X] * r[VCTR_INDEX_Y] - l[VCTR_INDEX_Y] * r[VCTR_INDEX_X]
+        };
+    }
+
+    static float sqrMagnitude(float[] v) {
+        return dot(v, v);
+    }
+
+    static float magnitude(float[] v) {
+        return (float)Math.sqrt(sqrMagnitude(v));
+    }
+
+    static float fastMagnitude(float[] v) {
+        return fastMagnitude2(fastMagnitude2(v[VCTR_INDEX_X], v[VCTR_INDEX_Y]), v[VCTR_INDEX_Z]);
+    }
+
+    private static float fastMagnitude2(float x, float y) {
+        // refer to
+        // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_rasterizetri.c
+        x = Math.abs(x);
+        y = Math.abs(y);
+        return (0.96f * Math.max(x, y)) + (0.4f * Math.min(x, y));
     }
 
     /////////////////////////////////////////////////////////////////

@@ -65,11 +65,25 @@ public final class QViewer extends QEncoding {
                     "vertex transform matrix",
                     QMatrix4x4.class
                 )
-            };}
+            };
+        }
 
-    public QVector3 vertexShader(VertexShaderContext context){QMatrix4x4 mtr=(QMatrix4x4)context.uniforms[DEFAULT_SHADER_MATRIX_SLOT];return QMatrix4x4.multiply(mtr,new QVector3(context.attributes[DEFAULT_SHADER_POSITION_SLOT]));}
+        public QVector3 vertexShader(
+            VertexShaderContext context
+        ) {
+            QMatrix4x4 mtr = (QMatrix4x4)context.uniforms[DEFAULT_SHADER_MATRIX_SLOT];
+            return QMatrix4x4.multiply(
+                mtr,
+                new QVector3(context.attributes[DEFAULT_SHADER_POSITION_SLOT])
+            );
+        }
 
-    public QColor fragmentShader(FragmentShaderContext context){return fillColor;}};
+        public QColor fragmentShader(
+            FragmentShaderContext context
+        ) {
+            return fillColor;
+        }
+    };
 
     private final QShader TEXTURED_SHADER = new QShader( ) {
         public ShaderRequirement[] requirements( ) {
@@ -95,15 +109,29 @@ public final class QViewer extends QEncoding {
                     RequirementType.Texture, 
                     "mesh texture"
                 )
-            };}
+            };
+        }
 
-    public QVector3 vertexShader(VertexShaderContext context){QMatrix4x4 mtr=(QMatrix4x4)context.uniforms[DEFAULT_SHADER_MATRIX_SLOT];QVector3 pos=new QVector3(context.attributes[DEFAULT_SHADER_POSITION_SLOT]);forwardAttributeToFragShader(context,DEFAULT_SHADER_UV_SLOT);
+        public QVector3 vertexShader(
+            VertexShaderContext context
+        ) {
+            QMatrix4x4 mtr = (QMatrix4x4)context.uniforms[DEFAULT_SHADER_MATRIX_SLOT];
+            QVector3   pos = new QVector3(context.attributes[DEFAULT_SHADER_POSITION_SLOT]);
+            forwardAttributeToFragShader(context, DEFAULT_SHADER_UV_SLOT);
 
-    return QMatrix4x4.multiply(mtr,pos);}
+            return QMatrix4x4.multiply(mtr, pos);
+        }
 
-    public QColor fragmentShader(FragmentShaderContext context){QSampleable tex=context.textures[DEFAULT_SHADER_TEXTURE_SLOT];float[]uv=new float[2];getOutputFromVertShader(context,DEFAULT_SHADER_UV_SLOT,uv);
+        public QColor fragmentShader(
+            FragmentShaderContext context
+        ) {
+            QSampleable tex = context.textures[DEFAULT_SHADER_TEXTURE_SLOT];
+            float[]     uv  = new float[2];
+            getOutputFromVertShader(context, DEFAULT_SHADER_UV_SLOT, uv);
 
-    return new QColor(tex.sample(uv[0],uv[1],sampleType));}};
+            return new QColor(tex.sample(uv[0], uv[1], sampleType));
+        }
+    };
 
     private final QShader NORMAL_SHADER = new QShader( ) {
         public ShaderRequirement[] requirements( ) {
@@ -124,11 +152,36 @@ public final class QViewer extends QEncoding {
                     "vertex transform matrix",
                     QMatrix4x4.class
                 )
-            };}
+            };
+        }
 
-    public QVector3 vertexShader(VertexShaderContext context){QMatrix4x4 mtr=(QMatrix4x4)context.uniforms[DEFAULT_SHADER_MATRIX_SLOT];QMatrix4x4 rotMtr=mtr.extractRotation();QMath.mul3_4x4(context.attributes[DEFAULT_SHADER_NORMAL_SLOT],rotMtr.getComponents());forwardAttributeToFragShader(context,DEFAULT_SHADER_NORMAL_SLOT);return QMatrix4x4.multiply(mtr,new QVector3(context.attributes[DEFAULT_SHADER_POSITION_SLOT]));}
+        public QVector3 vertexShader(
+            VertexShaderContext context
+        ) {
+            QMatrix4x4 mtr    = (QMatrix4x4)context.uniforms[DEFAULT_SHADER_MATRIX_SLOT];
+            QMatrix4x4 rotMtr = mtr.extractRotation( );
+            rotMtr.transformDir(context.attributes[DEFAULT_SHADER_NORMAL_SLOT]);
+            forwardAttributeToFragShader(context, DEFAULT_SHADER_NORMAL_SLOT);
 
-    public QColor fragmentShader(FragmentShaderContext context){float[]normal=new float[VCTR_NUM_CMPS];getOutputFromVertShader(context,DEFAULT_SHADER_NORMAL_SLOT,normal);return new QColor((int)((1.0f+normal[VCTR_INDEX_X])*127.0f),(int)((1.0f+normal[VCTR_INDEX_Y])*127.0f),(int)((1.0f+normal[VCTR_INDEX_Z])*127.0f));}};
+            return QMatrix4x4.multiply(
+                mtr,
+                new QVector3(context.attributes[DEFAULT_SHADER_POSITION_SLOT])
+            );
+        }
+
+        public QColor fragmentShader(
+            FragmentShaderContext context
+        ) {
+            float[] normal = new float[VCTR_NUM_CMPS];
+            getOutputFromVertShader(context, DEFAULT_SHADER_NORMAL_SLOT, normal);
+
+            return new QColor(
+                (int)((1.0f + normal[VCTR_INDEX_X]) * 127.0f),
+                (int)((1.0f + normal[VCTR_INDEX_Y]) * 127.0f),
+                (int)((1.0f + normal[VCTR_INDEX_Z]) * 127.0f)
+            );
+        }
+    };
 
     private final QShader MATERIAL_SHADER = new QShader( ) {
         public ShaderRequirement[] requirements( ) {
@@ -180,10 +233,7 @@ public final class QViewer extends QEncoding {
             pos = QMatrix4x4.multiply(mtr, pos);
 
             QMatrix4x4 rotMtr = mtr.extractRotation( );
-            QMath.mul3_4x4(
-                context.attributes[DEFAULT_SHADER_NORMAL_SLOT], 
-                rotMtr.getComponents( )
-            );
+            rotMtr.transformDir(context.attributes[DEFAULT_SHADER_NORMAL_SLOT]);
             
             setOutputToFragShader(context, DEFAULT_SHADER_POSITION_SLOT, pos.getComponents( ));
             forwardAttributeToFragShader(context, DEFAULT_SHADER_UV_SLOT);
@@ -205,8 +255,8 @@ public final class QViewer extends QEncoding {
             getOutputFromVertShader(context, DEFAULT_SHADER_POSITION_SLOT, pos);
             getOutputFromVertShader(context, DEFAULT_SHADER_UV_SLOT, uv);
             getOutputFromVertShader(context, DEFAULT_SHADER_NORMAL_SLOT, normal);
-            float normMag = QMath.fastmag3(normal);
-            QMath.mult3(normal, 1/normMag);
+            float normMag = QVector3.fastMagnitude(normal);
+            QVector3.scale(normal, 1/normMag);
             QColor texSampleColor = tex == null ? QColor.White() : new QColor(tex.sample(uv[0], uv[1], sampleType));
             QColor ambientColor = mat == null? QColor.Black() : mat.ambient;
             QColor diffuseColor = mat == null? QColor.White() : mat.diffuse;
@@ -230,11 +280,11 @@ public final class QViewer extends QEncoding {
                 float distToLight = dirFaceToLight.fastMagnitude( );
                 dirFaceToLight.multiply3(1.0f / distToLight);
 
-                diffuseIntensity += Math.max(0f, QMath.dot3(dirFaceToLight.getComponents(), normal));
+                diffuseIntensity += Math.max(0f, QVector3.dot(dirFaceToLight.getComponents(), normal));
                 // do we clamp intensity?
-                // reflect = dirFaceToLight.sub(new QVector3(normal).multiply3(2f * QMath.dot3(normal, dirFaceToLight.getComponents()))); 
+                // reflect = dirFaceToLight.sub(new QVector3(normal).multiply3(2f * QVector3.dot(normal, dirFaceToLight.getComponents()))); 
                 halfVec = dirFaceToLight.add(viewDir).fastNormalize();
-                specularIntensity += Math.pow(Math.max(0f, QMath.dot3(halfVec.getComponents(), normal)), shininess);
+                specularIntensity += Math.pow(Math.max(0f, QVector3.dot(halfVec.getComponents(), normal)), shininess);
             }
 
             texSampleColor.set( (int)(texSampleColor.getR()* Math.min(1f, ambientColor.getR() / 255f + diffuseIntensity * diffuseColor.getR() / 255f) + specularColor.getR() / 255f * specularIntensity), 
@@ -375,7 +425,8 @@ public final class QViewer extends QEncoding {
         // PUBLIC METHODS
         public void project() {
             posn[VCTR_INDEX_Z] = 1.0f / posn[VCTR_INDEX_Z];
-            QMath.mult2(posn, -posn[VCTR_INDEX_Z]);
+            posn[VCTR_INDEX_X] *= -posn[VCTR_INDEX_Z];
+            posn[VCTR_INDEX_Y] *= -posn[VCTR_INDEX_Z];
         }
 
         public void findClippedShaderOutputs(
@@ -412,12 +463,12 @@ public final class QViewer extends QEncoding {
         ////////////////////////////////////////////////////////////////
         // CONSTRUCTORS
         public Vertex() {
-            posn = QMath.new3();
+            posn = new float[VCTR_NUM_CMPS];
         }
 
         public Vertex(Vertex toCopy) {
-            posn = QMath.new3();
-            QMath.copy3(
+            posn = new float[VCTR_NUM_CMPS];
+            QVector3.copy(
                     posn,
                     toCopy.posn);
 
@@ -468,7 +519,7 @@ public final class QViewer extends QEncoding {
         }
 
         public void setPosn(int vertNum, float[] inVals) {
-            QMath.copy3(verts[vertNum].posn, inVals);
+            QVector3.copy(verts[vertNum].posn, inVals);
         }
 
         public float getPosnX(int vertNum) {
@@ -504,7 +555,7 @@ public final class QViewer extends QEncoding {
         public Triangle(Triangle toCopy) {
             triNum = toCopy.triNum;
             normal = new float[VCTR_NUM_CMPS];
-            QMath.copy3(normal, toCopy.normal);
+            QVector3.copy(normal, toCopy.normal);
 
             verts = new Vertex[VERTS_PER_TRI];
             for (int i = 0; i < verts.length; i++) {
@@ -653,16 +704,16 @@ public final class QViewer extends QEncoding {
 
             // GENERATE TRIANGLE NORMAL
             float[] d01 = new float[VCTR_NUM_CMPS];
-            QMath.copy3(d01, tri.getPosn(1));
-            QMath.sub3(d01, tri.getPosn(0));
+            QVector3.copy(d01, tri.getPosn(1));
+            QVector3.sub(d01, tri.getPosn(0));
 
             float[] d02 = new float[VCTR_NUM_CMPS];
-            QMath.copy3(d02, tri.getPosn(2));
-            QMath.sub3(d02, tri.getPosn(0));
+            QVector3.copy(d02, tri.getPosn(2));
+            QVector3.sub(d02, tri.getPosn(0));
 
-            float[] tempNormal = QMath.cross3(d01, d02);
-            QMath.mult3(tempNormal, 1.0f / QMath.mag3(tempNormal));
-            QMath.copy3(tri.normal, tempNormal);
+            float[] tempNormal = QVector3.cross(d01, d02);
+            QVector3.scale(tempNormal, 1.0f / QVector3.magnitude(tempNormal));
+            QVector3.copy(tri.normal, tempNormal);
 
             // CULL IF BACKFACING
             if (internalCheckBackfacing(tri)) {
@@ -713,14 +764,14 @@ public final class QViewer extends QEncoding {
         // NOTE:
         // if the dot product between the normal is > 0 for the ray
         // from the camera to the center of the tri, then it's backfacing
-        float[] rayToCenter = QMath.new3();
-        QMath.add3(rayToCenter, tri.getPosn(0));
-        QMath.add3(rayToCenter, tri.getPosn(1));
-        QMath.add3(rayToCenter, tri.getPosn(2));
+        float[] rayToCenter = new float[VCTR_NUM_CMPS];
+        QVector3.add(rayToCenter, tri.getPosn(0));
+        QVector3.add(rayToCenter, tri.getPosn(1));
+        QVector3.add(rayToCenter, tri.getPosn(2));
         final float inv3 = 1.0f / 3.0f;
-        QMath.mult3(rayToCenter, inv3);
-        QMath.mult3(rayToCenter, 1.0f / QMath.fastmag3(rayToCenter));
-        return (QMath.dot3(tri.normal, rayToCenter) > BACKFACE_CULL_MIN_DOT);
+        QVector3.scale(rayToCenter, inv3);
+        QVector3.scale(rayToCenter, 1.0f / QVector3.fastMagnitude(rayToCenter));
+        return (QVector3.dot(tri.normal, rayToCenter) > BACKFACE_CULL_MIN_DOT);
     }
 
     private Triangle[] internalClipTri(Triangle tri) {
@@ -808,14 +859,14 @@ public final class QViewer extends QEncoding {
         // NOTE:
         // takes a starting, ending, and middle position, generates
         // interpolation factor between pI to pF (0 for pI, 1 for pF)
-        float[] temp = QMath.new3();
-        QMath.copy3(temp, pF);
-        QMath.sub3(temp, pI);
-        float magTotal = QMath.fastmag3(temp);
+        float[] temp = new float[VCTR_NUM_CMPS];
+        QVector3.copy(temp, pF);
+        QVector3.sub(temp, pI);
+        float magTotal = QVector3.fastMagnitude(temp);
 
-        QMath.copy3(temp, pClip);
-        QMath.sub3(temp, pI);
-        float magIntersect = QMath.fastmag3(temp);
+        QVector3.copy(temp, pClip);
+        QVector3.sub(temp, pI);
+        float magIntersect = QVector3.fastMagnitude(temp);
 
         return magIntersect / magTotal;
     }

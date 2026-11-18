@@ -143,8 +143,8 @@ public final class Mascot {
         while ((System.currentTimeMillis() - t0) < CUT_RUNTIME_MS) {
             eyes.clearFrame();
             float time = (float) (System.currentTimeMillis() - t0) * 0.035f;
-            float osc0 = QMath.sinf(time);
-            float osc1 = QMath.cosf(time);
+            float osc0 = QMatrix4x4.sinDeg(time);
+            float osc1 = QMatrix4x4.cosDeg(time);
 
             for (int i = -6; i < 6; i++) {
                 for (int j = -6; j < 6; j++) {

@@ -57,10 +57,7 @@ public class FuzzShader extends QShader {
         QVector3   vertexPos = new QVector3(vctx.attributes[SHADER_POSITION_SLOT]);
         QMatrix4x4 transform = (QMatrix4x4)vctx.uniforms[SHADER_MATRIX_SLOT];
         QMatrix4x4 rotMtr = transform.extractRotation( );
-        QMath.mul3_4x4(
-            vctx.attributes[SHADER_NORMAL_SLOT], 
-            rotMtr.getComponents( )
-        );
+        rotMtr.transformDir(vctx.attributes[SHADER_NORMAL_SLOT]);
         
         vertexPos = QMatrix4x4.multiply(transform, vertexPos);
         setOutputToFragShader(vctx, SHADER_POSITION_SLOT, vertexPos.getComponents( ));

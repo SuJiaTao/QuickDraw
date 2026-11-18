@@ -51,11 +51,11 @@ Defined in [`settings.gradle`](settings.gradle):
 
 ### Data Encodings & Math
 - **[`QEncoding.java`](lib/src/main/java/ca/bael/QDraw/QEncoding.java)**: Base class holding shared constants for 32-bit `ARGB` color bitmasks/shifts (`COL_*`), 3-component vector indices (`VCTR_*`, `VCTR_COMPARE_EPSILON = 0.0005f`), and 4x4 matrix dimensions (`MTR_*`). Also documents standard codebase abbreviations and comment notation.
-- **[`QMath.java`](lib/src/main/java/ca/bael/QDraw/QMath.java)**: Static low-level float array operations (`copy2`, `copy3`, `copy4x4`, `cross3`, `dot3`, `add3`, `sub3`, `mult2`, `mult3`, `mul3_4x4`, `mul4x4`) with offset overloads to avoid array allocations.
-  - Trigonometric helpers `cosf(degrees)` and `sinf(degrees)` take **degrees**, not radians.
-  - Fast magnitude approximations (`fastmag2`, `fastmag3`) approximate Euclidean length without `Math.sqrt`.
 - **[`QVector3.java`](lib/src/main/java/ca/bael/QDraw/QVector3.java)**: 3-float vector wrapper supporting both in-place mutation (`vec.add(other)`, `vec.multiply3(fac)`) and static non-mutating operations (`QVector3.add(v1, v2)`). Note: static factory methods `QVector3.X()`, `Y()`, `Z()` currently return zero-initialized vectors (`COMPONENTS_X/Y/Z` are `{0,0,0}`); check callers before changing them.
+  - Package-private static in-place `float[]` helpers (`copy`, `add`, `sub`, `scale`, `dot`, `cross`, `magnitude`, `sqrMagnitude`, `fastMagnitude`) are used by `QViewer` internals on raw position/normal arrays. `fastMagnitude` approximates Euclidean length without `Math.sqrt`.
 - **[`QMatrix4x4.java`](lib/src/main/java/ca/bael/QDraw/QMatrix4x4.java)**: 16-float matrix indexed via `col + 4 * row`. Supports `Identity()`, `Zero()`, `scaleMatrix`, `translationMatrix`, `rotationMatrix` (angles in degrees), `TRS(translation, rotation, scale)`, and decomposition (`extractTranslation`, `extractScale`, `extractRotation`).
+  - `transformPoint(v)` applies the 3x3 part plus translation; `transformDir(v)` applies only the 3x3 part (use for normals/directions). Both mutate `v` in place and accept `float[]` or `QVector3`. The projective row is ignored.
+  - Trigonometric helpers `cosDeg(degrees)` and `sinDeg(degrees)` take **degrees**, not radians.
 
 ### Geometry & Attributes
 - **[`QAttribBuffer.java`](lib/src/main/java/ca/bael/QDraw/QAttribBuffer.java)**: Contiguous `float[]` buffer storing `attribCount` attributes of `compsPerAttrib` floats each.
@@ -86,7 +86,7 @@ Defined in [`settings.gradle`](settings.gradle):
   - **Pipeline stages in `internalDraw()`**:
     1. Validates vertex attribute indexers have matching triangle counts and checks `QShader.requirements()`.
     2. Executes `vertexShader` for each of the 3 triangle vertices.
-    3. Computes face normal (`cross3`) and culls backfacing triangles (`dot3(normal, rayToCenter) > 0`).
+    3. Computes face normal (`QVector3.cross`) and culls backfacing triangles (`QVector3.dot(normal, rayToCenter) > 0`).
     4. Clips triangles against `nearClip` (`Z > nearClip` is behind the camera; visible geometry has negative Z). Clips 1-vertex-behind into 2 triangles (quad) and 2-vertices-behind into 1 triangle, linearly interpolating shader outputs and preserving clockwise winding order.
     5. Projects vertices (`posn[Z] = 1.0f / posn[Z]`, `posn[X,Y] *= -posn[Z]`) and maps `viewBounds` to screen coordinates.
     6. Sorts vertices by Y, splits into flat-top and flat-bottom triangles, rasterizes scanlines, computes perspective-correct barycentric weights, tests inverted-Z depth (`invDepth <= currentDepth - DEPTH_TEST_EPSILON`), invokes `fragmentShader`, discards fully transparent fragments (`A == 0`), alpha-blends with existing framebuffer color, and updates depth and color buffers.

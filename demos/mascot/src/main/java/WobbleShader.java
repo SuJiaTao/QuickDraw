@@ -54,9 +54,9 @@ public final class WobbleShader extends QShader {
         forwardAttributeToFragShader(vctx, QViewer.DEFAULT_SHADER_UV_SLOT);
 
         // CALCULATE WOBBLE FACTOR
-        float offsetX = 0.03f * QMath.cosf( dt + (vertexPos.getY() * 35.0f) );
-        float offsetY = 0.12f * QMath.sinf( 35.0f + (dt + vertexPos.getX() * 70.0f) * 0.5f );
-        float offsetZ = 0.15f * QMath.sinf( 90.0f + dt + (vertexPos.getY() * 35.0f) ); 
+        float offsetX = 0.03f * QMatrix4x4.cosDeg( dt + (vertexPos.getY() * 35.0f) );
+        float offsetY = 0.12f * QMatrix4x4.sinDeg( 35.0f + (dt + vertexPos.getX() * 70.0f) * 0.5f );
+        float offsetZ = 0.15f * QMatrix4x4.sinDeg( 90.0f + dt + (vertexPos.getY() * 35.0f) ); 
 
         // WOBBLE
         transform.multiply(QMatrix4x4.translationMatrix(offsetX, offsetY, offsetZ));
