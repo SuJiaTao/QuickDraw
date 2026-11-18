@@ -278,6 +278,11 @@ public abstract class QShader {
     }
 
     /////////////////////////////////////////////////////////////////
+    // OVERRIDABLE METHODS
+    public void beginDraw(VertexShaderContext context) {
+    }
+
+    /////////////////////////////////////////////////////////////////
     // ABSTRACT METHODS
     public abstract ShaderRequirement[] requirements( );
 

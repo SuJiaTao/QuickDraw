@@ -303,6 +303,22 @@ public final class QMatrix4x4 extends QEncoding {
         return new QVector3(sx, sy, sz);
     }
 
+    public QMatrix4x4 normalMatrix( ) {
+        float[] r0 = { components[0], components[1], components[2]  };
+        float[] r1 = { components[4], components[5], components[6]  };
+        float[] r2 = { components[8], components[9], components[10] };
+        float[] c0 = QVector3.cross(r1, r2);
+        float[] c1 = QVector3.cross(r2, r0);
+        float[] c2 = QVector3.cross(r0, r1);
+        float invDet = 1.0f / QVector3.dot(r0, c0);
+        return new QMatrix4x4(new float[] {
+            c0[0] * invDet, c0[1] * invDet, c0[2] * invDet, 0.0f,
+            c1[0] * invDet, c1[1] * invDet, c1[2] * invDet, 0.0f,
+            c2[0] * invDet, c2[1] * invDet, c2[2] * invDet, 0.0f,
+            0.0f,           0.0f,           0.0f,           1.0f
+        });
+    }
+
     public QMatrix4x4 extractRotation( ) {
         // clear translation
         QMatrix4x4 rotMat = new QMatrix4x4(this);

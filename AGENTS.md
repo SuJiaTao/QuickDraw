@@ -55,6 +55,7 @@ Defined in [`settings.gradle`](settings.gradle):
   - Package-private static in-place `float[]` helpers (`copy`, `add`, `sub`, `scale`, `dot`, `cross`, `magnitude`, `sqrMagnitude`, `fastMagnitude`) are used by `QViewer` internals on raw position/normal arrays. `fastMagnitude` approximates Euclidean length without `Math.sqrt`.
 - **[`QMatrix4x4.java`](lib/src/main/java/ca/bael/QDraw/QMatrix4x4.java)**: 16-float matrix indexed via `col + 4 * row`. Supports `Identity()`, `Zero()`, `scaleMatrix`, `translationMatrix`, `rotationMatrix` (angles in degrees), `TRS(translation, rotation, scale)`, and decomposition (`extractTranslation`, `extractScale`, `extractRotation`).
   - `transformPoint(v)` applies the 3x3 part plus translation; `transformDir(v)` applies only the 3x3 part (use for normals/directions). Both mutate `v` in place and accept `float[]` or `QVector3`. The projective row is ignored.
+  - `normalMatrix()` returns the inverse-transpose of the 3x3 part (correct for non-uniform scale); normals transformed with it must be re-normalized.
   - Trigonometric helpers `cosDeg(degrees)` and `sinDeg(degrees)` take **degrees**, not radians.
 
 ### Geometry & Attributes
@@ -76,6 +77,7 @@ Defined in [`settings.gradle`](settings.gradle):
   - `ShaderRequirement[] requirements()` declaring required `Attribute`, `Uniform` (with expected `Class<?>`), `Texture` slots, and `Output` slots (with component count). Every slot written by `output`/`forward` must be declared as an `Output`; the pipeline packs declared outputs into one flat per-vertex array.
   - `QVector3 vertexShader(VertexShaderContext context)` reading inputs via `attribVec3`/`attrib`/`uniform`/`texture`, writing outputs via `output`/`forward`, and returning the transformed vertex position.
   - `QColor fragmentShader(FragmentShaderContext context)` reading interpolated outputs via `inputVec3`/`input`, plus `uniform`/`texture`/`screenX`/`screenY`/`invDepth`/`faceNormal`, and returning the fragment `QColor`.
+  - Optional `beginDraw(VertexShaderContext context)` runs once per draw after uniforms/textures are bound and before any vertex is processed; use it to precompute per-draw values (e.g. a normal matrix). Only `uniform`/`texture` are meaningful there. Values stored in shader fields make that shader instance unsafe to share across concurrently drawing viewers.
   - Also provides fast XORSHIFT deterministic PRNG (`seededRandom`, `seededRandomVector`).
 - **[`QLight.java`](lib/src/main/java/ca/bael/QDraw/QLight.java)** & **[`QMaterial.java`](lib/src/main/java/ca/bael/QDraw/QMaterial.java)**: Data structures for point/directional lights and Blinn-Phong material properties (`ambient`, `diffuse`, `specular`, `shininess`).
 - **[`QViewer.java`](lib/src/main/java/ca/bael/QDraw/QViewer.java)**: The software rendering pipeline.

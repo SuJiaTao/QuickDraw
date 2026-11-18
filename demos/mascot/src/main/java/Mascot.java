@@ -25,6 +25,21 @@ public final class Mascot {
     public static QRenderBuffer frameBuffer;
     public static QViewer eyes;
 
+    private static int  fpsFrames = 0;
+    private static long fpsWindowStart = System.nanoTime();
+
+    public static void presentFrame() {
+        window.updateFrame();
+        fpsFrames++;
+        long now = System.nanoTime();
+        if (now - fpsWindowStart >= 1_000_000_000L) {
+            double ms = (now - fpsWindowStart) / 1e6;
+            System.out.printf("%d fps (%.2f ms/frame)%n", fpsFrames, ms / fpsFrames);
+            fpsFrames = 0;
+            fpsWindowStart = now;
+        }
+    }
+
     public static final QTexture flipBRInplace(QTexture tex) {
         for (int i = 0; i < tex.getWidth(); i++) {
             for (int j = 0; j < tex.getHeight(); j++) {
@@ -55,7 +70,7 @@ public final class Mascot {
             eyes.setMatrix(m0);
             eyes.drawMesh(MASCOT_MESH);
 
-            window.updateFrame();
+            presentFrame();
         }
     }
 
@@ -104,7 +119,7 @@ public final class Mascot {
             eyes.setMatrix(m2);
             eyes.drawMesh(MASCOT_MESH);
 
-            window.updateFrame();
+            presentFrame();
         }
     }
 
@@ -134,7 +149,7 @@ public final class Mascot {
             eyes.setMatrix(m1);
             eyes.drawMesh(MASCOT_MESH);
 
-            window.updateFrame();
+            presentFrame();
         }
     }
 
@@ -168,7 +183,7 @@ public final class Mascot {
                 }
             }
 
-            window.updateFrame();
+            presentFrame();
         }
     }
 
@@ -193,7 +208,7 @@ public final class Mascot {
             eyes.setMatrix(m0);
             eyes.drawMesh(MASCOT_MESH);
 
-            window.updateFrame();
+            presentFrame();
         }
     }
 
@@ -219,7 +234,7 @@ public final class Mascot {
             eyes.setMatrix(m0);
             eyes.drawMesh(MASCOT_MESH);
 
-            window.updateFrame();
+            presentFrame();
         }
     }
 

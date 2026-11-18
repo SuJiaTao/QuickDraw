@@ -163,13 +163,19 @@ public final class QViewer extends QEncoding {
             };
         }
 
+        private QMatrix4x4 normalMtr;
+
+        public void beginDraw(VertexShaderContext context) {
+            normalMtr = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class).normalMatrix( );
+        }
+
         public QVector3 vertexShader(
             VertexShaderContext context
         ) {
             QMatrix4x4 mtr = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class);
             context.output(
                 DEFAULT_SHADER_NORMAL_SLOT,
-                mtr.extractRotation( ).transformDir(context.attribVec3(DEFAULT_SHADER_NORMAL_SLOT))
+                normalMtr.transformDir(context.attribVec3(DEFAULT_SHADER_NORMAL_SLOT)).normalize( )
             );
 
             return mtr.transformPoint(context.attribVec3(DEFAULT_SHADER_POSITION_SLOT));
@@ -248,12 +254,18 @@ public final class QViewer extends QEncoding {
             };
         }
 
+        private QMatrix4x4 normalMtr;
+
+        public void beginDraw(VertexShaderContext context) {
+            normalMtr = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class).normalMatrix( );
+        }
+
         public QVector3 vertexShader(
             VertexShaderContext context
         ) {
             QMatrix4x4 mtr    = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class);
             QVector3   pos    = mtr.transformPoint(context.attribVec3(DEFAULT_SHADER_POSITION_SLOT));
-            QVector3   normal = mtr.extractRotation( ).transformDir(context.attribVec3(DEFAULT_SHADER_NORMAL_SLOT));
+            QVector3   normal = normalMtr.transformDir(context.attribVec3(DEFAULT_SHADER_NORMAL_SLOT)).normalize( );
 
             context.output(DEFAULT_SHADER_POSITION_SLOT, pos);
             context.forward(DEFAULT_SHADER_UV_SLOT);
@@ -332,6 +344,7 @@ public final class QViewer extends QEncoding {
     private final float[] baryWeights = new float[VERTS_PER_TRI];
     private final float[] edge01 = new float[VCTR_NUM_CMPS];
     private final float[] edge02 = new float[VCTR_NUM_CMPS];
+    private final float[] rayToCenter = new float[VCTR_NUM_CMPS];
 
     ////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
@@ -710,6 +723,8 @@ public final class QViewer extends QEncoding {
         fctx.layout = outputLayout;
         fctx.inputs = new float[outputLayout.total];
 
+        shader.beginDraw(vctx);
+
         for (int triNum = 0; triNum < triCount; triNum++) {
             // GENERATE TRIANGLE
             Triangle tri = new Triangle(triNum);
@@ -723,12 +738,13 @@ public final class QViewer extends QEncoding {
             QVector3.copy(edge02, tri.getPosn(2));
             QVector3.sub(edge02, tri.getPosn(0));
             QVector3.cross(tri.normal, edge01, edge02);
-            QVector3.scale(tri.normal, 1.0f / QVector3.magnitude(tri.normal));
 
             // CULL IF BACKFACING
             if (internalCheckBackfacing(tri)) {
                 continue;
             }
+
+            QVector3.scale(tri.normal, 1.0f / QVector3.magnitude(tri.normal));
 
             // CLIP AND RENDER
             if (tri.getPosnZ(0) <= nearClip &&
@@ -776,13 +792,9 @@ public final class QViewer extends QEncoding {
         // NOTE:
         // if the dot product between the normal is > 0 for the ray
         // from the camera to the center of the tri, then it's backfacing
-        float[] rayToCenter = new float[VCTR_NUM_CMPS];
-        QVector3.add(rayToCenter, tri.getPosn(0));
+        QVector3.copy(rayToCenter, tri.getPosn(0));
         QVector3.add(rayToCenter, tri.getPosn(1));
         QVector3.add(rayToCenter, tri.getPosn(2));
-        final float inv3 = 1.0f / 3.0f;
-        QVector3.scale(rayToCenter, inv3);
-        QVector3.scale(rayToCenter, 1.0f / QVector3.fastMagnitude(rayToCenter));
         return (QVector3.dot(tri.normal, rayToCenter) > BACKFACE_CULL_MIN_DOT);
     }
 
@@ -871,16 +883,8 @@ public final class QViewer extends QEncoding {
         // NOTE:
         // takes a starting, ending, and middle position, generates
         // interpolation factor between pI to pF (0 for pI, 1 for pF)
-        float[] temp = new float[VCTR_NUM_CMPS];
-        QVector3.copy(temp, pF);
-        QVector3.sub(temp, pI);
-        float magTotal = QVector3.fastMagnitude(temp);
-
-        QVector3.copy(temp, pClip);
-        QVector3.sub(temp, pI);
-        float magIntersect = QVector3.fastMagnitude(temp);
-
-        return magIntersect / magTotal;
+        return (pClip[VCTR_INDEX_Z] - pI[VCTR_INDEX_Z]) /
+               (pF[VCTR_INDEX_Z] - pI[VCTR_INDEX_Z]);
     }
 
     private Triangle[] internalClipTriCase1(Triangle tri, ClipState clipState) {
