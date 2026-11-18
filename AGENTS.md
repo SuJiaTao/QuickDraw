@@ -73,10 +73,10 @@ Defined in [`settings.gradle`](settings.gradle):
 - **[`QRenderBuffer.java`](lib/src/main/java/ca/bael/QDraw/QRenderBuffer.java)**: Subclasses `QSampleable`. Wraps a `BufferedImage` (`TYPE_INT_ARGB` backed by `DataBufferInt`) and a `float[]` depth buffer. `coordToDataIndex(x, y)` inverts `y` so `(0, 0)` is bottom-left.
 
 ### Shaders, Lighting, and Rendering Pipeline
-- **[`QShader.java`](lib/src/main/java/ca/bael/QDraw/QShader.java)**: Abstract base class for shaders. Subclasses implement:
+- **[`QShader.java`](lib/src/main/java/ca/bael/QDraw/QShader.java)**: Abstract base class for shaders. Subclasses must implement `requirements()` and may override the rest:
   - `ShaderRequirement[] requirements()` declaring required `Attribute`, `Uniform` (with expected `Class<?>`), `Texture` slots, and `Output` slots (with component count). Every slot written by `output`/`forward` must be declared as an `Output`; the pipeline packs declared outputs into one flat per-vertex array.
-  - `QVector3 vertexShader(VertexShaderContext context)` reading inputs via `attribVec3`/`attrib`/`uniform`/`texture`, writing outputs via `output`/`forward`, and returning the transformed vertex position.
-  - `QColor fragmentShader(FragmentShaderContext context)` reading interpolated outputs via `inputVec3`/`input`, plus `uniform`/`texture`/`screenX`/`screenY`/`invDepth`/`faceNormal`, and returning the fragment `QColor`.
+  - `QVector3 vertexShader(VertexShaderContext context)` (default: returns the position attribute from `QViewer.DEFAULT_SHADER_POSITION_SLOT` untransformed) reading inputs via `attribVec3`/`attrib`/`uniform`/`texture`, writing outputs via `output`/`forward`, and returning the transformed vertex position.
+  - `QColor fragmentShader(FragmentShaderContext context)` (default: opaque magenta `(255, 0, 255, 255)` as a "not implemented" marker) reading interpolated outputs via `inputVec3`/`input`, plus `uniform`/`texture`/`screenX`/`screenY`/`invDepth`/`faceNormal`, and returning the fragment `QColor`.
   - Optional `beginDraw(VertexShaderContext context)` runs once per draw after uniforms/textures are bound and before any vertex is processed; use it to precompute per-draw values (e.g. a normal matrix). Only `uniform`/`texture` are meaningful there. Values stored in shader fields make that shader instance unsafe to share across concurrently drawing viewers.
   - Also provides fast XORSHIFT deterministic PRNG (`seededRandom`, `seededRandomVector`).
 - **[`QLight.java`](lib/src/main/java/ca/bael/QDraw/QLight.java)** & **[`QMaterial.java`](lib/src/main/java/ca/bael/QDraw/QMaterial.java)**: Data structures for point/directional lights and Blinn-Phong material properties (`ambient`, `diffuse`, `specular`, `shininess`).

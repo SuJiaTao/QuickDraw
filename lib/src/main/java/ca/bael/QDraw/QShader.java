@@ -282,15 +282,19 @@ public abstract class QShader {
     public void beginDraw(VertexShaderContext context) {
     }
 
+    public QVector3 vertexShader(
+        VertexShaderContext context
+    ) {
+        return context.attribVec3(QViewer.DEFAULT_SHADER_POSITION_SLOT);
+    }
+
+    public QColor fragmentShader(
+        FragmentShaderContext context
+    ) {
+        return new QColor(0xFF, 0x00, 0xFF, 0xFF);
+    }
+
     /////////////////////////////////////////////////////////////////
     // ABSTRACT METHODS
     public abstract ShaderRequirement[] requirements( );
-
-    public abstract QVector3 vertexShader(
-        VertexShaderContext context
-    );
-
-    public abstract QColor fragmentShader(
-        FragmentShaderContext context
-    );
 }
