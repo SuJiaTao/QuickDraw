@@ -1297,6 +1297,10 @@ public final class QViewer extends QEncoding {
 
         internalFindBaryWeights(drawX, drawY, triangle, baryWeights);
 
+        float[] depthData = renderTarget.getDepthData();
+        int[]   colorData = renderTarget.getColorData();
+        int     pixel     = renderTarget.coordToDataIndex(drawX, drawY);
+
         float invDepth = triangle.getPosnZ(0) * baryWeights[0] +
                 triangle.getPosnZ(1) * baryWeights[1] +
                 triangle.getPosnZ(2) * baryWeights[2];
@@ -1305,7 +1309,7 @@ public final class QViewer extends QEncoding {
         // since all depths are negative and inverted, the further value
         // will be a smaller negative and hence greater. therefore the failing
         // depth test will be greater than the previous depth
-        if (invDepth > renderTarget.getDepth(drawX, drawY) - DEPTH_TEST_EPSILON) {
+        if (invDepth > depthData[pixel] - DEPTH_TEST_EPSILON) {
             return;
         }
 
@@ -1325,12 +1329,8 @@ public final class QViewer extends QEncoding {
         }
 
         // BLEND FRAGMENT TO BELOW COLOR AND WRITE TO RENDERTARGET
-        int blendedColor = QColor.blend(
-                renderTarget.getColor(drawX, drawY),
-                fragColor.toInt());
-
-        renderTarget.setDepth(drawX, drawY, invDepth);
-        renderTarget.setColor(drawX, drawY, blendedColor);
+        depthData[pixel] = invDepth;
+        colorData[pixel] = QColor.blend(colorData[pixel], fragColor.toInt());
     }
 
     ////////////////////////////////////////////////////////////////

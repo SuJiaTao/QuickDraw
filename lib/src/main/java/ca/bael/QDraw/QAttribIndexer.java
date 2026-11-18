@@ -66,9 +66,7 @@ public final class QAttribIndexer {
         int           offsetOut,
         float[]       bufferOut
     ) {
-        int[] triIndicies = new int[INDICIES_PER_TRI];
-        getTriIndicies(0, triIndicies, triNum);
-        attribBuffer.getAttrib(offsetOut, bufferOut, triIndicies[vertNum]);
+        attribBuffer.getAttrib(offsetOut, bufferOut, attribIndexBuffer[getTriBaseOffset(triNum) + vertNum]);
     }
 
     /////////////////////////////////////////////////////////////////
