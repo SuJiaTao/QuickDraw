@@ -167,57 +167,6 @@ public abstract class QShader {
         );
     }
 
-    public static QColor blendColor(QColor bottom, QColor top) {
-        int tFac = top.getA();
-        if (tFac == 0xFF) return top;
-
-        int bFac = 0xFF - tFac;
-        if (bFac == 0xFF) return bottom;
-
-        // NOTE: unsigned lshift 8 is equivalent to division by 255
-        return new QColor(
-            (top.getR() * tFac + bottom.getR() * bFac) >>> 8,
-            (top.getG() * tFac + bottom.getG() * bFac) >>> 8,
-            (top.getB() * tFac + bottom.getB() * bFac) >>> 8
-        );
-    }
-
-    public static QColor addColor(QColor color1, QColor color2) {
-        return new QColor(
-            (color1.getR() + color1.getR()),
-            (color1.getG() + color2.getG()),
-            (color1.getB() + color2.getB())
-        );
-    }
-
-    public static QColor multiplyColor(QColor color1, QColor color2) {
-        return new QColor(
-            (color1.getR() * color1.getR()) >>> 8,
-            (color1.getG() * color2.getG()) >>> 8,
-            (color1.getB() * color2.getB()) >>> 8
-        );
-    }
-
-    public static QColor multiplyColor(QColor color, float factor) {
-        int iFac = (int)(factor * 255.0f);
-        return new QColor(
-            (color.getR() * iFac) >>> 8,
-            (color.getG() * iFac) >>> 8,
-            (color.getB() * iFac) >>> 8
-        );
-    }
-
-    public static QColor multiplyColor(QColor color, float facR, float facG, float facB) {
-        int iFacR = (int)(facR * 255.0f);
-        int iFacG = (int)(facG * 255.0f);
-        int iFacB = (int)(facB * 255.0f);
-        return new QColor(
-            (color.getR() * iFacR) >>> 8,
-            (color.getG() * iFacG) >>> 8,
-            (color.getB() * iFacB) >>> 8
-        );
-    }
-
     /////////////////////////////////////////////////////////////////
     // ABSTRACT METHODS
     public abstract ShaderRequirement[] requirements( );

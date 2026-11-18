@@ -27,6 +27,70 @@ public final class QColor extends QEncoding {
     }
 
     /////////////////////////////////////////////////////////////////
+    // PRIVATE METHODS
+    private static int clampChannel(int val) {
+        return Math.max(0x00, Math.min(COL_CHNL_BMASK, val));
+    }
+
+    private static int channel(int argb, int offset) {
+        return (argb >>> offset) & COL_CHNL_BMASK;
+    }
+
+    private static int div255(int x) {
+        return (x + 1 + (x >>> 8)) >>> 8;
+    }
+
+    private static int opaque(int r, int g, int b) {
+        return COL_BMASK_A |
+               (clampChannel(r) << COL_LSHIFT_OFST_R) |
+               (clampChannel(g) << COL_LSHIFT_OFST_G) |
+               (clampChannel(b) << COL_LSHIFT_OFST_B);
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // PUBLIC STATIC METHODS (packed ARGB)
+    public static int blend(int bottom, int top) {
+        int tFac = channel(top, COL_LSHIFT_OFST_A);
+        if (tFac == 0xFF) return top;
+        if (tFac == 0x00) return bottom;
+
+        int bFac = 0xFF - tFac;
+        return opaque(
+            div255(channel(top, COL_LSHIFT_OFST_R) * tFac + channel(bottom, COL_LSHIFT_OFST_R) * bFac),
+            div255(channel(top, COL_LSHIFT_OFST_G) * tFac + channel(bottom, COL_LSHIFT_OFST_G) * bFac),
+            div255(channel(top, COL_LSHIFT_OFST_B) * tFac + channel(bottom, COL_LSHIFT_OFST_B) * bFac)
+        );
+    }
+
+    public static int add(int c1, int c2) {
+        return opaque(
+            channel(c1, COL_LSHIFT_OFST_R) + channel(c2, COL_LSHIFT_OFST_R),
+            channel(c1, COL_LSHIFT_OFST_G) + channel(c2, COL_LSHIFT_OFST_G),
+            channel(c1, COL_LSHIFT_OFST_B) + channel(c2, COL_LSHIFT_OFST_B)
+        );
+    }
+
+    public static int multiply(int c1, int c2) {
+        return opaque(
+            div255(channel(c1, COL_LSHIFT_OFST_R) * channel(c2, COL_LSHIFT_OFST_R)),
+            div255(channel(c1, COL_LSHIFT_OFST_G) * channel(c2, COL_LSHIFT_OFST_G)),
+            div255(channel(c1, COL_LSHIFT_OFST_B) * channel(c2, COL_LSHIFT_OFST_B))
+        );
+    }
+
+    public static int multiply(int c, float fac) {
+        return multiply(c, fac, fac, fac);
+    }
+
+    public static int multiply(int c, float facR, float facG, float facB) {
+        return opaque(
+            (int)(channel(c, COL_LSHIFT_OFST_R) * facR),
+            (int)(channel(c, COL_LSHIFT_OFST_G) * facG),
+            (int)(channel(c, COL_LSHIFT_OFST_B) * facB)
+        );
+    }
+
+    /////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
     public int toInt( ) {
         return colorData;
@@ -59,10 +123,10 @@ public final class QColor extends QEncoding {
         return (colorData & channelMask) >>> channelOffset;
     }
 
-    public int getR( ) { return getChannel(Channel.R); };
-    public int getG( ) { return getChannel(Channel.G); };
-    public int getB( ) { return getChannel(Channel.B); };
-    public int getA( ) { return getChannel(Channel.A); };
+    public int getR( ) { return channel(colorData, COL_LSHIFT_OFST_R); };
+    public int getG( ) { return channel(colorData, COL_LSHIFT_OFST_G); };
+    public int getB( ) { return channel(colorData, COL_LSHIFT_OFST_B); };
+    public int getA( ) { return channel(colorData, COL_LSHIFT_OFST_A); };
 
     public QColor setChannel(int val, Channel c) {
         int channelOffset;
@@ -88,7 +152,7 @@ public final class QColor extends QEncoding {
                 throw new QException(PointOfError.BadState, "bad switch state");
         }
 
-        val &= COL_CHNL_BMASK;
+        val = clampChannel(val);
         colorData = (colorData & ~(channelMask)) | (val << channelOffset);
 
         return this;
@@ -119,6 +183,31 @@ public final class QColor extends QEncoding {
 
     public QColor set(QColor toCopy) {
         this.colorData = toCopy.colorData;
+        return this;
+    }
+
+    public QColor blend(QColor top) {
+        colorData = blend(colorData, top.colorData);
+        return this;
+    }
+
+    public QColor add(QColor other) {
+        colorData = add(colorData, other.colorData);
+        return this;
+    }
+
+    public QColor multiply(QColor other) {
+        colorData = multiply(colorData, other.colorData);
+        return this;
+    }
+
+    public QColor multiply(float fac) {
+        colorData = multiply(colorData, fac);
+        return this;
+    }
+
+    public QColor multiply(float facR, float facG, float facB) {
+        colorData = multiply(colorData, facR, facG, facB);
         return this;
     }
 

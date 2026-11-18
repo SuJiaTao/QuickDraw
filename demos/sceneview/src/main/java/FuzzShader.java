@@ -115,9 +115,6 @@ public class FuzzShader extends QShader {
             diffuseAccum += (diffuse + phong) * (light.strength / dist);
         }
         
-        return multiplyColor(
-            texCol, 
-            Math.min(1.0f, ambient + diffuseAccum)
-        );
+        return texCol.multiply(Math.min(1.0f, ambient + diffuseAccum));
     }
 }

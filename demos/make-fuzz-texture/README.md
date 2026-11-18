@@ -28,6 +28,6 @@ Defined in [`MakeFuzzTexture.java`](src/main/java/MakeFuzzTexture.java):
      - Primary blue `(25, 76, 178)`
      - Secondary blue `(127, 153, 204)`
      - Tertiary blue `(204, 204, 229)`
-   - Uses bitwise-shifted coordinates `(x >> n, y >> m)` as seeds to `QShader.seededRandom(...)` and scales the pixel's brightness via `QShader.multiplyColor(...)` to produce a multi-frequency "fuzzy" procedural texture effect.
+   - Uses bitwise-shifted coordinates `(x >> n, y >> m)` as seeds to `QShader.seededRandom(...)` and scales the pixel's brightness via `QColor.multiply(...)` to produce a multi-frequency "fuzzy" procedural texture effect.
 3. **Saves Output**:
    - Writes the resulting image to `demos/make-fuzz-texture/out/Mascot256_AltEyes.png` using `QTexture.save(...)`.

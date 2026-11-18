@@ -66,6 +66,7 @@ Defined in [`settings.gradle`](settings.gradle):
 
 ### Color, Textures, and Render Buffers
 - **[`QColor.java`](lib/src/main/java/ca/bael/QDraw/QColor.java)**: 32-bit `ARGB` color wrapper (`0xAARRGGBB`). Channel values are `0..255`.
+  - Color math (`blend`, `add`, `multiply`) exists as static methods on packed `int` ARGB (allocation-free, used by the pipeline) and as in-place chainable instance methods. Results are opaque (`A = 0xFF`) and channels saturate at `0..255`.
 - **[`QSampleable.java`](lib/src/main/java/ca/bael/QDraw/QSampleable.java)**: Abstract 2D pixel source/target supporting UV sampling (`SampleType.Cutoff`, `Clamp`, `Repeat`) and functional pixel transforms (`mapColor`, `mapColorSpacial`, `copyTo`).
 - **[`QTexture.java`](lib/src/main/java/ca/bael/QDraw/QTexture.java)**: Subclasses `QSampleable`. Stores pixel data in **16x16 (`CHUNK_WIDTH x CHUNK_HEIGHT`) spatial chunks** (`translateIndex(x, y)`) using bitwise shifts/masks to maximize CPU cache locality during 2D UV sampling. Y coordinates are flipped on image load so `(0, 0)` corresponds to the bottom-left corner. Supports saving to `.png`.
 - **[`QRenderBuffer.java`](lib/src/main/java/ca/bael/QDraw/QRenderBuffer.java)**: Subclasses `QSampleable`. Wraps a `BufferedImage` (`TYPE_INT_ARGB` backed by `DataBufferInt`) and a `float[]` depth buffer. `coordToDataIndex(x, y)` inverts `y` so `(0, 0)` is bottom-left.
@@ -75,7 +76,7 @@ Defined in [`settings.gradle`](settings.gradle):
   - `ShaderRequirement[] requirements()` declaring required `Attribute`, `Uniform` (with expected `Class<?>`), and `Texture` slots.
   - `QVector3 vertexShader(VertexShaderContext context)` returning transformed vertex position and writing varyings via `setOutputToFragShader` / `forwardAttributeToFragShader`.
   - `QColor fragmentShader(FragmentShaderContext context)` reading interpolated varyings via `getOutputFromVertShader` and returning fragment `QColor`.
-  - Also provides fast XORSHIFT deterministic PRNG (`seededRandom`, `seededRandomVector`) and integer color math (`blendColor`, `addColor`, `multiplyColor`).
+  - Also provides fast XORSHIFT deterministic PRNG (`seededRandom`, `seededRandomVector`).
 - **[`QLight.java`](lib/src/main/java/ca/bael/QDraw/QLight.java)** & **[`QMaterial.java`](lib/src/main/java/ca/bael/QDraw/QMaterial.java)**: Data structures for point/directional lights and Blinn-Phong material properties (`ambient`, `diffuse`, `specular`, `shininess`).
 - **[`QViewer.java`](lib/src/main/java/ca/bael/QDraw/QViewer.java)**: The software rendering pipeline.
   - Built-in render modes (`RenderMode`): `SolidFill`, `Textured`, `Normal`, `Material` (Blinn-Phong), and `CustomShader`.

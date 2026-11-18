@@ -1342,12 +1342,12 @@ public final class QViewer extends QEncoding {
         }
 
         // BLEND FRAGMENT TO BELOW COLOR AND WRITE TO RENDERTARGET
-        QColor blendedColor = QShader.blendColor(
-                new QColor(renderTarget.getColor(drawX, drawY)),
-                fragColor);
+        int blendedColor = QColor.blend(
+                renderTarget.getColor(drawX, drawY),
+                fragColor.toInt());
 
         renderTarget.setDepth(drawX, drawY, invDepth);
-        renderTarget.setColor(drawX, drawY, blendedColor.toInt());
+        renderTarget.setColor(drawX, drawY, blendedColor);
     }
 
     ////////////////////////////////////////////////////////////////
