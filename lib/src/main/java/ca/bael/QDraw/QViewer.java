@@ -160,14 +160,19 @@ public final class QViewer {
 
     public void setVertexAttribSlot(
             int slot,
-            QAttribIndexer indexer) {
-        state.slotAttribs[slot] = indexer;
+            QAttribBuffer attribs) {
+        state.slotAttribs[slot] = attribs;
+    }
+
+    public void setIndexBuffer(QIndexBuffer indexBuffer) {
+        state.indexBuffer = indexBuffer;
     }
 
     public void clearVertexAttribSlots() {
         for (int i = 0; i < state.slotAttribs.length; i++) {
             state.slotAttribs[i] = null;
         }
+        state.indexBuffer = null;
     }
 
     public void clearFrame() {
@@ -176,6 +181,11 @@ public final class QViewer {
     }
 
     public void draw() {
+        if (state.indexBuffer == null) {
+            throw new QException(
+                    PointOfError.BadState,
+                    "No index buffer set");
+        }
         QShader shader = internalGetRelevantShader();
         ShaderRequirement[] requirements = shader.requirements();
         internalEnsureShaderRequirements(requirements);
@@ -202,9 +212,10 @@ public final class QViewer {
 
     public void drawMesh(
             QMesh mesh) {
-        setVertexAttribSlot(DEFAULT_SHADER_POSITION_SLOT, mesh.getPosIndexer());
-        setVertexAttribSlot(DEFAULT_SHADER_UV_SLOT, mesh.getUVIndexer());
-        setVertexAttribSlot(DEFAULT_SHADER_NORMAL_SLOT, mesh.getNormalIndexer());
+        setIndexBuffer(mesh.getIndexBuffer());
+        setVertexAttribSlot(DEFAULT_SHADER_POSITION_SLOT, mesh.getPosBuffer());
+        setVertexAttribSlot(DEFAULT_SHADER_UV_SLOT, mesh.getUVBuffer());
+        setVertexAttribSlot(DEFAULT_SHADER_NORMAL_SLOT, mesh.getNormalBuffer());
 
         draw();
 

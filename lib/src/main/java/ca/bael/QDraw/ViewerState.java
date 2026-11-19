@@ -21,7 +21,8 @@ final class ViewerState {
 
     public final QUniform<?>[]    slotUniforms = new QUniform<?>[QViewer.SHADER_UNIFORM_SLOTS];
     public final QSampleable[]    slotTextures = new QSampleable[QViewer.SHADER_TEXTURE_SLOTS];
-    public final QAttribIndexer[] slotAttribs  = new QAttribIndexer[QViewer.SHADER_VERTEX_ATTRIB_SLOTS];
+    public final QAttribBuffer[]  slotAttribs  = new QAttribBuffer[QViewer.SHADER_VERTEX_ATTRIB_SLOTS];
+    public QIndexBuffer           indexBuffer;
 
     ////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
@@ -36,6 +37,7 @@ final class ViewerState {
         copy.sampleType = sampleType;
         copy.depthTest  = depthTest;
         copy.depthWrite = depthWrite;
+        copy.indexBuffer = indexBuffer;
         System.arraycopy(slotTextures, 0, copy.slotTextures, 0, slotTextures.length);
         System.arraycopy(slotAttribs, 0, copy.slotAttribs, 0, slotAttribs.length);
         for (int i = 0; i < slotUniforms.length; i++) {

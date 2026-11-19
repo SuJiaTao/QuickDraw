@@ -153,15 +153,14 @@ public final class QMesh {
     private QAttribBuffer  posBuffer;
     private QAttribBuffer  uvBuffer;
     private QAttribBuffer  normalBuffer;
-    private QAttribIndexer posIndexer;
-    private QAttribIndexer uvIndexer;
-    private QAttribIndexer normalIndexer;
+    private QIndexBuffer   indexBuffer;
 
     /////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
-    public QAttribIndexer getPosIndexer( ) { return posIndexer; }
-    public QAttribIndexer getUVIndexer( ) { return uvIndexer; }
-    public QAttribIndexer getNormalIndexer( ) { return normalIndexer; }
+    public QIndexBuffer  getIndexBuffer( ) { return indexBuffer; }
+    public QAttribBuffer getPosBuffer( ) { return posBuffer; }
+    public QAttribBuffer getUVBuffer( ) { return uvBuffer; }
+    public QAttribBuffer getNormalBuffer( ) { return normalBuffer; }
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE METHODS
@@ -324,15 +323,7 @@ public final class QMesh {
         uvBuffer     = gatherAttribs(uvBuffer, uniqueUVIndicies.toArray( ));
         normalBuffer = gatherAttribs(normalBuffer, uniqueNormalIndicies.toArray( ));
 
-        posIndexer = new QAttribIndexer(vertIndicies, totalVertCount);
-        posIndexer.setAttribBuffer(posBuffer);
-
-        uvIndexer = new QAttribIndexer(posIndexer);
-        uvIndexer.setAttribBuffer(uvBuffer);
-
-        normalIndexer = new QAttribIndexer(posIndexer);
-        normalIndexer.setAttribBuffer(normalBuffer);
-
+        indexBuffer = QIndexBuffer.wrap(vertIndicies);
     }
 
     private static QAttribBuffer gatherAttribs(QAttribBuffer src, int[] srcIndicies) {
@@ -369,13 +360,23 @@ public final class QMesh {
             initMesh(inPosns, inUVs, inNormals, inFaceIndicies);
     }
 
+    public QMesh(
+        QIndexBuffer  inIndexBuffer,
+        QAttribBuffer inPosBuffer,
+        QAttribBuffer inUVBuffer,
+        QAttribBuffer inNormalBuffer
+        ) {
+        indexBuffer  = inIndexBuffer;
+        posBuffer    = inPosBuffer;
+        uvBuffer     = inUVBuffer;
+        normalBuffer = inNormalBuffer;
+    }
+
     public QMesh(QMesh toCopy) {
         posBuffer     = toCopy.posBuffer;
         uvBuffer      = toCopy.uvBuffer;
         normalBuffer  = toCopy.normalBuffer;
-        posIndexer    = toCopy.posIndexer;
-        uvIndexer     = toCopy.uvIndexer;
-        normalIndexer = toCopy.normalIndexer;
+        indexBuffer   = toCopy.indexBuffer;
     }
 
     public QMesh(String objFilePath) {

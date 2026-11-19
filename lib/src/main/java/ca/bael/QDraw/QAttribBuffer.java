@@ -13,9 +13,9 @@ public final class QAttribBuffer {
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
-    private float[] buffer;
-    private int     compsPerAttrib;
-    private int     attribCount;
+    private final float[] buffer;
+    private final int     compsPerAttrib;
+    private final int     attribCount;
 
     /////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
@@ -49,34 +49,48 @@ public final class QAttribBuffer {
         );
     }
 
-    /////////////////////////////////////////////////////////////////
-    // CONSTRUCTORS
-    public QAttribBuffer(QAttribBuffer toCopy) {
-        buffer = new float[toCopy.buffer.length];
-        System.arraycopy(
-            toCopy.buffer,
-            0, 
-            buffer, 
-            0, 
-            buffer.length
-        );
-        compsPerAttrib = toCopy.compsPerAttrib;
-        attribCount    = toCopy.attribCount;
+    public void set(int attribIndex, float... values) {
+        System.arraycopy(values, 0, buffer, getAttribBaseOffset(attribIndex), compsPerAttrib);
     }
 
-    public QAttribBuffer(float[] bufferIn, int numCompsPerAttrib, int numAttribs) {
+    public static QAttribBuffer wrap(float[] bufferIn, int numCompsPerAttrib) {
+        return new QAttribBuffer(bufferIn, numCompsPerAttrib);
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // CONSTRUCTORS
+    private QAttribBuffer(float[] bufferIn, int numCompsPerAttrib) {
         if (numCompsPerAttrib < MIN_COMPS_PER_ATTRIB) {
             throw new QException(
-                PointOfError.InvalidParameter, 
-                "numAttribs must be greater than " +
+                PointOfError.InvalidParameter,
+                "numCompsPerAttrib must be at least " +
                 MIN_COMPS_PER_ATTRIB +
-                ". Given was: " + numAttribs
+                ". Given was: " + numCompsPerAttrib
+            );
+        }
+        if ((bufferIn.length % numCompsPerAttrib) != 0) {
+            throw new QException(
+                PointOfError.InvalidParameter,
+                "buffer length must be multiple of " + numCompsPerAttrib +
+                ". Given was: " + bufferIn.length
             );
         }
 
+        buffer         = bufferIn;
         compsPerAttrib = numCompsPerAttrib;
-        attribCount    = numAttribs;
-        buffer         = new float[numCompsPerAttrib * numAttribs];
+        attribCount    = bufferIn.length / numCompsPerAttrib;
+    }
+
+    public QAttribBuffer(int numCompsPerAttrib, int numAttribs) {
+        this(new float[numCompsPerAttrib * numAttribs], numCompsPerAttrib);
+    }
+
+    public QAttribBuffer(QAttribBuffer toCopy) {
+        this(toCopy.buffer.clone( ), toCopy.compsPerAttrib);
+    }
+
+    public QAttribBuffer(float[] bufferIn, int numCompsPerAttrib, int numAttribs) {
+        this(numCompsPerAttrib, numAttribs);
         System.arraycopy(bufferIn, 0, buffer, 0, buffer.length);
     }
 }

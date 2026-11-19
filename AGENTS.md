@@ -59,9 +59,9 @@ Defined in [`settings.gradle`](settings.gradle):
   - Trigonometric helpers `cosDeg(degrees)` and `sinDeg(degrees)` take **degrees**, not radians.
 
 ### Geometry & Attributes
-- **[`QAttribBuffer.java`](lib/src/main/java/ca/bael/QDraw/QAttribBuffer.java)**: Contiguous `float[]` buffer storing `attribCount` attributes of `compsPerAttrib` floats each.
-- **[`QAttribIndexer.java`](lib/src/main/java/ca/bael/QDraw/QAttribIndexer.java)**: Holds `int[]` triangle vertex indices (length must be a multiple of 3) referencing a `QAttribBuffer`. `new QAttribIndexer(other)` shares `other`'s index array.
-- **[`QMesh.java`](lib/src/main/java/ca/bael/QDraw/QMesh.java)**: Manages position (3 floats), UV (2 floats), and normal (3 floats) `QAttribBuffer`/`QAttribIndexer` pairs. At load, each unique (position, uv, normal) tuple becomes one vertex and all three indexers share a single index array.
+- **[`QAttribBuffer.java`](lib/src/main/java/ca/bael/QDraw/QAttribBuffer.java)**: Fixed-size, writable `float[]` buffer storing `attribCount` attributes of `compsPerAttrib` floats each. `new QAttribBuffer(comps, count)` is zero-filled, `wrap(data, comps)` does not copy, `set(i, ...)` writes one attribute.
+- **[`QIndexBuffer.java`](lib/src/main/java/ca/bael/QDraw/QIndexBuffer.java)**: Fixed-size, writable `int[]` triangle vertex indices (length must be a multiple of 3). `new QIndexBuffer(triCount)` is zero-filled, `wrap(indices)` does not copy. One index buffer per draw indexes every bound attribute slot.
+- **[`QMesh.java`](lib/src/main/java/ca/bael/QDraw/QMesh.java)**: One `QIndexBuffer` plus position (3 floats), UV (2 floats), and normal (3 floats) `QAttribBuffer`s. At `.obj`/array load, each unique (position, uv, normal) tuple becomes one vertex. `new QMesh(indexBuffer, pos, uv, normal)` takes buffers directly with no deduplication.
   - Can be constructed from raw arrays or a Wavefront `.obj` file path (`new QMesh(String objFilePath)`).
   - The `.obj` parser requires `v`, `vt`, `vn`, and face definitions formatted as `f p/uv/n ...` (1-indexed, must include normals). Faces with more than 3 vertices are triangulated via triangle-fan tessellation.
 
@@ -94,8 +94,8 @@ Defined in [`settings.gradle`](settings.gradle):
     - Textures (`0..15`): `0` = primary `QSampleable`.
   - `flush()` runs stages 1–5 for every queued draw first (in parallel across draws, each geometry worker emitting screen-space vertices and triangle records into its own reusable `TriangleQueue`), then runs stage 6 over all emitted triangles in draw order.
   - **Pipeline stages in `GeometryWorker` (1-5) / `RasterWorker` (6)**:
-    1. Validates vertex attribute indexers have matching triangle counts and checks `QShader.requirements()`.
-    2. Executes `vertexShader` for each of the 3 triangle vertices. When all bound indexers share one index array (as `QMesh` produces), results are cached per index for the duration of the draw, so vertex shaders must be deterministic in their attributes and uniforms.
+    1. Validates every index is within every bound attribute buffer (`draw()` already checked `QShader.requirements()` and that an index buffer is set).
+    2. Executes `vertexShader` for each of the 3 triangle vertices. Results are cached per vertex index for the duration of the draw, so vertex shaders must be deterministic in their attributes and uniforms.
     3. Computes face normal (`QVector3.cross`) and culls backfacing triangles (`QVector3.dot(normal, rayToCenter) > 0`).
     4. Clips triangles against `nearClip` (`Z > nearClip` is behind the camera; visible geometry has negative Z). Clips 1-vertex-behind into 2 triangles (quad) and 2-vertices-behind into 1 triangle, linearly interpolating shader outputs and preserving clockwise winding order.
     5. Projects vertices (`posn[Z] = 1.0f / posn[Z]`, `posn[X,Y] *= -posn[Z]`) and maps `viewBounds` to screen coordinates.
@@ -108,7 +108,7 @@ Defined in [`settings.gradle`](settings.gradle):
 ## Important Gotchas & Conventions for Agents
 
 1. **`QViewer.drawMesh()` Clears All Slots After Drawing**:
-   - Calling `viewer.drawMesh(mesh)` automatically calls `clearTextureSlots()`, `clearUniformSlots()`, and `clearVertexAttribSlots()` after `draw()`. Any uniforms (matrices, lights, materials) and textures **must be re-bound before each `drawMesh()` call**.
+   - Calling `viewer.drawMesh(mesh)` automatically calls `clearTextureSlots()`, `clearUniformSlots()`, and `clearVertexAttribSlots()` (which also clears the index buffer) after `draw()`. Any uniforms (matrices, lights, materials) and textures **must be re-bound before each `drawMesh()` call**.
    - `draw()`/`drawMesh()` only **queue** the draw (shader requirements are still checked immediately). Nothing is rendered until `flush()`, which must be called before the render buffer is read or presented (e.g. before `QWindow.updateFrame()`). `clearFrame()` flushes first.
    - Queued draws capture viewer state (render mode, shader, fill color, sample type, near clip, view bounds, slots). Uniform values are copied via `QUniform.snapshot()`, so they may be modified right after `drawMesh()`; textures, meshes, and shader instances are captured by reference and must not be modified until `flush()`.
    - Errors raised while shading (e.g. unwritten outputs) surface from `flush()`, not `drawMesh()`.

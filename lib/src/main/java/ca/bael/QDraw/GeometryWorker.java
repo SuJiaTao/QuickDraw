@@ -47,27 +47,26 @@ final class GeometryWorker {
                     PointOfError.BadState,
                     "Render target unassigned");
         }
-        QAttribIndexer[] slotAttribs = draw.state.slotAttribs;
+        QAttribBuffer[] slotAttribs = draw.state.slotAttribs;
+        int[] indicies = draw.state.indexBuffer.getIndicies();
+        int triCount = draw.state.indexBuffer.getTriCount();
 
-        // ENSURE ALL INDEXERS HAVE THE SAME TRI COUNT
-        int triCount = -1;
-        for (int slot = 0; slot < slotAttribs.length; slot++) {
-            if (slotAttribs[slot] == null)
-                continue;
-            if (triCount == -1) {
-                triCount = slotAttribs[slot].getTriCount();
-                continue;
-            }
-            if (slotAttribs[slot].getTriCount() != triCount) {
+        int vertCount = 0;
+        for (int index : indicies) {
+            if (index < 0) {
                 throw new QException(
-                        PointOfError.BadState,
-                        "Not all vertex attribute slots are the same length.");
+                        PointOfError.InvalidData,
+                        "Negative vertex index: " + index);
             }
+            vertCount = Math.max(vertCount, index + 1);
         }
-        if (triCount == -1) {
-            throw new QException(
-                    PointOfError.BadState,
-                    "No vertex attribute slots set!");
+        for (QAttribBuffer attribs : slotAttribs) {
+            if (attribs != null && attribs.getAttribCount() < vertCount) {
+                throw new QException(
+                        PointOfError.InvalidData,
+                        "Vertex index " + (vertCount - 1) +
+                        " exceeds attribute buffer of size " + attribs.getAttribCount());
+            }
         }
 
         vctx.uniforms = draw.state.slotUniforms;
@@ -86,7 +85,7 @@ final class GeometryWorker {
             vert.shaderOutputs = new float[draw.layout.total];
         }
 
-        vertexCache.prepare(slotAttribs, draw.layout.total);
+        vertexCache.prepare(indicies, vertCount, draw.layout.total);
 
         draw.data = draw.shader.beginDraw(vctx);
         vctx.drawData = draw.data;
@@ -181,20 +180,16 @@ final class GeometryWorker {
         vctx.outputs = vert.shaderOutputs;
 
         // POPULATE VERTEX SHADER INPUTS
-        QAttribIndexer[] slotAttribs = draw.state.slotAttribs;
+        QAttribBuffer[] slotAttribs = draw.state.slotAttribs;
         for (int slot = 0; slot < slotAttribs.length; slot++) {
             // skip if slot is unused
-            QAttribIndexer indexer = slotAttribs[slot];
-            if (indexer == null) {
+            QAttribBuffer attribs = slotAttribs[slot];
+            if (attribs == null) {
                 continue;
             }
 
-            // populate attribute slot using indexer
-            indexer.index(
-                    tri.triNum,
-                    triVertNum,
-                    0,
-                    vctx.attributes[slot]);
+            // populate attribute slot using vertex index
+            attribs.getAttrib(0, vctx.attributes[slot], idx);
         }
 
         // CALL SHADER
