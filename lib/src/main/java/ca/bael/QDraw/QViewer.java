@@ -4,6 +4,7 @@
 
 package ca.bael.QDraw;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import ca.bael.QDraw.QException.PointOfError;
@@ -345,6 +346,7 @@ public final class QViewer extends QEncoding {
     private final Triangle workTri = new Triangle(0);
     private final VertexCache vertexCache = new VertexCache();
     private QShader drawShader;
+    private final ArrayList<DrawState> queuedDraws = new ArrayList<>();
 
     ////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
@@ -424,12 +426,27 @@ public final class QViewer extends QEncoding {
     }
 
     public void clearFrame() {
+        flush();
         renderTarget.clearColorBuffer();
         renderTarget.clearDepthBuffer();
     }
 
     public void draw() {
-        internalDraw();
+        internalEnsureShaderRequirements(internalGetRelevantShader().requirements());
+        queuedDraws.add(new DrawState(true));
+    }
+
+    public void flush() {
+        DrawState live = new DrawState(false);
+        try {
+            for (DrawState queued : queuedDraws) {
+                queued.apply();
+                internalDraw();
+            }
+        } finally {
+            queuedDraws.clear();
+            live.apply();
+        }
     }
 
     public void drawMesh(
@@ -447,6 +464,62 @@ public final class QViewer extends QEncoding {
 
     ////////////////////////////////////////////////////////////////
     // PRIVATE CLASSES
+    private final class DrawState {
+        ////////////////////////////////////////////////////////////////
+        // PRIVATE MEMBERS
+        private final float            nearClip;
+        private final float            viewLeft;
+        private final float            viewRight;
+        private final float            viewBottom;
+        private final float            viewTop;
+        private final QShader          customShader;
+        private final RenderMode       renderMode;
+        private final QColor           fillColor;
+        private final SampleType       sampleType;
+        private final QUniform<?>[]    uniforms;
+        private final QSampleable[]    textures;
+        private final QAttribIndexer[] attribs;
+
+        ////////////////////////////////////////////////////////////////
+        // PUBLIC METHODS
+        public void apply() {
+            QViewer.this.nearClip     = nearClip;
+            QViewer.this.viewLeft     = viewLeft;
+            QViewer.this.viewRight    = viewRight;
+            QViewer.this.viewBottom   = viewBottom;
+            QViewer.this.viewTop      = viewTop;
+            QViewer.this.customShader = customShader;
+            QViewer.this.renderMode   = renderMode;
+            QViewer.this.fillColor    = fillColor;
+            QViewer.this.sampleType   = sampleType;
+            System.arraycopy(uniforms, 0, slotUniforms, 0, uniforms.length);
+            System.arraycopy(textures, 0, slotTextures, 0, textures.length);
+            System.arraycopy(attribs, 0, slotAttribs, 0, attribs.length);
+        }
+
+        ////////////////////////////////////////////////////////////////
+        // CONSTRUCTORS
+        public DrawState(boolean snapshot) {
+            nearClip     = QViewer.this.nearClip;
+            viewLeft     = QViewer.this.viewLeft;
+            viewRight    = QViewer.this.viewRight;
+            viewBottom   = QViewer.this.viewBottom;
+            viewTop      = QViewer.this.viewTop;
+            customShader = QViewer.this.customShader;
+            renderMode   = QViewer.this.renderMode;
+            fillColor    = snapshot ? QViewer.this.fillColor.snapshot() : QViewer.this.fillColor;
+            sampleType   = QViewer.this.sampleType;
+            uniforms     = slotUniforms.clone();
+            textures     = slotTextures.clone();
+            attribs      = slotAttribs.clone();
+            for (int i = 0; snapshot && i < uniforms.length; i++) {
+                if (uniforms[i] != null) {
+                    uniforms[i] = uniforms[i].snapshot();
+                }
+            }
+        }
+    }
+
     private static class Vertex {
         ////////////////////////////////////////////////////////////////
         // PUBLIC MEMBERS

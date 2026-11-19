@@ -107,6 +107,9 @@ Defined in [`settings.gradle`](settings.gradle):
 
 1. **`QViewer.drawMesh()` Clears All Slots After Drawing**:
    - Calling `viewer.drawMesh(mesh)` automatically calls `clearTextureSlots()`, `clearUniformSlots()`, and `clearVertexAttribSlots()` after `draw()`. Any uniforms (matrices, lights, materials) and textures **must be re-bound before each `drawMesh()` call**.
+   - `draw()`/`drawMesh()` only **queue** the draw (shader requirements are still checked immediately). Nothing is rendered until `flush()`, which must be called before the render buffer is read or presented (e.g. before `QWindow.updateFrame()`). `clearFrame()` flushes first.
+   - Queued draws capture viewer state (render mode, shader, fill color, sample type, near clip, view bounds, slots). Uniform values are copied via `QUniform.snapshot()`, so they may be modified right after `drawMesh()`; textures, meshes, and shader instances are captured by reference and must not be modified until `flush()`.
+   - Errors raised while shading (e.g. unwritten outputs) surface from `flush()`, not `drawMesh()`.
 2. **Coordinate System & Camera Space**:
    - The camera looks down the **negative Z-axis** (`nearClip` defaults to `-0.005f` and is clamped via `Math.min(MIN_NEAR_CLIP, val)`). Geometry in front of the camera has `Z < nearClip`.
    - Screen space and texture space have `(0, 0)` at the **bottom-left**.

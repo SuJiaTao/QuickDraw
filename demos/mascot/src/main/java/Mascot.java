@@ -27,15 +27,21 @@ public final class Mascot {
 
     private static int  fpsFrames = 0;
     private static long fpsWindowStart = System.nanoTime();
+    private static long fpsFlushNanos = 0;
 
     public static void presentFrame() {
+        long flushStart = System.nanoTime();
+        eyes.flush();
+        fpsFlushNanos += System.nanoTime() - flushStart;
         window.updateFrame();
         fpsFrames++;
         long now = System.nanoTime();
         if (now - fpsWindowStart >= 1_000_000_000L) {
             double ms = (now - fpsWindowStart) / 1e6;
-            System.out.printf("%d fps (%.2f ms/frame)%n", fpsFrames, ms / fpsFrames);
+            System.out.printf("%d fps (%.2f ms/frame, %.2f ms flush)%n",
+                fpsFrames, ms / fpsFrames, fpsFlushNanos / 1e6 / fpsFrames);
             fpsFrames = 0;
+            fpsFlushNanos = 0;
             fpsWindowStart = now;
         }
     }

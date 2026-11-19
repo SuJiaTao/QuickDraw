@@ -65,6 +65,7 @@ public final class Profile {
                     texTimer.beginTime();
                     viewer.setMatrix(tMatrix);
                     viewer.drawMesh(mesh);
+                    viewer.flush( );
                     texTimer.endTime();
 
                     window.updateFrame( );
@@ -76,6 +77,7 @@ public final class Profile {
                     rbTimer.beginTime();
                     viewer.setMatrix(tMatrix);
                     viewer.drawMesh(mesh);
+                    viewer.flush( );
                     rbTimer.endTime();
 
                     window.updateFrame( );
@@ -89,6 +91,7 @@ public final class Profile {
                     rbTimer.beginTime();
                     viewer.setMatrix(tMatrix);
                     viewer.drawMesh(mesh);
+                    viewer.flush( );
                     rbTimer.endTime();
 
                     window.updateFrame( );
@@ -100,6 +103,7 @@ public final class Profile {
                     texTimer.beginTime();
                     viewer.setMatrix(tMatrix);
                     viewer.drawMesh(mesh);
+                    viewer.flush( );
                     texTimer.endTime();
 
                     window.updateFrame( );

@@ -152,7 +152,8 @@ public final class Sceneview {
             viewer.setTexture(tex1);
             viewer.setMatrix(QMatrix4x4.multiply(modelMatrix1, viewMatrix));
             viewer.drawMesh(mesh1);
-            
+            viewer.flush( );
+
             window.updateFrame( );
         }
     }
