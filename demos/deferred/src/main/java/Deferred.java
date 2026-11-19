@@ -5,9 +5,20 @@
 import java.awt.event.KeyEvent;
 import java.util.Random;
 
-import ca.bael.QDraw.*;
+import ca.bael.QDraw.QColor;
+import ca.bael.QDraw.QLight;
+import ca.bael.QDraw.QLights;
+import ca.bael.QDraw.QMaterial;
+import ca.bael.QDraw.QMatrix4x4;
+import ca.bael.QDraw.QMesh;
+import ca.bael.QDraw.QRenderBuffer;
 import ca.bael.QDraw.QRenderBuffer.GBufferFormat;
+import ca.bael.QDraw.QScalar;
+import ca.bael.QDraw.QTexture;
+import ca.bael.QDraw.QVector3;
+import ca.bael.QDraw.QViewer;
 import ca.bael.QDraw.QViewer.RenderMode;
+import ca.bael.QDraw.QWindow;
 
 public final class Deferred {
     public static final int   WINDOW_WIDTH     = 1200;
@@ -15,9 +26,9 @@ public final class Deferred {
     public static final int   FB_WIDTH         = WINDOW_WIDTH >> 1;
     public static final int   FB_HEIGHT        = WINDOW_HEIGHT >> 1;
     public static final float FB_ASPECT        = (float) FB_WIDTH / (float) FB_HEIGHT;
-    public static final int   LATTICE_X        = 16;
+    public static final int   LATTICE_X        = 20;
     public static final int   LATTICE_Y        = 1;
-    public static final int   LATTICE_Z        = 16;
+    public static final int   LATTICE_Z        = 20;
     public static final float LATTICE_SPACING  = 2.2f;
     public static final float MASCOT_SCALE     = 0.2f;
     public static final float MASCOT_HEIGHT    = 9.6f * MASCOT_SCALE;
@@ -76,6 +87,13 @@ public final class Deferred {
                 .translate(0.0f, 0.0f, -CAMERA_DISTANCE);
     }
 
+    private static QMatrix4x4 inverseViewMatrix(float yaw) {
+        return QMatrix4x4.Identity()
+                .translate(0.0f, 0.0f, CAMERA_DISTANCE)
+                .rotate(-CAMERA_PITCH, 0.0f, 0.0f)
+                .rotate(0.0f, -yaw, 0.0f);
+    }
+
     private static QMatrix4x4 modelView(QMatrix4x4 view, QVector3 position, float scale) {
         return QMatrix4x4.multiply(QMatrix4x4.TRS(position, QVector3.Zero(), QVector3.One().multiply3(scale)), view);
     }
@@ -95,7 +113,10 @@ public final class Deferred {
 
         QViewer lightPass = new QViewer(frameBuffer);
         lightPass.setRenderMode(RenderMode.CustomShader);
-        lightPass.setCustomShader(new LightingShader(FB_WIDTH, FB_HEIGHT, -FB_ASPECT, FB_ASPECT, -1.0f, 1.0f));
+        float halfX = 0.5f * LATTICE_X * LATTICE_SPACING;
+        float halfZ = 0.5f * LATTICE_Z * LATTICE_SPACING;
+        lightPass.setCustomShader(new LightingShader(FB_WIDTH, FB_HEIGHT, -FB_ASPECT, FB_ASPECT, -1.0f, 1.0f,
+            new QVector3(-halfX, -0.5f * MASCOT_HEIGHT, -halfZ), new QVector3(halfX, 0.5f * MASCOT_HEIGHT, halfZ)));
 
         int     view       = LightingShader.VIEW_LIT;
         boolean prevUp     = false;
@@ -153,6 +174,7 @@ public final class Deferred {
             lightPass.setLights(new QLights(lights));
             lightPass.setUniformSlot(QViewer.DEFAULT_SHADER_MATERIAL_SLOT, LIT_MATERIAL);
             lightPass.setUniformSlot(LightingShader.VIEW_MODE_UNIFORM_SLOT, new QScalar(view));
+            lightPass.setUniformSlot(LightingShader.INV_VIEW_UNIFORM_SLOT, inverseViewMatrix(yaw));
             lightPass.drawMesh(SCREEN_QUAD);
             lightPass.flush();
             window.updateFrame();

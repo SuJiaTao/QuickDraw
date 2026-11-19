@@ -11,6 +11,7 @@ public final class LightingShader extends QShader {
     public static final int      GBUFFER_TEXTURE_SLOT   = 0;
     public static final int      ALBEDO_TEXTURE_SLOT    = 1;
     public static final int      VIEW_MODE_UNIFORM_SLOT = 3;
+    public static final int      INV_VIEW_UNIFORM_SLOT  = 4;
     public static final int      VIEW_POSITION          = 0;
     public static final int      VIEW_NORMAL            = 1;
     public static final int      VIEW_UV                = 2;
@@ -26,14 +27,19 @@ public final class LightingShader extends QShader {
     private final float viewRight;
     private final float viewBottom;
     private final float viewTop;
+    private final QVector3 worldMin;
+    private final QVector3 worldMax;
 
-    public LightingShader(int width, int height, float viewLeft, float viewRight, float viewBottom, float viewTop) {
+    public LightingShader(int width, int height, float viewLeft, float viewRight, float viewBottom, float viewTop,
+                          QVector3 worldMin, QVector3 worldMax) {
         this.width      = width;
         this.height     = height;
         this.viewLeft   = viewLeft;
         this.viewRight  = viewRight;
         this.viewBottom = viewBottom;
         this.viewTop    = viewTop;
+        this.worldMin   = worldMin;
+        this.worldMax   = worldMax;
     }
 
     public ShaderRequirement[] requirements( ) {
@@ -43,7 +49,8 @@ public final class LightingShader extends QShader {
             new ShaderRequirement(ALBEDO_TEXTURE_SLOT, RequirementType.Texture, "mascot albedo"),
             new ShaderRequirement(DEFAULT_SHADER_LIGHTS_SLOT, RequirementType.Uniform, "view-space lights", QLights.class),
             new ShaderRequirement(DEFAULT_SHADER_MATERIAL_SLOT, RequirementType.Uniform, "lit material", QMaterial.class),
-            new ShaderRequirement(VIEW_MODE_UNIFORM_SLOT, RequirementType.Uniform, "view mode", QScalar.class)
+            new ShaderRequirement(VIEW_MODE_UNIFORM_SLOT, RequirementType.Uniform, "view mode", QScalar.class),
+            new ShaderRequirement(INV_VIEW_UNIFORM_SLOT, RequirementType.Uniform, "view-to-world matrix", QMatrix4x4.class)
         };
     }
 
@@ -59,7 +66,12 @@ public final class LightingShader extends QShader {
         switch (context.uniform(VIEW_MODE_UNIFORM_SLOT, QScalar.class).intValue( )) {
             case VIEW_POSITION: {
                 QVector3 p = reconstructPosition(context, invDepth, context.scratchVec3(0));
-                return context.color( ).set(band(p.getX( )), band(p.getY( )), band(p.getZ( )));
+                context.uniform(INV_VIEW_UNIFORM_SLOT, QMatrix4x4.class).transformPoint(p);
+                return context.color( ).set(
+                    normalized(p.getX( ), worldMin.getX( ), worldMax.getX( )),
+                    normalized(p.getY( ), worldMin.getY( ), worldMax.getY( )),
+                    normalized(p.getZ( ), worldMin.getZ( ), worldMax.getZ( ))
+                );
             }
             case VIEW_NORMAL: {
                 QVector3 n = context.gbufferVec3(GBUFFER_TEXTURE_SLOT, GBufferShader.NORMAL_GBUFFER, context.scratchVec3(0));
@@ -125,5 +137,9 @@ public final class LightingShader extends QShader {
     private static int band(float v) {
         float scaled = v / POSITION_BAND;
         return (int)((scaled - (float)Math.floor(scaled)) * 255.0f);
+    }
+
+    private static int normalized(float v, float min, float max) {
+        return (int)(Math.min(1.0f, Math.max(0.0f, (v - min) / (max - min))) * 255.0f);
     }
 }
