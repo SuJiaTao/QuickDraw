@@ -27,8 +27,8 @@ public final class QWindow {
     /////////////////////////////////////////////////////////////////
     // PUBLIC MEMBERS
     public QColor clearColor;
-    public long   drawNanos;
-    public long   showNanos;
+    public final QTimer drawTimer = new QTimer( );
+    public final QTimer showTimer = new QTimer( );
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE CLASSES
@@ -122,7 +122,7 @@ public final class QWindow {
             return;
         }
 
-        long drawStart = System.nanoTime( );
+        drawTimer.start( );
         windowGraphics.setRenderingHint(
             RenderingHints.KEY_INTERPOLATION,
             RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR
@@ -136,10 +136,10 @@ public final class QWindow {
             null
         );
 
-        long showStart = System.nanoTime( );
+        drawTimer.stop( );
+        showTimer.start( );
         window.getBufferStrategy().show();
-        drawNanos += showStart - drawStart;
-        showNanos += System.nanoTime( ) - showStart;
+        showTimer.stop( );
     }
 
     public boolean isKeyDown(int keyCode) {

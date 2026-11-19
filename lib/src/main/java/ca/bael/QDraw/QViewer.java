@@ -6,6 +6,12 @@ package ca.bael.QDraw;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import ca.bael.QDraw.QException.PointOfError;
 import ca.bael.QDraw.QSampleable.SampleType;
@@ -43,6 +49,13 @@ public final class QViewer extends QEncoding {
 
     public static final RenderMode DEFAULT_RENDER_MODE = RenderMode.Textured;
     public static final QColor DEFAULT_FILL_COLOR = QColor.White();
+    private static final int RASTER_THREADS = Runtime.getRuntime().availableProcessors();
+    private static final int STRIP_HEIGHT   = 8;
+    private static final ExecutorService RASTER_POOL = Executors.newFixedThreadPool(RASTER_THREADS, task -> {
+        Thread thread = new Thread(task, "QViewer-raster");
+        thread.setDaemon(true);
+        return thread;
+    });
     public static final SampleType DEFAULT_SAMPLE_TYPE = SampleType.Repeat;
     public static final int DEFAULT_SHADER_POSITION_SLOT = 0;
     public static final int DEFAULT_SHADER_UV_SLOT = 1;
@@ -79,7 +92,7 @@ public final class QViewer extends QEncoding {
         public QColor fragmentShader(
             FragmentShaderContext context
         ) {
-            return fillColor;
+            return context.fillColor;
         }
     };
 
@@ -137,7 +150,7 @@ public final class QViewer extends QEncoding {
             return context.color( ).set(context.texture(DEFAULT_SHADER_TEXTURE_SLOT).sample(
                 context.input(uvSlot, 0),
                 context.input(uvSlot, 1),
-                sampleType
+                context.sampleType
             ));
         }
     };
@@ -301,7 +314,7 @@ public final class QViewer extends QEncoding {
             float[] uv     = context.input(uvSlot, new float[2]);
             float[] normal = context.inputVec3(normalSlot).normalize( ).getComponents( );
             QColor texSampleColor = context.color( ).set(
-                tex == null ? 0xFFFFFFFF : tex.sample(uv[0], uv[1], sampleType)
+                tex == null ? 0xFFFFFFFF : tex.sample(uv[0], uv[1], context.sampleType)
             );
 
             float diffuseIntensity = 0f;
@@ -352,15 +365,20 @@ public final class QViewer extends QEncoding {
     private QSampleable[] slotTextures = new QSampleable[SHADER_TEXTURE_SLOTS];
     private QAttribIndexer[] slotAttribs = new QAttribIndexer[SHADER_VERTEX_ATTRIB_SLOTS];
     private final QShader.VertexShaderContext vctx = new QShader.VertexShaderContext();
-    private final QShader.FragmentShaderContext fctx = new QShader.FragmentShaderContext();
-    private final RasterSetup raster = new RasterSetup();
     private final float[] edge01 = new float[VCTR_NUM_CMPS];
     private final float[] edge02 = new float[VCTR_NUM_CMPS];
     private final float[] rayToCenter = new float[VCTR_NUM_CMPS];
     private final Triangle workTri = new Triangle(0);
     private final VertexCache vertexCache = new VertexCache();
+    private final TriangleQueue triQueue = new TriangleQueue();
     private QShader drawShader;
     private final ArrayList<DrawState> queuedDraws = new ArrayList<>();
+    private final List<RasterWorker> workers = new ArrayList<>();
+    private final AtomicInteger nextStrip = new AtomicInteger();
+    private boolean clearPending;
+
+    public final QTimer geometryTimer = new QTimer();
+    public final QTimer rasterTimer = new QTimer();
 
     ////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
@@ -441,8 +459,7 @@ public final class QViewer extends QEncoding {
 
     public void clearFrame() {
         flush();
-        renderTarget.clearColorBuffer();
-        renderTarget.clearDepthBuffer();
+        clearPending = true;
     }
 
     public void draw() {
@@ -453,12 +470,21 @@ public final class QViewer extends QEncoding {
     public void flush() {
         DrawState live = new DrawState(false);
         try {
+            geometryTimer.start();
+            triQueue.reset();
             for (DrawState queued : queuedDraws) {
                 queued.apply();
-                internalDraw();
+                internalProcessGeometry(queued);
             }
+            geometryTimer.stop();
+            rasterTimer.start();
+            if (!queuedDraws.isEmpty() || clearPending) {
+                internalRasterizeParallel();
+            }
+            rasterTimer.stop();
         } finally {
             queuedDraws.clear();
+            clearPending = false;
             live.apply();
         }
     }
@@ -493,6 +519,12 @@ public final class QViewer extends QEncoding {
         private final QUniform<?>[]    uniforms;
         private final QSampleable[]    textures;
         private final QAttribIndexer[] attribs;
+        private QShader                shader;
+        private QShader.OutputLayout   layout;
+        private int                    triStart;
+        private int                    triEnd;
+        private float                  minY = Float.POSITIVE_INFINITY;
+        private float                  maxY = Float.NEGATIVE_INFINITY;
 
         ////////////////////////////////////////////////////////////////
         // PUBLIC METHODS
@@ -542,12 +574,6 @@ public final class QViewer extends QEncoding {
 
         ////////////////////////////////////////////////////////////////
         // PUBLIC METHODS
-        public void project() {
-            posn[VCTR_INDEX_Z] = 1.0f / posn[VCTR_INDEX_Z];
-            posn[VCTR_INDEX_X] *= -posn[VCTR_INDEX_Z];
-            posn[VCTR_INDEX_Y] *= -posn[VCTR_INDEX_Z];
-        }
-
         public void findClippedShaderOutputs(
                 Vertex vISrc,
                 Vertex vFSrc,
@@ -678,35 +704,37 @@ public final class QViewer extends QEncoding {
     private static final class RasterSetup {
         ////////////////////////////////////////////////////////////////
         // PUBLIC MEMBERS
-        public float[] out0, out1, out2;
-        public float[] normal;
+        public float[] verts;
+        public int out0, out1, out2;
+        public final float[] normal = new float[VCTR_NUM_CMPS];
         public float z0, z1, z2;
         public float p2x, p2y;
         public float db0dx, db0dy, db1dx, db1dy;
 
         ////////////////////////////////////////////////////////////////
         // PUBLIC METHODS
-        public void set(Triangle tri) {
+        public void set(float[] v, int o0, int o1, int o2, int n) {
             // refer to
             // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_rasterizetri.c
-            float p0x = tri.getPosnX(0);
-            float p0y = tri.getPosnY(0);
-            float p1x = tri.getPosnX(1);
-            float p1y = tri.getPosnY(1);
-            p2x = tri.getPosnX(2);
-            p2y = tri.getPosnY(2);
+            float p0x = v[o0 + VCTR_INDEX_X];
+            float p0y = v[o0 + VCTR_INDEX_Y];
+            float p1x = v[o1 + VCTR_INDEX_X];
+            float p1y = v[o1 + VCTR_INDEX_Y];
+            p2x = v[o2 + VCTR_INDEX_X];
+            p2y = v[o2 + VCTR_INDEX_Y];
             float invDenom = 1.0f / ((p1y - p2y) * (p0x - p2x) + (p2x - p1x) * (p0y - p2y));
             db0dx = (p1y - p2y) * invDenom;
             db0dy = (p2x - p1x) * invDenom;
             db1dx = (p2y - p0y) * invDenom;
             db1dy = (p0x - p2x) * invDenom;
-            z0 = tri.getPosnZ(0);
-            z1 = tri.getPosnZ(1);
-            z2 = tri.getPosnZ(2);
-            out0 = tri.getVertex(0).shaderOutputs;
-            out1 = tri.getVertex(1).shaderOutputs;
-            out2 = tri.getVertex(2).shaderOutputs;
-            normal = tri.normal;
+            z0 = v[o0 + VCTR_INDEX_Z];
+            z1 = v[o1 + VCTR_INDEX_Z];
+            z2 = v[o2 + VCTR_INDEX_Z];
+            verts = v;
+            out0 = o0 + VCTR_NUM_CMPS;
+            out1 = o1 + VCTR_NUM_CMPS;
+            out2 = o2 + VCTR_NUM_CMPS;
+            System.arraycopy(v, n, normal, 0, VCTR_NUM_CMPS);
         }
 
         public float b0At(float x, float y) {
@@ -723,6 +751,7 @@ public final class QViewer extends QEncoding {
         // PRIVATE MEMBERS
         private int[]   indicies;
         private int[]   stamp   = new int[0];
+        private int[]   emitted = new int[0];
         private float[] posn    = new float[0];
         private float[] outputs = new float[0];
         private int     drawId  = 0;
@@ -749,6 +778,7 @@ public final class QViewer extends QEncoding {
             }
             if (stamp.length < size) {
                 stamp = new int[size];
+                emitted = new int[size];
                 posn = new float[size * VCTR_NUM_CMPS];
             }
             if (outputs.length < size * total) {
@@ -774,8 +804,281 @@ public final class QViewer extends QEncoding {
                 return;
             }
             stamp[idx] = drawId;
+            emitted[idx] = -1;
             System.arraycopy(vert.posn, 0, posn, idx * VCTR_NUM_CMPS, VCTR_NUM_CMPS);
             System.arraycopy(vert.shaderOutputs, 0, outputs, idx * total, total);
+        }
+
+        public int emitted(int idx) {
+            return idx < 0 || stamp[idx] != drawId ? -1 : emitted[idx];
+        }
+
+        public void setEmitted(int idx, int offset) {
+            if (idx >= 0) {
+                emitted[idx] = offset;
+            }
+        }
+    }
+
+    private static final class TriangleQueue {
+        ////////////////////////////////////////////////////////////////
+        // CONSTANTS
+        public static final int RECORD_SIZE = 4;
+
+        ////////////////////////////////////////////////////////////////
+        // PUBLIC MEMBERS
+        public float[] verts = new float[0];
+        public int[]   tris  = new int[0];
+        public int     vertEnd;
+        public int     triEnd;
+
+        ////////////////////////////////////////////////////////////////
+        // PUBLIC METHODS
+        public void reset() {
+            vertEnd = 0;
+            triEnd = 0;
+        }
+
+        public int allocVerts(int count) {
+            if (vertEnd + count > verts.length) {
+                verts = Arrays.copyOf(verts, Math.max(verts.length * 2, vertEnd + count));
+            }
+            int offset = vertEnd;
+            vertEnd += count;
+            return offset;
+        }
+
+        public void addTri(int v0, int v1, int v2, int normal) {
+            if (triEnd + RECORD_SIZE > tris.length) {
+                tris = Arrays.copyOf(tris, Math.max(tris.length * 2, RECORD_SIZE * 1024));
+            }
+            tris[triEnd++] = v0;
+            tris[triEnd++] = v1;
+            tris[triEnd++] = v2;
+            tris[triEnd++] = normal;
+        }
+    }
+
+    private final class RasterWorker implements java.util.concurrent.Callable<Void> {
+        ////////////////////////////////////////////////////////////////
+        // PRIVATE MEMBERS
+        private final RasterSetup raster = new RasterSetup();
+        private final QShader.FragmentShaderContext fctx = new QShader.FragmentShaderContext();
+        private QShader shader;
+        private int stripStart;
+        private int stripEnd;
+
+        ////////////////////////////////////////////////////////////////
+        // PUBLIC METHODS
+        public Void call() {
+            int height     = renderTarget.getHeight();
+            int stripCount = (height + STRIP_HEIGHT - 1) / STRIP_HEIGHT;
+            for (int strip = nextStrip.getAndIncrement(); strip < stripCount; strip = nextStrip.getAndIncrement()) {
+                stripStart = strip * STRIP_HEIGHT;
+                stripEnd   = Math.min(stripStart + STRIP_HEIGHT, height);
+                if (clearPending) {
+                    renderTarget.clearRows(stripStart, stripEnd);
+                }
+                for (DrawState draw : queuedDraws) {
+                    internalRasterize(draw);
+                }
+            }
+            return null;
+        }
+
+        ////////////////////////////////////////////////////////////////
+        // PRIVATE METHODS
+        private void internalRasterize(DrawState draw) {
+            if (Math.ceil(draw.maxY - 0.5f) <= stripStart || Math.ceil(draw.minY - 0.5f) >= stripEnd) {
+                return;
+            }
+            shader          = draw.shader;
+            fctx.uniforms   = draw.uniforms;
+            fctx.textures   = draw.textures;
+            fctx.sampleType = draw.sampleType;
+            fctx.fillColor  = draw.fillColor;
+            fctx.target     = renderTarget;
+            fctx.layout     = draw.layout;
+            if (fctx.inputs == null || fctx.inputs.length != draw.layout.total) {
+                fctx.inputs = new float[draw.layout.total];
+            }
+
+            int[] tris = triQueue.tris;
+            for (int t = draw.triStart; t < draw.triEnd; t += TriangleQueue.RECORD_SIZE) {
+                internalDrawTri(tris[t], tris[t + 1], tris[t + 2], tris[t + 3]);
+            }
+        }
+
+        private void internalDrawTri(int o0, int o1, int o2, int normal) {
+            float[] v = triQueue.verts;
+            int swap;
+
+            // NOTE:
+            // - a triangle must be rasterized in two parts, a line will be cut
+            // through it's middle highest verticie horizontally, and each partition
+            // will be draw seperately
+            // - the triangle will have to be sorted by height then cut
+            // - after being cut, the top two verticies will be sorted from left to right
+
+            if (v[o2 + VCTR_INDEX_Y] > v[o1 + VCTR_INDEX_Y]) { swap = o2; o2 = o1; o1 = swap; }
+            if (v[o1 + VCTR_INDEX_Y] > v[o0 + VCTR_INDEX_Y]) { swap = o1; o1 = o0; o0 = swap; }
+            if (v[o2 + VCTR_INDEX_Y] > v[o1 + VCTR_INDEX_Y]) { swap = o2; o2 = o1; o1 = swap; }
+            if (Math.ceil(v[o0 + VCTR_INDEX_Y] - 0.5f) <= stripStart ||
+                Math.ceil(v[o2 + VCTR_INDEX_Y] - 0.5f) >= stripEnd) {
+                return;
+            }
+            raster.set(v, o0, o1, o2, normal);
+
+            float invSlope20 = (v[o0 + VCTR_INDEX_X] - v[o2 + VCTR_INDEX_X]) /
+                    (v[o0 + VCTR_INDEX_Y] - v[o2 + VCTR_INDEX_Y]);
+            float dY21 = v[o1 + VCTR_INDEX_Y] - v[o2 + VCTR_INDEX_Y];
+            float midX = v[o2 + VCTR_INDEX_X] + (invSlope20 * dY21);
+            float flatXL = Math.min(v[o1 + VCTR_INDEX_X], midX);
+            float flatXR = Math.max(v[o1 + VCTR_INDEX_X], midX);
+
+            internalDrawFlatTopTri(
+                    flatXL, flatXR, v[o1 + VCTR_INDEX_Y],
+                    v[o2 + VCTR_INDEX_X], v[o2 + VCTR_INDEX_Y]);
+            internalDrawFlatBottomTri(
+                    flatXL, flatXR, v[o1 + VCTR_INDEX_Y],
+                    v[o0 + VCTR_INDEX_X], v[o0 + VCTR_INDEX_Y]);
+        }
+
+        private void internalDrawFlatTopTri(
+                float flatXL, float flatXR, float flatY,
+                float apexX, float apexY) {
+
+            // NOTE:
+            // - flattop triangle is drawn from the bottom apex up to the flat edge
+
+            float invDY = 1.0f / (flatY - apexY);
+            if (Float.isNaN(invDY)) {
+                return;
+            }
+
+            float invSlopeLeft  = (flatXL - apexX) * invDY;
+            float invSlopeRight = (flatXR - apexX) * invDY;
+
+            int Y_START = Math.max((int) Math.ceil(apexY - 0.5f), stripStart);
+            int Y_END = Math.min((int) Math.ceil(flatY - 0.5f), stripEnd);
+
+            for (int drawY = Y_START; drawY < Y_END; drawY++) {
+
+                float distY = (drawY + 0.5f) - apexY;
+                int X_START = Math.max(
+                        (int) Math.ceil(apexX + (invSlopeLeft * distY) - 0.5f),
+                        0);
+                int X_END = Math.min(
+                        (int) Math.ceil(apexX + (invSlopeRight * distY) - 0.5f),
+                        renderTarget.getWidth());
+
+                internalDrawSpan(X_START, X_END, drawY);
+
+            }
+
+        }
+
+        private void internalDrawFlatBottomTri(
+                float flatXL, float flatXR, float flatY,
+                float apexX, float apexY) {
+
+            // NOTE:
+            // - flatbottom triangle is drawn from the flat edge up to the top apex
+
+            float invDY = 1.0f / (apexY - flatY);
+            if (Float.isNaN(invDY)) {
+                return;
+            }
+
+            float invSlopeLeft  = (apexX - flatXL) * invDY;
+            float invSlopeRight = (apexX - flatXR) * invDY;
+
+            int Y_START = Math.max((int) Math.ceil(flatY - 0.5f), stripStart);
+            int Y_END = Math.min((int) Math.ceil(apexY - 0.5f), stripEnd);
+
+            for (int drawY = Y_START; drawY < Y_END; drawY++) {
+
+                float distY = (drawY + 0.5f) - flatY;
+                int X_START = Math.max(
+                        (int) Math.ceil(flatXL + (invSlopeLeft * distY) - 0.5f),
+                        0);
+                int X_END = Math.min(
+                        (int) Math.ceil(flatXR + (invSlopeRight * distY) - 0.5f),
+                        renderTarget.getWidth());
+
+                internalDrawSpan(X_START, X_END, drawY);
+
+            }
+
+        }
+
+        private void internalDrawSpan(int xStart, int xEnd, int drawY) {
+            float centerX = xStart + 0.5f;
+            float centerY = drawY + 0.5f;
+            float b0 = raster.b0At(centerX, centerY);
+            float b1 = raster.b1At(centerX, centerY);
+            for (int drawX = xStart; drawX < xEnd; drawX++) {
+                internalDrawFragment(drawX, drawY, b0, b1);
+                b0 += raster.db0dx;
+                b1 += raster.db1dx;
+            }
+        }
+
+        private void internalInterpolateFragmentInputs(
+                float a0,
+                float a1,
+                float a2,
+                float[] buffer) {
+            float[] verts = raster.verts;
+            int o0 = raster.out0;
+            int o1 = raster.out1;
+            int o2 = raster.out2;
+            for (int i = 0; i < buffer.length; i++) {
+                buffer[i] = a0 * verts[o0 + i] + a1 * verts[o1 + i] + a2 * verts[o2 + i];
+            }
+        }
+
+        private void internalDrawFragment(
+                int drawX,
+                int drawY,
+                float b0,
+                float b1) {
+
+            float[] depthData = renderTarget.getDepthData();
+            int[]   colorData = renderTarget.getColorData();
+            int     pixel     = renderTarget.coordToDataIndex(drawX, drawY);
+
+            float w0 = raster.z0 * b0;
+            float w1 = raster.z1 * b1;
+            float w2 = raster.z2 * (1.0f - b0 - b1);
+            float invDepth = w0 + w1 + w2;
+
+            // NOTE:
+            // since all depths are negative and inverted, the further value
+            // will be a smaller negative and hence greater. therefore the failing
+            // depth test will be greater than the previous depth
+            if (invDepth > depthData[pixel] - DEPTH_TEST_EPSILON) {
+                return;
+            }
+
+            // CALL FRAGMENT SHADER
+            fctx.screenX = drawX;
+            fctx.screenY = drawY;
+            fctx.invDepth = invDepth;
+            fctx.normal = raster.normal;
+            float invW = 1.0f / invDepth;
+            internalInterpolateFragmentInputs(w0 * invW, w1 * invW, w2 * invW, fctx.inputs);
+
+            QColor fragColor = shader.fragmentShader(fctx);
+
+            // DISCARD IF FRAGMENT IS TRANSPARENT
+            if ((fragColor.getA()) == 0) {
+                return;
+            }
+
+            // BLEND FRAGMENT TO BELOW COLOR AND WRITE TO RENDERTARGET
+            depthData[pixel] = invDepth;
+            colorData[pixel] = QColor.blend(colorData[pixel], fragColor.toInt());
         }
     }
 
@@ -783,6 +1086,9 @@ public final class QViewer extends QEncoding {
     // PRIVATE METHODS
     private void init(QRenderBuffer target) {
         renderTarget = target;
+        for (int i = 0; i < RASTER_THREADS; i++) {
+            workers.add(new RasterWorker());
+        }
     }
 
     private void internalEnsureShaderRequirements(ShaderRequirement[] requirements) {
@@ -865,7 +1171,7 @@ public final class QViewer extends QEncoding {
         }
     }
 
-    private void internalDraw() {
+    private void internalProcessGeometry(DrawState draw) {
         if (renderTarget == null) {
             throw new QException(
                     PointOfError.BadState,
@@ -908,12 +1214,6 @@ public final class QViewer extends QEncoding {
             }
         }
 
-        fctx.uniforms = slotUniforms;
-        fctx.textures = slotTextures;
-        fctx.target = renderTarget;
-        fctx.layout = outputLayout;
-        fctx.inputs = new float[outputLayout.total];
-
         for (Vertex vert : workTri.verts) {
             vert.posn = new float[VCTR_NUM_CMPS];
             vert.shaderOutputs = new float[outputLayout.total];
@@ -922,6 +1222,10 @@ public final class QViewer extends QEncoding {
         vertexCache.prepare(slotAttribs, outputLayout.total);
 
         drawShader.beginDraw(vctx);
+
+        draw.shader = drawShader;
+        draw.layout = outputLayout;
+        draw.triStart = triQueue.triEnd;
 
         for (int triNum = 0; triNum < triCount; triNum++) {
             // GENERATE TRIANGLE
@@ -949,16 +1253,73 @@ public final class QViewer extends QEncoding {
             if (tri.getPosnZ(0) <= nearClip &&
                 tri.getPosnZ(1) <= nearClip &&
                 tri.getPosnZ(2) <= nearClip) {
-                internalDrawTri(tri);
+                internalEmitTri(tri, true, draw);
                 continue;
             }
 
             Triangle[] clipTris = internalClipTri(tri);
             for (Triangle clippedTri : clipTris) {
-                internalDrawTri(clippedTri);
+                internalEmitTri(clippedTri, false, draw);
             }
         }
 
+        draw.triEnd = triQueue.triEnd;
+    }
+
+    private void internalEmitTri(Triangle tri, boolean shared, DrawState draw) {
+        int v0 = internalEmitVertex(tri, 0, shared);
+        int v1 = internalEmitVertex(tri, 1, shared);
+        int v2 = internalEmitVertex(tri, 2, shared);
+        int n  = triQueue.allocVerts(VCTR_NUM_CMPS);
+        System.arraycopy(tri.normal, 0, triQueue.verts, n, VCTR_NUM_CMPS);
+        triQueue.addTri(v0, v1, v2, n);
+        float[] v = triQueue.verts;
+        draw.minY = Math.min(draw.minY, Math.min(v[v0 + VCTR_INDEX_Y], Math.min(v[v1 + VCTR_INDEX_Y], v[v2 + VCTR_INDEX_Y])));
+        draw.maxY = Math.max(draw.maxY, Math.max(v[v0 + VCTR_INDEX_Y], Math.max(v[v1 + VCTR_INDEX_Y], v[v2 + VCTR_INDEX_Y])));
+    }
+
+    private int internalEmitVertex(Triangle tri, int triVertNum, boolean shared) {
+        int idx    = shared ? vertexCache.indexOf(tri.triNum, triVertNum) : -1;
+        int offset = vertexCache.emitted(idx);
+        if (offset >= 0) {
+            return offset;
+        }
+
+        Vertex vert  = tri.verts[triVertNum];
+        int    total = vert.shaderOutputs.length;
+        offset = triQueue.allocVerts(VCTR_NUM_CMPS + total);
+
+        float[] out  = triQueue.verts;
+        float   invZ = 1.0f / vert.posn[VCTR_INDEX_Z];
+        out[offset + VCTR_INDEX_X] = (vert.posn[VCTR_INDEX_X] * -invZ - viewLeft) *
+                (renderTarget.getWidth() / (viewRight - viewLeft));
+        out[offset + VCTR_INDEX_Y] = (vert.posn[VCTR_INDEX_Y] * -invZ - viewBottom) *
+                (renderTarget.getHeight() / (viewTop - viewBottom));
+        out[offset + VCTR_INDEX_Z] = invZ;
+        System.arraycopy(vert.shaderOutputs, 0, out, offset + VCTR_NUM_CMPS, total);
+
+        vertexCache.setEmitted(idx, offset);
+        return offset;
+    }
+
+    private void internalRasterizeParallel() {
+        nextStrip.set(0);
+        try {
+            for (Future<Void> result : RASTER_POOL.invokeAll(workers)) {
+                result.get();
+            }
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof RuntimeException cause) {
+                throw cause;
+            }
+            if (e.getCause() instanceof Error cause) {
+                throw cause;
+            }
+            throw new QException(PointOfError.BadState, e.getCause().toString());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new QException(PointOfError.BadState, "Interrupted while rasterizing");
+        }
     }
 
     private void internalProcessVertex(Triangle tri, int triVertNum) {
@@ -1280,217 +1641,6 @@ public final class QViewer extends QEncoding {
                         "Bad clip state:" + clipState.toString());
         }
 
-    }
-
-    private void internalMapVertToScreenSpace(Triangle srcTri, int vertNum) {
-        // NOTE:
-        // - this transformation will map (left, right) -> (0, targetWidth) and
-        // (bottom, top) -> (0, targetheight). this is essentially a projected
-        // view-space to screenspace transformation
-        // - in order to do this, the space is translated such that the bottom left
-        // corner is (0, 0), and then it is scaled to fit the screenspace
-
-        srcTri.setPosnX(vertNum, srcTri.getPosnX(vertNum) - viewLeft);
-        srcTri.setPosnY(vertNum, srcTri.getPosnY(vertNum) - viewBottom);
-
-        srcTri.setPosnX(vertNum,
-                srcTri.getPosnX(vertNum) *
-                        (renderTarget.getWidth() / (viewRight - viewLeft)));
-        srcTri.setPosnY(vertNum,
-                srcTri.getPosnY(vertNum) *
-                        (renderTarget.getHeight() / (viewTop - viewBottom)));
-
-    }
-
-    private void internalDrawTri(Triangle tri) {
-
-        // NOTE:
-        // - from this point forward, all z values will be inverted
-        tri.getVertex(0).project();
-        tri.getVertex(1).project();
-        tri.getVertex(2).project();
-
-        // MAP TO SCREEN SPACE
-        internalMapVertToScreenSpace(tri, 0);
-        internalMapVertToScreenSpace(tri, 1);
-        internalMapVertToScreenSpace(tri, 2);
-
-        // NOTE:
-        // - a triangle must be rasterized in two parts, a line will be cut
-        // through it's middle highest verticie horizontally, and each partition
-        // will be draw seperately
-        // - the triangle will have to be sorted by height then cut
-        // - after being cut, the top two verticies will be sorted from left to right
-
-        Triangle sortedTri = internalSortTriVertsByHeight(tri);
-        raster.set(sortedTri);
-
-        float invSlope20 = (sortedTri.getPosnX(0) - sortedTri.getPosnX(2)) /
-                (sortedTri.getPosnY(0) - sortedTri.getPosnY(2));
-        float dY21 = sortedTri.getPosnY(1) - sortedTri.getPosnY(2);
-        float midX = sortedTri.getPosnX(2) + (invSlope20 * dY21);
-        float flatXL = Math.min(sortedTri.getPosnX(1), midX);
-        float flatXR = Math.max(sortedTri.getPosnX(1), midX);
-
-        internalDrawFlatTopTri(
-                flatXL, flatXR, sortedTri.getPosnY(1),
-                sortedTri.getPosnX(2), sortedTri.getPosnY(2));
-        internalDrawFlatBottomTri(
-                flatXL, flatXR, sortedTri.getPosnY(1),
-                sortedTri.getPosnX(0), sortedTri.getPosnY(0));
-
-    }
-
-    private Triangle internalSortTriVertsByHeight(Triangle tri) {
-
-        if (tri.getPosnY(2) > tri.getPosnY(1)) {
-            tri.swapVerts(2, 1);
-        }
-        if (tri.getPosnY(1) > tri.getPosnY(0)) {
-            tri.swapVerts(1, 0);
-        }
-        if (tri.getPosnY(2) > tri.getPosnY(1)) {
-            tri.swapVerts(2, 1);
-        }
-
-        return tri;
-
-    }
-
-    private void internalDrawFlatTopTri(
-            float flatXL, float flatXR, float flatY,
-            float apexX, float apexY) {
-
-        // NOTE:
-        // - flattop triangle is drawn from the bottom apex up to the flat edge
-
-        float invDY = 1.0f / (flatY - apexY);
-        if (Float.isNaN(invDY)) {
-            return;
-        }
-
-        float invSlopeLeft  = (flatXL - apexX) * invDY;
-        float invSlopeRight = (flatXR - apexX) * invDY;
-
-        int Y_START = Math.max((int) Math.ceil(apexY - 0.5f), 0);
-        int Y_END = Math.min((int) Math.ceil(flatY - 0.5f), renderTarget.getHeight());
-
-        for (int drawY = Y_START; drawY < Y_END; drawY++) {
-
-            float distY = (drawY + 0.5f) - apexY;
-            int X_START = Math.max(
-                    (int) Math.ceil(apexX + (invSlopeLeft * distY) - 0.5f),
-                    0);
-            int X_END = Math.min(
-                    (int) Math.ceil(apexX + (invSlopeRight * distY) - 0.5f),
-                    renderTarget.getWidth());
-
-            internalDrawSpan(X_START, X_END, drawY);
-
-        }
-
-    }
-
-    private void internalDrawFlatBottomTri(
-            float flatXL, float flatXR, float flatY,
-            float apexX, float apexY) {
-
-        // NOTE:
-        // - flatbottom triangle is drawn from the flat edge up to the top apex
-
-        float invDY = 1.0f / (apexY - flatY);
-        if (Float.isNaN(invDY)) {
-            return;
-        }
-
-        float invSlopeLeft  = (apexX - flatXL) * invDY;
-        float invSlopeRight = (apexX - flatXR) * invDY;
-
-        int Y_START = Math.max((int) Math.ceil(flatY - 0.5f), 0);
-        int Y_END = Math.min((int) Math.ceil(apexY - 0.5f), renderTarget.getHeight());
-
-        for (int drawY = Y_START; drawY < Y_END; drawY++) {
-
-            float distY = (drawY + 0.5f) - flatY;
-            int X_START = Math.max(
-                    (int) Math.ceil(flatXL + (invSlopeLeft * distY) - 0.5f),
-                    0);
-            int X_END = Math.min(
-                    (int) Math.ceil(flatXR + (invSlopeRight * distY) - 0.5f),
-                    renderTarget.getWidth());
-
-            internalDrawSpan(X_START, X_END, drawY);
-
-        }
-
-    }
-
-    private void internalDrawSpan(int xStart, int xEnd, int drawY) {
-        float centerX = xStart + 0.5f;
-        float centerY = drawY + 0.5f;
-        float b0 = raster.b0At(centerX, centerY);
-        float b1 = raster.b1At(centerX, centerY);
-        for (int drawX = xStart; drawX < xEnd; drawX++) {
-            internalDrawFragment(drawX, drawY, b0, b1);
-            b0 += raster.db0dx;
-            b1 += raster.db1dx;
-        }
-    }
-
-    private void internalInterpolateFragmentInputs(
-            float a0,
-            float a1,
-            float a2,
-            float[] buffer) {
-        float[] output0 = raster.out0;
-        float[] output1 = raster.out1;
-        float[] output2 = raster.out2;
-        for (int i = 0; i < buffer.length; i++) {
-            buffer[i] = a0 * output0[i] + a1 * output1[i] + a2 * output2[i];
-        }
-    }
-
-    private void internalDrawFragment(
-            int drawX,
-            int drawY,
-            float b0,
-            float b1) {
-
-        float[] depthData = renderTarget.getDepthData();
-        int[]   colorData = renderTarget.getColorData();
-        int     pixel     = renderTarget.coordToDataIndex(drawX, drawY);
-
-        float w0 = raster.z0 * b0;
-        float w1 = raster.z1 * b1;
-        float w2 = raster.z2 * (1.0f - b0 - b1);
-        float invDepth = w0 + w1 + w2;
-
-        // NOTE:
-        // since all depths are negative and inverted, the further value
-        // will be a smaller negative and hence greater. therefore the failing
-        // depth test will be greater than the previous depth
-        if (invDepth > depthData[pixel] - DEPTH_TEST_EPSILON) {
-            return;
-        }
-
-        // CALL FRAGMENT SHADER
-        fctx.screenX = drawX;
-        fctx.screenY = drawY;
-        fctx.invDepth = invDepth;
-        fctx.normal = raster.normal;
-        float invW = 1.0f / invDepth;
-        internalInterpolateFragmentInputs(w0 * invW, w1 * invW, w2 * invW, fctx.inputs);
-
-        QColor fragColor = drawShader.fragmentShader(fctx);
-
-        // DISCARD IF FRAGMENT IS TRANSPARENT
-        if ((fragColor.getA()) == 0) {
-            return;
-        }
-
-        // BLEND FRAGMENT TO BELOW COLOR AND WRITE TO RENDERTARGET
-        depthData[pixel] = invDepth;
-        colorData[pixel] = QColor.blend(colorData[pixel], fragColor.toInt());
     }
 
     ////////////////////////////////////////////////////////////////
