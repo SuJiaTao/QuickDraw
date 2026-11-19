@@ -36,7 +36,7 @@ public final class Deferred {
     public static final float CAMERA_PITCH     = -35.264f;
     public static final float CAMERA_DISTANCE  = 3.0f * MASCOT_HEIGHT;
     public static final float CAMERA_TURN_RATE = 60.0f;
-    public static final int   LIGHT_COUNT      = 8;
+    public static final int   LIGHT_COUNT      = 12;
     public static final float LIGHT_STRENGTH   = 3.0f;
     public static final float LIGHT_HEIGHT     = 3.0f;
     public static final float LIGHT_BOB        = 2.0f;

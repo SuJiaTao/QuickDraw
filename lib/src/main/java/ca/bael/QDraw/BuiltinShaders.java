@@ -161,7 +161,7 @@ final class BuiltinShaders {
                 QMatrix4x4 mtr = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class);
                 context.output(
                     data.normalSlot( ),
-                    data.normalMtr( ).transformDir(context.attribVec3(DEFAULT_SHADER_NORMAL_SLOT)).normalize( )
+                    data.normalMtr( ).transformDir(context.attribVec3(DEFAULT_SHADER_NORMAL_SLOT, context.scratchVec3(0))).normalize( )
                 );
 
                 return mtr.transformPoint(context.attribVec3(DEFAULT_SHADER_POSITION_SLOT, context.position( )));
@@ -257,7 +257,7 @@ final class BuiltinShaders {
                 MaterialData data = context.drawData(MaterialData.class);
                 QMatrix4x4 mtr    = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class);
                 QVector3   pos    = mtr.transformPoint(context.attribVec3(DEFAULT_SHADER_POSITION_SLOT, context.position( )));
-                QVector3   normal = data.normalMtr( ).transformDir(context.attribVec3(DEFAULT_SHADER_NORMAL_SLOT)).normalize( );
+                QVector3   normal = data.normalMtr( ).transformDir(context.attribVec3(DEFAULT_SHADER_NORMAL_SLOT, context.scratchVec3(0))).normalize( );
 
                 context.output(data.posSlot( ), pos);
                 context.forward(data.uvSlot( ));

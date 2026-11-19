@@ -2,10 +2,18 @@
 // 2024
 // GBufferShader.java
 
-import ca.bael.QDraw.*;
+import ca.bael.QDraw.QColor;
+import ca.bael.QDraw.QDrawData;
+import ca.bael.QDraw.QMatrix4x4;
 import ca.bael.QDraw.QRenderBuffer.GBufferFormat;
+import ca.bael.QDraw.QScalar;
+import ca.bael.QDraw.QShader;
 import ca.bael.QDraw.QShader.ShaderRequirement.RequirementType;
-import static ca.bael.QDraw.QViewer.*;
+import ca.bael.QDraw.QVector3;
+import static ca.bael.QDraw.QViewer.DEFAULT_SHADER_MATRIX_SLOT;
+import static ca.bael.QDraw.QViewer.DEFAULT_SHADER_NORMAL_SLOT;
+import static ca.bael.QDraw.QViewer.DEFAULT_SHADER_POSITION_SLOT;
+import static ca.bael.QDraw.QViewer.DEFAULT_SHADER_UV_SLOT;
 
 public final class GBufferShader extends QShader {
     public static final int  NORMAL_GBUFFER  = 0;
@@ -45,7 +53,7 @@ public final class GBufferShader extends QShader {
         GBufferData data = context.drawData(GBufferData.class);
         QMatrix4x4  mtr  = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class);
         context.forward(data.uvSlot( ));
-        context.output(data.normalSlot( ), data.normalMtr( ).transformDir(context.attribVec3(DEFAULT_SHADER_NORMAL_SLOT)).normalize( ));
+        context.output(data.normalSlot( ), data.normalMtr( ).transformDir(context.attribVec3(DEFAULT_SHADER_NORMAL_SLOT, context.scratchVec3(0))).normalize( ));
         return mtr.transformPoint(context.attribVec3(DEFAULT_SHADER_POSITION_SLOT, context.position( )));
     }
 

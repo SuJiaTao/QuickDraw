@@ -15,6 +15,7 @@ public abstract class QShader {
     public static final int RANDOM_GRANULATIRY        = 0xFFFF;
     public static final float NORMALIZATION_FACTOR    = 1.0f / (float)RANDOM_GRANULATIRY;
     public static final int VERTEX_SHADER_MAX_OUTPUTS = 8;
+    public static final int VERTEX_SCRATCH_VEC3S      = 4;
     public static final int FRAGMENT_SCRATCH_VEC3S    = 4;
 
     /////////////////////////////////////////////////////////////////
@@ -42,6 +43,13 @@ public abstract class QShader {
         int           written;
         QDrawData     drawData;
         final QVector3 position = new QVector3( );
+        final QVector3[] scratch = new QVector3[VERTEX_SCRATCH_VEC3S];
+
+        VertexShaderContext( ) {
+            for (int i = 0; i < scratch.length; i++) {
+                scratch[i] = new QVector3( );
+            }
+        }
 
         /////////////////////////////////////////////////////////////////
         // PUBLIC METHODS
@@ -57,6 +65,10 @@ public abstract class QShader {
 
         public QVector3 position( ) {
             return position;
+        }
+
+        public QVector3 scratchVec3(int index) {
+            return scratch[index];
         }
 
         public float[] attrib(int slot, float[] out) {
