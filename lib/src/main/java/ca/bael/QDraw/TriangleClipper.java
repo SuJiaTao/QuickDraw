@@ -4,11 +4,16 @@
 
 package ca.bael.QDraw;
 
+import static ca.bael.QDraw.QVector3.VCTR_INDEX_X;
+import static ca.bael.QDraw.QVector3.VCTR_INDEX_Y;
+import static ca.bael.QDraw.QVector3.VCTR_INDEX_Z;
+import static ca.bael.QDraw.QVector3.VCTR_NUM_CMPS;
+
 import java.util.Arrays;
 
 import ca.bael.QDraw.QException.PointOfError;
 
-final class TriangleClipper extends QEncoding {
+final class TriangleClipper {
     ////////////////////////////////////////////////////////////////
     // PRIVATE CLASSES
     private static class ClipState {

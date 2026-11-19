@@ -4,7 +4,12 @@
 
 package ca.bael.QDraw;
 
-final class Triangle extends QEncoding {
+import static ca.bael.QDraw.QVector3.VCTR_INDEX_X;
+import static ca.bael.QDraw.QVector3.VCTR_INDEX_Y;
+import static ca.bael.QDraw.QVector3.VCTR_INDEX_Z;
+import static ca.bael.QDraw.QVector3.VCTR_NUM_CMPS;
+
+final class Triangle {
     ////////////////////////////////////////////////////////////////
     // CONSTANTS
     public static final int VERTS_PER_TRI = 3;

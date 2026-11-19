@@ -4,6 +4,11 @@
 
 package ca.bael.QDraw;
 
+import static ca.bael.QDraw.QVector3.VCTR_INDEX_X;
+import static ca.bael.QDraw.QVector3.VCTR_INDEX_Y;
+import static ca.bael.QDraw.QVector3.VCTR_INDEX_Z;
+import static ca.bael.QDraw.QVector3.VCTR_NUM_CMPS;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -18,7 +23,7 @@ import ca.bael.QDraw.QSampleable.SampleType;
 import ca.bael.QDraw.QShader.ShaderRequirement;
 import ca.bael.QDraw.QShader.ShaderRequirement.RequirementType;
 
-public final class QViewer extends QEncoding {
+public final class QViewer {
     ////////////////////////////////////////////////////////////////
     // PUBLIC ENUMS
     public enum RenderMode {

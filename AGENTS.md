@@ -50,7 +50,7 @@ Defined in [`settings.gradle`](settings.gradle):
 ## Architecture & Core Classes (`ca.bael.QDraw`)
 
 ### Data Encodings & Math
-- **[`QEncoding.java`](lib/src/main/java/ca/bael/QDraw/QEncoding.java)**: Base class holding shared constants for 32-bit `ARGB` color bitmasks/shifts (`COL_*`), 3-component vector indices (`VCTR_*`, `VCTR_COMPARE_EPSILON = 0.0005f`), and 4x4 matrix dimensions (`MTR_*`). Also documents standard codebase abbreviations and comment notation.
+- **[`package-info.java`](lib/src/main/java/ca/bael/QDraw/package-info.java)**: Documents standard codebase abbreviations and comment notation. Encoding constants live in their owner classes: `COL_*` (private) in `QColor`, `MTR_*` (private) in `QMatrix4x4`, and `VCTR_*` / `VCTR_COMPARE_EPSILON = 0.0005f` (package-private) in `QVector3`, which other classes pull in via `import static ca.bael.QDraw.QVector3.VCTR_*`.
 - **[`QVector3.java`](lib/src/main/java/ca/bael/QDraw/QVector3.java)**: 3-float vector wrapper supporting both in-place mutation (`vec.add(other)`, `vec.multiply3(fac)`) and static non-mutating operations (`QVector3.add(v1, v2)`). Note: static factory methods `QVector3.X()`, `Y()`, `Z()` currently return zero-initialized vectors (`COMPONENTS_X/Y/Z` are `{0,0,0}`); check callers before changing them.
   - Package-private static in-place `float[]` helpers (`copy`, `add`, `sub`, `scale`, `dot`, `cross`, `magnitude`, `sqrMagnitude`, `fastMagnitude`) are used by `QViewer` internals on raw position/normal arrays. `fastMagnitude` approximates Euclidean length without `Math.sqrt`.
 - **[`QMatrix4x4.java`](lib/src/main/java/ca/bael/QDraw/QMatrix4x4.java)**: 16-float matrix indexed via `col + 4 * row`. Supports `Identity()`, `Zero()`, `scaleMatrix`, `translationMatrix`, `rotationMatrix` (angles in degrees), `TRS(translation, rotation, scale)`, and decomposition (`extractTranslation`, `extractScale`, `extractRotation`).
@@ -122,4 +122,4 @@ Defined in [`settings.gradle`](settings.gradle):
 4. **Unit Tests (`Expects.java`)**:
    - Unit tests in [`lib/src/test/java/ca/bael/QDraw/Expects.java`](lib/src/test/java/ca/bael/QDraw/Expects.java) (`ColorTest`, `RenderBufferTest`, `VectorTest`, `MatrixTest`, and `MathTest`) use JUnit Jupiter (`@Test`). When adding new tests, annotate them with `@Test` (non-static) and run `./gradlew :lib:test` to verify execution.
 5. **Code Formatting Style**:
-   - Maintain the existing file header comments, `/////////////////////////////////////////////////////////////////` section dividers, and `QEncoding` conventions when editing files in `lib/src/main/java/ca/bael/QDraw/`.
+   - Maintain the existing file header comments, `/////////////////////////////////////////////////////////////////` section dividers, and the `package-info.java` abbreviation/notation conventions when editing files in `lib/src/main/java/ca/bael/QDraw/`.

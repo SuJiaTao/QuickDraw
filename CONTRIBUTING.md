@@ -65,7 +65,7 @@ When modifying existing classes or adding new ones to `ca.bael.QDraw`, please fo
    - The core library (`:lib`) relies strictly on standard Java SE / AWT / Swing / ImageIO APIs. Do not introduce third-party runtime dependencies without prior discussion.
 
 2. **Naming Conventions**:
-   - Public library classes in `ca.bael.QDraw` are prefixed with `Q` (e.g., `QViewer`, `QShader`, `QMesh`, `QTexture`, `QRenderBuffer`, `QVector3`, `QMatrix4x4`, `QColor`, `QMath`, `QWindow`, `QLight`, `QMaterial`, `QAttribBuffer`, `QAttribIndexer`, `QEncoding`, `QException`, `QSampleable`).
+   - Public library classes in `ca.bael.QDraw` are prefixed with `Q` (e.g., `QViewer`, `QShader`, `QMesh`, `QTexture`, `QRenderBuffer`, `QVector3`, `QMatrix4x4`, `QColor`, `QMath`, `QWindow`, `QLight`, `QMaterial`, `QAttribBuffer`, `QAttribIndexer`, `QException`, `QSampleable`).
    - Internal helper methods on `QViewer` are prefixed with `internal` (e.g., `internalDraw`, `internalClipTri`).
    - Constants use `UPPER_SNAKE_CASE`.
 
@@ -91,9 +91,9 @@ When modifying existing classes or adding new ones to `ca.bael.QDraw`, please fo
      // CONSTRUCTORS
      ```
 
-4. **Data Layout & Abbreviations (`QEncoding`)**:
-   - Classes that work directly with packed arrays (`QColor`, `QVector3`, `QMatrix4x4`, `QMath`, `QMesh`, `QViewer`) extend [`QEncoding`](lib/src/main/java/ca/bael/QDraw/QEncoding.java).
-   - Follow the standard abbreviations and array layout documentation syntax defined in `QEncoding.java`:
+4. **Data Layout & Abbreviations ([`package-info.java`](lib/src/main/java/ca/bael/QDraw/package-info.java))**:
+   - Encoding constants live in their owner class (`COL_*` in `QColor`, `MTR_*` in `QMatrix4x4`, `VCTR_*` in `QVector3`); other classes use `import static ca.bael.QDraw.QVector3.VCTR_*` rather than inheritance.
+   - Follow the standard abbreviations and array layout documentation syntax defined in `package-info.java`:
      - `| x y z |` — array of fixed length
      - `< x y z >` — contiguous logical grouping of elements in an array
      - `| < x y z > ... |` — array of arbitrary number of groupings

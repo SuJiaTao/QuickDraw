@@ -4,7 +4,9 @@
 
 package ca.bael.QDraw;
 
-final class VertexCache extends QEncoding {
+import static ca.bael.QDraw.QVector3.VCTR_NUM_CMPS;
+
+final class VertexCache {
     ////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
     private int[]   indicies;

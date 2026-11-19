@@ -4,10 +4,13 @@
 
 package ca.bael.QDraw;
 
+import static ca.bael.QDraw.QVector3.VCTR_INDEX_X;
+import static ca.bael.QDraw.QVector3.VCTR_INDEX_Y;
+
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-final class RasterWorker extends QEncoding {
+final class RasterWorker {
     ////////////////////////////////////////////////////////////////
     // CONSTANTS
     private static final float DEPTH_TEST_EPSILON = 0.002f;
