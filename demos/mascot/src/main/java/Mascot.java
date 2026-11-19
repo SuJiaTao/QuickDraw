@@ -38,10 +38,13 @@ public final class Mascot {
         long now = System.nanoTime();
         if (now - fpsWindowStart >= 1_000_000_000L) {
             double ms = (now - fpsWindowStart) / 1e6;
-            System.out.printf("%d fps (%.2f ms/frame, %.2f ms flush)%n",
-                fpsFrames, ms / fpsFrames, fpsFlushNanos / 1e6 / fpsFrames);
+            System.out.printf("%d fps (%.2f ms/frame, %.2f ms flush, %.2f ms draw, %.2f ms show)%n",
+                fpsFrames, ms / fpsFrames, fpsFlushNanos / 1e6 / fpsFrames,
+                window.drawNanos / 1e6 / fpsFrames, window.showNanos / 1e6 / fpsFrames);
             fpsFrames = 0;
             fpsFlushNanos = 0;
+            window.drawNanos = 0;
+            window.showNanos = 0;
             fpsWindowStart = now;
         }
     }
