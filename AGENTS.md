@@ -83,11 +83,13 @@ Defined in [`settings.gradle`](settings.gradle):
 - **[`QLight.java`](lib/src/main/java/ca/bael/QDraw/QLight.java)**: Point light (`position`, `strength`). `illuminate(point, outDir)` writes the normalized direction from `point` to the light into `outDir` and returns the attenuated strength (`strength / distance`). Positions are in **view space** (same space as transformed vertices; camera at the origin looking down -Z).
 - **[`QMaterial.java`](lib/src/main/java/ca/bael/QDraw/QMaterial.java)**: Blinn-Phong material properties (`ambient`, `diffuse`, `specular`, `shininess`).
   - The `Material` render mode adds specular on top of the lit texture color and only for surfaces facing the light (N·L > 0).
+- **[`QUniform.java`](lib/src/main/java/ca/bael/QDraw/QUniform.java)**: Interface for uniform slot values; `snapshot()` returns a copy unaffected by later changes to the original (immutable types return themselves). Implemented by `QMatrix4x4`, `QVector3`, `QColor`, `QMaterial`, `QLight`, `QLights`, and `QScalar`.
+- **[`QLights.java`](lib/src/main/java/ca/bael/QDraw/QLights.java)** / **[`QScalar.java`](lib/src/main/java/ca/bael/QDraw/QScalar.java)**: `QUniform` wrappers for a light array (`count()`, `get(i)`) and an immutable number (`floatValue()`, `intValue()`, `doubleValue()`; constructed from any numeric primitive).
 - **[`QViewer.java`](lib/src/main/java/ca/bael/QDraw/QViewer.java)**: The software rendering pipeline.
   - Built-in render modes (`RenderMode`): `SolidFill`, `Textured`, `Normal`, `Material` (Blinn-Phong), and `CustomShader`.
   - Default slots:
     - Attributes (`0..7`): `0` = position, `1` = UV, `2` = normal.
-    - Uniforms (`0..15`): `0` = transform `QMatrix4x4`, `1` = `QLight[]`, `2` = `QMaterial`.
+    - Uniforms (`0..15`): `0` = transform `QMatrix4x4`, `1` = `QLights`, `2` = `QMaterial`. Only `QUniform` values can be bound.
     - Textures (`0..15`): `0` = primary `QSampleable`.
   - **Pipeline stages in `internalDraw()`**:
     1. Validates vertex attribute indexers have matching triangle counts and checks `QShader.requirements()`.
@@ -109,7 +111,7 @@ Defined in [`settings.gradle`](settings.gradle):
    - The camera looks down the **negative Z-axis** (`nearClip` defaults to `-0.005f` and is clamped via `Math.min(MIN_NEAR_CLIP, val)`). Geometry in front of the camera has `Z < nearClip`.
    - Screen space and texture space have `(0, 0)` at the **bottom-left**.
 3. **Uniform Type Checking**:
-   - `QViewer.internalEnsureShaderRequirements` checks uniform types using exact class equality (`slotUniforms[slot].getClass() != require.uniformClass`). Pass the exact class expected by the shader (e.g., `QMatrix4x4.class`, `QLight[].class`, `QMaterial.class`, `Float.class`).
+   - `QViewer.internalEnsureShaderRequirements` checks uniform types using exact class equality (`slotUniforms[slot].getClass() != require.uniformClass`). Pass the exact class expected by the shader (e.g., `QMatrix4x4.class`, `QLights.class`, `QMaterial.class`, `QScalar.class`).
 4. **Unit Tests (`Expects.java`)**:
    - Unit tests in [`lib/src/test/java/ca/bael/QDraw/Expects.java`](lib/src/test/java/ca/bael/QDraw/Expects.java) (`ColorTest`, `RenderBufferTest`, `VectorTest`, `MatrixTest`, and `MathTest`) use JUnit Jupiter (`@Test`). When adding new tests, annotate them with `@Test` (non-static) and run `./gradlew :lib:test` to verify execution.
 5. **Code Formatting Style**:

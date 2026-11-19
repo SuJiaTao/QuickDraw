@@ -226,7 +226,7 @@ public final class QViewer extends QEncoding {
                     DEFAULT_SHADER_LIGHTS_SLOT, 
                     RequirementType.Uniform, 
                     "view-space light position array",
-                    QLight[].class
+                    QLights.class
                 ),
                 new ShaderRequirement(
                     DEFAULT_SHADER_MATERIAL_SLOT, 
@@ -281,7 +281,7 @@ public final class QViewer extends QEncoding {
         ) {
             QSampleable tex = context.texture(DEFAULT_SHADER_TEXTURE_SLOT);
             QMaterial   mat = context.uniform(DEFAULT_SHADER_MATERIAL_SLOT, QMaterial.class);
-            QLight[] lights = context.uniform(DEFAULT_SHADER_LIGHTS_SLOT, QLight[].class);
+            QLights  lights = context.uniform(DEFAULT_SHADER_LIGHTS_SLOT, QLights.class);
 
             float[] uv     = context.input(DEFAULT_SHADER_UV_SLOT, new float[2]);
             float[] normal = context.inputVec3(DEFAULT_SHADER_NORMAL_SLOT).normalize( ).getComponents( );
@@ -297,7 +297,8 @@ public final class QViewer extends QEncoding {
             QVector3 viewDir = POS_VEC.copy().multiply3(-1).normalize();
             QVector3 toLight = new QVector3( );
 
-            for (QLight light : lights) {
+            for (int i = 0; i < lights.count( ); i++) {
+                QLight light = lights.get(i);
                 float attenuation = light.illuminate(POS_VEC, toLight);
                 float lambert = QVector3.dot(toLight.getComponents(), normal);
                 if (lambert <= 0.0f) {
@@ -332,7 +333,7 @@ public final class QViewer extends QEncoding {
     private QColor fillColor = DEFAULT_FILL_COLOR;
     private SampleType sampleType = DEFAULT_SAMPLE_TYPE;
 
-    private Object[] slotUniforms = new Object[SHADER_UNIFORM_SLOTS];
+    private QUniform<?>[] slotUniforms = new QUniform<?>[SHADER_UNIFORM_SLOTS];
     private QSampleable[] slotTextures = new QSampleable[SHADER_TEXTURE_SLOTS];
     private QAttribIndexer[] slotAttribs = new QAttribIndexer[SHADER_VERTEX_ATTRIB_SLOTS];
     private final QShader.VertexShaderContext vctx = new QShader.VertexShaderContext();
@@ -376,7 +377,7 @@ public final class QViewer extends QEncoding {
 
     public void setUniformSlot(
             int slot,
-            Object uniform) {
+            QUniform<?> uniform) {
         slotUniforms[slot] = uniform;
     }
 
@@ -384,8 +385,8 @@ public final class QViewer extends QEncoding {
         setUniformSlot(DEFAULT_SHADER_MATRIX_SLOT, matrix);
     }
 
-    public void setLights(QLight[] lightArray) {
-        setUniformSlot(DEFAULT_SHADER_LIGHTS_SLOT, lightArray);
+    public void setLights(QLights lights) {
+        setUniformSlot(DEFAULT_SHADER_LIGHTS_SLOT, lights);
     }
 
     public void clearUniformSlots() {

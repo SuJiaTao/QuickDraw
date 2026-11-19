@@ -4,7 +4,7 @@
 
 package ca.bael.QDraw;
 
-public final class QMatrix4x4 extends QEncoding {
+public final class QMatrix4x4 extends QEncoding implements QUniform<QMatrix4x4> {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
     private static final float DEG_TO_RAD = (float)Math.PI / 180.0f;
@@ -301,6 +301,10 @@ public final class QMatrix4x4 extends QEncoding {
             getValue(2, 0), getValue(2, 1), getValue(2, 2)
         ).fastMagnitude( );
         return new QVector3(sx, sy, sz);
+    }
+
+    public QMatrix4x4 snapshot( ) {
+        return new QMatrix4x4(this);
     }
 
     public QMatrix4x4 normalMatrix( ) {

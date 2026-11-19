@@ -21,7 +21,7 @@ public abstract class QShader {
     public static final class VertexShaderContext {
         /////////////////////////////////////////////////////////////////
         // PACKAGE MEMBERS
-        Object[]      uniforms;
+        QUniform<?>[] uniforms;
         QSampleable[] textures;
         float[][]     attributes;
         OutputLayout  layout;
@@ -50,7 +50,7 @@ public abstract class QShader {
             return out;
         }
 
-        public <T> T uniform(int slot, Class<T> type) {
+        public <T extends QUniform<T>> T uniform(int slot, Class<T> type) {
             return type.cast(uniforms[slot]);
         }
 
@@ -94,7 +94,7 @@ public abstract class QShader {
     public static final class FragmentShaderContext {
         /////////////////////////////////////////////////////////////////
         // PACKAGE MEMBERS
-        Object[]      uniforms;
+        QUniform<?>[] uniforms;
         QSampleable[] textures;
         QRenderBuffer target;
         int           screenX;
@@ -134,7 +134,7 @@ public abstract class QShader {
             return out;
         }
 
-        public <T> T uniform(int slot, Class<T> type) {
+        public <T extends QUniform<T>> T uniform(int slot, Class<T> type) {
             return type.cast(uniforms[slot]);
         }
 
@@ -213,7 +213,7 @@ public abstract class QShader {
         public int             slot;
         public RequirementType requireType;
         public String          purpose;
-        public Class<?>        uniformClass;
+        public Class<? extends QUniform<?>> uniformClass;
         public int             components;
 
         /////////////////////////////////////////////////////////////////
@@ -228,7 +228,7 @@ public abstract class QShader {
             int      _slot, 
             RequirementType _type, 
             String   _purpose, 
-            Class<?> _uniformClass
+            Class<? extends QUniform<?>> _uniformClass
         ) {
             if (_type != RequirementType.Uniform) {
                 throw new QException(

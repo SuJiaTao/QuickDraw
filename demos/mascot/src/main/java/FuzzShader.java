@@ -40,7 +40,7 @@ public class FuzzShader extends QShader {
                     SHADER_LIGHTS_SLOT, 
                     RequirementType.Uniform, 
                     "point light position array",
-                    QLight[].class
+                    QLights.class
             ),
             new ShaderRequirement(
                     SHADER_TEXTURE_SLOT, 
@@ -114,9 +114,10 @@ public class FuzzShader extends QShader {
         // APPLY SIMPLE PHONG SHADING
         float ambient      = 0.4f;
         float diffuseAccum = 0.0f;
-        QLight[] lights  = fctx.uniform(SHADER_LIGHTS_SLOT, QLight[].class);
+        QLights  lights  = fctx.uniform(SHADER_LIGHTS_SLOT, QLights.class);
         QVector3 toLight = new QVector3( );
-        for (QLight light : lights) {
+        for (int i = 0; i < lights.count( ); i++) {
+            QLight light = lights.get(i);
             float attenuation = light.illuminate(pos, toLight);
 
             float diffuse = Math.max(0.0f, QVector3.dot(

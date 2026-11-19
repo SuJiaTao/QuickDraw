@@ -6,7 +6,7 @@ package ca.bael.QDraw;
 
 import ca.bael.QDraw.QException.PointOfError;
 
-public final class QVector3 extends QEncoding {
+public final class QVector3 extends QEncoding implements QUniform<QVector3> {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
     private static final float[] COMPONENTS_ZERO = { 0.0f, 0.0f, 0.0f };
@@ -50,6 +50,10 @@ public final class QVector3 extends QEncoding {
     // PUBLIC METHODS
     public QVector3 copy( ) {
         return new QVector3(this);
+    }
+
+    public QVector3 snapshot( ) {
+        return copy( );
     }
 
     public float getX( ) {

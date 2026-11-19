@@ -103,10 +103,10 @@ public final class Mascot {
                                         QColor.White(),
                                         1024));
             eyes.setLights(
-                    new QLight[] {
+                    new QLights(
                             new QLight(new QVector3(3.0f, 2.0f, 3.0f), 3.5f),
                             new QLight(new QVector3(3.0f, -2.0f, -5.0f), 1.0f)
-                    });
+                    ));
             eyes.setMatrix(m1);
             eyes.drawMesh(MASCOT_MESH);
 
@@ -201,9 +201,9 @@ public final class Mascot {
                     new QVector3(0.0f, time, 0.0f),
                     QVector3.One().multiply3(0.25f));
 
-            Float dt = (float) (System.currentTimeMillis() - t0);
+            float dt = (float) (System.currentTimeMillis() - t0);
 
-            eyes.setUniformSlot(1, dt);
+            eyes.setUniformSlot(1, new QScalar(dt));
             eyes.setTexture(MASCOT_TEXTURE);
             eyes.setMatrix(m0);
             eyes.drawMesh(MASCOT_MESH);
@@ -228,9 +228,9 @@ public final class Mascot {
                     QVector3.One().multiply3(0.25f));
             eyes.setTexture(MASCOT_TEXTURE);
             eyes.setLights(
-                    new QLight[] {
+                    new QLights(
                             new QLight(new QVector3(7.0f, 3.0f, 4.0f), 3.4f)
-                    });
+                    ));
             eyes.setMatrix(m0);
             eyes.drawMesh(MASCOT_MESH);
 

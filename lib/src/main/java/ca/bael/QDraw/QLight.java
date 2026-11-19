@@ -4,7 +4,7 @@
 
 package ca.bael.QDraw;
 
-public class QLight {
+public class QLight implements QUniform<QLight> {
     /////////////////////////////////////////////////////////////////
     // PUBLIC MEMBERS
     public QVector3 position;
@@ -12,6 +12,10 @@ public class QLight {
 
     /////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
+    public QLight snapshot( ) {
+        return new QLight(this);
+    }
+
     public float illuminate(QVector3 point, QVector3 outDir) {
         outDir.set(position);
         float dist = outDir.sub(point).magnitude( );
