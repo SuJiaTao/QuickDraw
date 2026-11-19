@@ -26,11 +26,23 @@ public abstract class QShader {
         float[][]     attributes;
         OutputLayout  layout;
         float[]       outputs;
+        int           written;
+        final QVector3 position = new QVector3( );
 
         /////////////////////////////////////////////////////////////////
         // PUBLIC METHODS
         public QVector3 attribVec3(int slot) {
             return new QVector3(attributes[slot]);
+        }
+
+        public QVector3 attribVec3(int slot, QVector3 out) {
+            float[] attrib = attributes[slot];
+            out.set(attrib[0], attrib[1], attrib.length > 2 ? attrib[2] : 0.0f);
+            return out;
+        }
+
+        public QVector3 position( ) {
+            return position;
         }
 
         public float[] attrib(int slot, float[] out) {
@@ -60,6 +72,18 @@ public abstract class QShader {
                 );
             }
             System.arraycopy(v, 0, outputs, offset, v.length);
+            written |= 1 << slot;
+        }
+
+        void ensureOutputsWritten( ) {
+            int missing = layout.declared & ~written;
+            if (missing != 0) {
+                throw new QException(
+                    PointOfError.InvalidData,
+                    "Vertex shader did not write declared output slot " +
+                    Integer.numberOfTrailingZeros(missing)
+                );
+            }
         }
 
         public void forward(int attribSlot) {
@@ -79,9 +103,14 @@ public abstract class QShader {
         float[]       normal;
         OutputLayout  layout;
         float[]       inputs;
+        final QColor  color = new QColor( );
 
         /////////////////////////////////////////////////////////////////
         // PUBLIC METHODS
+        public QColor color( ) {
+            return color;
+        }
+
         public QVector3 inputVec3(int slot) {
             return inputVec3(slot, new QVector3( ));
         }
@@ -136,6 +165,7 @@ public abstract class QShader {
         final int[] offsets = new int[VERTEX_SHADER_MAX_OUTPUTS];
         final int[] sizes   = new int[VERTEX_SHADER_MAX_OUTPUTS];
         final int   total;
+        final int   declared;
 
         /////////////////////////////////////////////////////////////////
         // PACKAGE METHODS
@@ -153,6 +183,7 @@ public abstract class QShader {
         // CONSTRUCTOR
         OutputLayout(ShaderRequirement[] requirements) {
             int offset = 0;
+            int mask   = 0;
             for (ShaderRequirement require : requirements) {
                 if (require.requireType != RequirementType.Output) {
                     continue;
@@ -160,8 +191,10 @@ public abstract class QShader {
                 offsets[require.slot] = offset;
                 sizes[require.slot]   = require.components;
                 offset += require.components;
+                mask |= 1 << require.slot;
             }
             total = offset;
+            declared = mask;
         }
     }
 
@@ -285,13 +318,13 @@ public abstract class QShader {
     public QVector3 vertexShader(
         VertexShaderContext context
     ) {
-        return context.attribVec3(QViewer.DEFAULT_SHADER_POSITION_SLOT);
+        return context.attribVec3(QViewer.DEFAULT_SHADER_POSITION_SLOT, context.position( ));
     }
 
     public QColor fragmentShader(
         FragmentShaderContext context
     ) {
-        return new QColor(0xFF, 0x00, 0xFF, 0xFF);
+        return context.color( ).set(0xFF, 0x00, 0xFF, 0xFF);
     }
 
     /////////////////////////////////////////////////////////////////

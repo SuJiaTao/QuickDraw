@@ -72,7 +72,7 @@ public final class QViewer extends QEncoding {
             VertexShaderContext context
         ) {
             QMatrix4x4 mtr = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class);
-            return mtr.transformPoint(context.attribVec3(DEFAULT_SHADER_POSITION_SLOT));
+            return mtr.transformPoint(context.attribVec3(DEFAULT_SHADER_POSITION_SLOT, context.position( )));
         }
 
         public QColor fragmentShader(
@@ -121,13 +121,13 @@ public final class QViewer extends QEncoding {
             QMatrix4x4 mtr = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class);
             context.forward(DEFAULT_SHADER_UV_SLOT);
 
-            return mtr.transformPoint(context.attribVec3(DEFAULT_SHADER_POSITION_SLOT));
+            return mtr.transformPoint(context.attribVec3(DEFAULT_SHADER_POSITION_SLOT, context.position( )));
         }
 
         public QColor fragmentShader(
             FragmentShaderContext context
         ) {
-            return new QColor(context.texture(DEFAULT_SHADER_TEXTURE_SLOT).sample(
+            return context.color( ).set(context.texture(DEFAULT_SHADER_TEXTURE_SLOT).sample(
                 context.input(DEFAULT_SHADER_UV_SLOT, 0),
                 context.input(DEFAULT_SHADER_UV_SLOT, 1),
                 sampleType
@@ -164,6 +164,7 @@ public final class QViewer extends QEncoding {
         }
 
         private QMatrix4x4 normalMtr;
+        private final QVector3 normal = new QVector3( );
 
         public void beginDraw(VertexShaderContext context) {
             normalMtr = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class).normalMatrix( );
@@ -175,10 +176,10 @@ public final class QViewer extends QEncoding {
             QMatrix4x4 mtr = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class);
             context.output(
                 DEFAULT_SHADER_NORMAL_SLOT,
-                normalMtr.transformDir(context.attribVec3(DEFAULT_SHADER_NORMAL_SLOT)).normalize( )
+                normalMtr.transformDir(context.attribVec3(DEFAULT_SHADER_NORMAL_SLOT, normal)).normalize( )
             );
 
-            return mtr.transformPoint(context.attribVec3(DEFAULT_SHADER_POSITION_SLOT));
+            return mtr.transformPoint(context.attribVec3(DEFAULT_SHADER_POSITION_SLOT, context.position( )));
         }
 
         public QColor fragmentShader(
@@ -186,7 +187,7 @@ public final class QViewer extends QEncoding {
         ) {
             QVector3 normal = context.inputVec3(DEFAULT_SHADER_NORMAL_SLOT);
 
-            return new QColor(
+            return context.color( ).set(
                 (int)((1.0f + normal.getX( )) * 127.0f),
                 (int)((1.0f + normal.getY( )) * 127.0f),
                 (int)((1.0f + normal.getZ( )) * 127.0f)
@@ -255,6 +256,7 @@ public final class QViewer extends QEncoding {
         }
 
         private QMatrix4x4 normalMtr;
+        private final QVector3 normal = new QVector3( );
 
         public void beginDraw(VertexShaderContext context) {
             normalMtr = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class).normalMatrix( );
@@ -264,8 +266,8 @@ public final class QViewer extends QEncoding {
             VertexShaderContext context
         ) {
             QMatrix4x4 mtr    = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class);
-            QVector3   pos    = mtr.transformPoint(context.attribVec3(DEFAULT_SHADER_POSITION_SLOT));
-            QVector3   normal = normalMtr.transformDir(context.attribVec3(DEFAULT_SHADER_NORMAL_SLOT)).normalize( );
+            QVector3   pos    = mtr.transformPoint(context.attribVec3(DEFAULT_SHADER_POSITION_SLOT, context.position( )));
+            normalMtr.transformDir(context.attribVec3(DEFAULT_SHADER_NORMAL_SLOT, normal)).normalize( );
 
             context.output(DEFAULT_SHADER_POSITION_SLOT, pos);
             context.forward(DEFAULT_SHADER_UV_SLOT);
@@ -283,7 +285,9 @@ public final class QViewer extends QEncoding {
 
             float[] uv     = context.input(DEFAULT_SHADER_UV_SLOT, new float[2]);
             float[] normal = context.inputVec3(DEFAULT_SHADER_NORMAL_SLOT).fastNormalize( ).getComponents( );
-            QColor texSampleColor = tex == null ? QColor.White() : new QColor(tex.sample(uv[0], uv[1], sampleType));
+            QColor texSampleColor = context.color( ).set(
+                tex == null ? 0xFFFFFFFF : tex.sample(uv[0], uv[1], sampleType)
+            );
             QColor ambientColor = mat == null? QColor.Black() : mat.ambient;
             QColor diffuseColor = mat == null? QColor.White() : mat.diffuse;
             QColor specularColor = mat == null? QColor.White() : mat.specular; 
@@ -884,7 +888,7 @@ public final class QViewer extends QEncoding {
             return;
         }
 
-        Arrays.fill(vert.shaderOutputs, 0.0f);
+        vctx.written = 0;
         vctx.outputs = vert.shaderOutputs;
 
         // POPULATE VERTEX SHADER INPUTS
@@ -905,6 +909,7 @@ public final class QViewer extends QEncoding {
 
         // CALL SHADER
         QVector3.copy(vert.posn, drawShader.vertexShader(vctx).getComponents());
+        vctx.ensureOutputsWritten();
         vertexCache.store(idx, vert);
     }
 
