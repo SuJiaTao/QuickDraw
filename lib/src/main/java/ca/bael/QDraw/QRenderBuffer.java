@@ -5,6 +5,7 @@
 package ca.bael.QDraw;
 
 import java.awt.image.*;
+import java.util.Arrays;
 import ca.bael.QDraw.QException.PointOfError;
 
 public final class QRenderBuffer extends QSampleable {
@@ -93,5 +94,10 @@ public final class QRenderBuffer extends QSampleable {
         for (int i = 0; i < depthBuffer.length; i++) {
             depthBuffer[i] = CLEAR_DEPTH;
         }
+    }
+
+    void clearRows(int y0, int y1) {
+        Arrays.fill(colorBuffer, width * (height - y1), width * (height - y0), CLEAR_COLOR);
+        Arrays.fill(depthBuffer, width * (height - y1), width * (height - y0), CLEAR_DEPTH);
     }
 }
