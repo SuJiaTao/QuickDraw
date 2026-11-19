@@ -134,6 +134,8 @@ public abstract class QShader {
         float[]       normal;
         OutputLayout  layout;
         float[]       inputs;
+        QSampleable.SampleType sampleType;
+        QColor        fillColor;
         final QColor  color = new QColor( );
 
         /////////////////////////////////////////////////////////////////

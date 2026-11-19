@@ -27,24 +27,27 @@ public final class Mascot {
 
     private static int  fpsFrames = 0;
     private static long fpsWindowStart = System.nanoTime();
-    private static long fpsFlushNanos = 0;
+    private static final QTimer flushTimer = new QTimer();
 
     public static void presentFrame() {
-        long flushStart = System.nanoTime();
+        flushTimer.start();
         eyes.flush();
-        fpsFlushNanos += System.nanoTime() - flushStart;
+        flushTimer.stop();
         window.updateFrame();
         fpsFrames++;
         long now = System.nanoTime();
         if (now - fpsWindowStart >= 1_000_000_000L) {
             double ms = (now - fpsWindowStart) / 1e6;
-            System.out.printf("%d fps (%.2f ms/frame, %.2f ms flush, %.2f ms draw, %.2f ms show)%n",
-                fpsFrames, ms / fpsFrames, fpsFlushNanos / 1e6 / fpsFrames,
-                window.drawNanos / 1e6 / fpsFrames, window.showNanos / 1e6 / fpsFrames);
+            System.out.printf("%d fps (%.2f ms/frame, %.2f ms flush [%.2f geom, %.2f raster], %.2f ms draw, %.2f ms show)%n",
+                fpsFrames, ms / fpsFrames, flushTimer.millisPer(fpsFrames),
+                eyes.geometryTimer.millisPer(fpsFrames), eyes.rasterTimer.millisPer(fpsFrames),
+                window.drawTimer.millisPer(fpsFrames), window.showTimer.millisPer(fpsFrames));
             fpsFrames = 0;
-            fpsFlushNanos = 0;
-            window.drawNanos = 0;
-            window.showNanos = 0;
+            flushTimer.reset();
+            eyes.geometryTimer.reset();
+            eyes.rasterTimer.reset();
+            window.drawTimer.reset();
+            window.showTimer.reset();
             fpsWindowStart = now;
         }
     }
