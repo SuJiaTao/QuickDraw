@@ -6,6 +6,7 @@ package ca.bael.QDraw;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.*;
 import javax.swing.*;
 import java.util.*;
 import ca.bael.QDraw.QException.PointOfError;
@@ -20,6 +21,7 @@ public final class QWindow {
     private JFrame        window;
     private Graphics2D    windowGraphics; 
     private QRenderBuffer renderBuffer;
+    private VolatileImage gpuImage;
     private int           windowWidth;
     private int           windowHeight;
     private InputListener listener;
@@ -117,18 +119,35 @@ public final class QWindow {
         renderBuffer = buffer;
     }
 
+    private void uploadToGpu(BufferedImage source) {
+        GraphicsConfiguration config = window.getGraphicsConfiguration( );
+        do {
+            if (gpuImage == null ||
+                gpuImage.validate(config) == VolatileImage.IMAGE_INCOMPATIBLE) {
+                gpuImage = config.createCompatibleVolatileImage(
+                    source.getWidth( ),
+                    source.getHeight( )
+                );
+            }
+            Graphics2D uploadGraphics = gpuImage.createGraphics( );
+            uploadGraphics.drawImage(source, 0, 0, null);
+            uploadGraphics.dispose( );
+        } while (gpuImage.contentsLost( ));
+    }
+
     public void updateFrame( ) {
         if (renderBuffer == null) {
             return;
         }
 
         long drawStart = System.nanoTime( );
+        uploadToGpu(renderBuffer.getBufferedImage( ));
         windowGraphics.setRenderingHint(
             RenderingHints.KEY_INTERPOLATION,
             RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR
         );
         windowGraphics.drawImage(
-            renderBuffer.getBufferedImage(),
+            gpuImage,
             0,
             0,
             windowWidth,
