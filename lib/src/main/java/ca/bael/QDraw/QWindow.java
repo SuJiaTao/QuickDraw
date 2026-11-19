@@ -26,7 +26,6 @@ public final class QWindow {
 
     /////////////////////////////////////////////////////////////////
     // PUBLIC MEMBERS
-    public QColor clearColor;
     public final QTimer drawTimer = new QTimer( );
     public final QTimer showTimer = new QTimer( );
 
@@ -89,8 +88,6 @@ public final class QWindow {
 
         windowWidth  = width;
         windowHeight = height;
-
-        clearColor = new QColor();
 
         window = new JFrame(title);
         window.setSize(width, height);

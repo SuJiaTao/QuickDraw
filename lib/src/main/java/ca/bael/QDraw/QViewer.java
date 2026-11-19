@@ -46,6 +46,8 @@ public final class QViewer {
 
     public static final RenderMode DEFAULT_RENDER_MODE = RenderMode.Textured;
     public static final QColor DEFAULT_FILL_COLOR = QColor.White();
+    public static final boolean DEFAULT_DEPTH_TEST = true;
+    public static final boolean DEFAULT_DEPTH_WRITE = true;
     private static final int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
     private static final String[] WORKER_NAMES = { "Kitty", "Sharky", "Froggy", "Solo", "Tango", "Yote" };
     private static final AtomicInteger WORKER_COUNT = new AtomicInteger();
@@ -110,6 +112,14 @@ public final class QViewer {
 
     public void setCustomShader(QShader _shader) {
         customShader = _shader;
+    }
+
+    public void setDepthTest(boolean enabled) {
+        state.depthTest = enabled;
+    }
+
+    public void setDepthWrite(boolean enabled) {
+        state.depthWrite = enabled;
     }
 
     public void setUniformSlot(

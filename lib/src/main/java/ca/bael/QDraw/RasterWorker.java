@@ -13,8 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 final class RasterWorker {
     ////////////////////////////////////////////////////////////////
     // CONSTANTS
-    private static final float DEPTH_TEST_EPSILON = 0.002f;
-    private static final int   STRIP_HEIGHT       = 8;
+    private static final int STRIP_HEIGHT = 8;
 
     ////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
@@ -25,6 +24,8 @@ final class RasterWorker {
     private TriangleQueue triQueue;
     private int stripStart;
     private int stripEnd;
+    private boolean depthTest;
+    private boolean depthWrite;
 
     ////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
@@ -58,6 +59,8 @@ final class RasterWorker {
         fctx.target     = renderTarget;
         fctx.layout     = draw.layout;
         fctx.drawData   = draw.data;
+        depthTest       = draw.state.depthTest;
+        depthWrite      = draw.state.depthWrite;
         if (fctx.inputs == null || fctx.inputs.length != draw.layout.total) {
             fctx.inputs = new float[draw.layout.total];
         }
@@ -215,8 +218,8 @@ final class RasterWorker {
         // NOTE:
         // since all depths are negative and inverted, the further value
         // will be a smaller negative and hence greater. therefore the failing
-        // depth test will be greater than the previous depth
-        if (invDepth > depthData[pixel] - DEPTH_TEST_EPSILON) {
+        // depth test will be greater than or equal to the previous depth
+        if (depthTest && invDepth >= depthData[pixel]) {
             return;
         }
 
@@ -236,7 +239,9 @@ final class RasterWorker {
         }
 
         // BLEND FRAGMENT TO BELOW COLOR AND WRITE TO RENDERTARGET
-        depthData[pixel] = invDepth;
+        if (depthWrite) {
+            depthData[pixel] = invDepth;
+        }
         colorData[pixel] = QColor.blend(colorData[pixel], fragColor.toInt());
     }
 

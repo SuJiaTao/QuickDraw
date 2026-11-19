@@ -54,7 +54,7 @@ public final class QAttribBuffer {
     public QAttribBuffer(QAttribBuffer toCopy) {
         buffer = new float[toCopy.buffer.length];
         System.arraycopy(
-            toCopy, 
+            toCopy.buffer,
             0, 
             buffer, 
             0, 
