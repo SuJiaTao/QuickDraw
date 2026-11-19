@@ -15,6 +15,8 @@ public abstract class QShader {
     public static final int RANDOM_GRANULATIRY        = 0xFFFF;
     public static final float NORMALIZATION_FACTOR    = 1.0f / (float)RANDOM_GRANULATIRY;
     public static final int VERTEX_SHADER_MAX_OUTPUTS = 8;
+    public static final int VERTEX_SCRATCH_VEC3S      = 4;
+    public static final int FRAGMENT_SCRATCH_VEC3S    = 4;
 
     /////////////////////////////////////////////////////////////////
     // PUBLIC CLASSES
@@ -41,6 +43,13 @@ public abstract class QShader {
         int           written;
         QDrawData     drawData;
         final QVector3 position = new QVector3( );
+        final QVector3[] scratch = new QVector3[VERTEX_SCRATCH_VEC3S];
+
+        VertexShaderContext( ) {
+            for (int i = 0; i < scratch.length; i++) {
+                scratch[i] = new QVector3( );
+            }
+        }
 
         /////////////////////////////////////////////////////////////////
         // PUBLIC METHODS
@@ -56,6 +65,10 @@ public abstract class QShader {
 
         public QVector3 position( ) {
             return position;
+        }
+
+        public QVector3 scratchVec3(int index) {
+            return scratch[index];
         }
 
         public float[] attrib(int slot, float[] out) {
@@ -142,12 +155,26 @@ public abstract class QShader {
         QSampleable.SampleType sampleType;
         QColor        fillColor;
         QDrawData     drawData;
+        int           gbufferWritten;
         final QColor  color = new QColor( );
+        final float[] gbufferFloats = new float[QRenderBuffer.GBUFFER_SLOTS * 3];
+        final long[]  gbufferLongs  = new long[QRenderBuffer.GBUFFER_SLOTS];
+        final QVector3[] scratch = new QVector3[FRAGMENT_SCRATCH_VEC3S];
+
+        FragmentShaderContext( ) {
+            for (int i = 0; i < scratch.length; i++) {
+                scratch[i] = new QVector3( );
+            }
+        }
 
         /////////////////////////////////////////////////////////////////
         // PUBLIC METHODS
         public QColor color( ) {
             return color;
+        }
+
+        public QVector3 scratchVec3(int index) {
+            return scratch[index];
         }
 
         public QVector3 inputVec3(int slot) {
@@ -222,6 +249,66 @@ public abstract class QShader {
         public QVector3 faceNormal( ) {
             return new QVector3(normal);
         }
+
+        public QVector3 gbufferVec3(int textureSlot, int gslot, QVector3 out) {
+            return gbufferSource(textureSlot).getGBufferVec3(gslot, screenX, screenY, out);
+        }
+
+        public long gbufferLong(int textureSlot, int gslot) {
+            return gbufferSource(textureSlot).getGBufferLong(gslot, screenX, screenY);
+        }
+
+        public float gbufferDepth(int textureSlot) {
+            return gbufferSource(textureSlot).getDepth(screenX, screenY);
+        }
+
+        private QRenderBuffer gbufferSource(int textureSlot) {
+            if (!(textures[textureSlot] instanceof QRenderBuffer source)) {
+                throw new QException(
+                    PointOfError.InvalidParameter,
+                    "Texture slot " + textureSlot + " does not hold a QRenderBuffer"
+                );
+            }
+            if (source.getWidth( ) != target.getWidth( ) || source.getHeight( ) != target.getHeight( )) {
+                throw new QException(
+                    PointOfError.InvalidData,
+                    "G-buffer source and render target sizes differ"
+                );
+            }
+            return source;
+        }
+
+        public void outputGBuffer(int slot, QVector3 v) {
+            checkGBufferFormat(slot, QRenderBuffer.GBufferFormat.Float3);
+            System.arraycopy(v.getComponents( ), 0, gbufferFloats, slot * 3, 3);
+            gbufferWritten |= 1 << slot;
+        }
+
+        public void outputGBuffer(int slot, long v) {
+            checkGBufferFormat(slot, QRenderBuffer.GBufferFormat.Long);
+            gbufferLongs[slot] = v;
+            gbufferWritten |= 1 << slot;
+        }
+
+        private void checkGBufferFormat(int slot, QRenderBuffer.GBufferFormat format) {
+            if (layout.gbufferFormats[slot] != format) {
+                throw new QException(
+                    PointOfError.InvalidParameter,
+                    "G-buffer slot " + slot + " was not declared as " + format + " in requirements()"
+                );
+            }
+        }
+
+        void ensureGBufferWritten( ) {
+            int missing = layout.gbufferDeclared & ~gbufferWritten;
+            if (missing != 0) {
+                throw new QException(
+                    PointOfError.InvalidData,
+                    "Fragment shader did not write declared g-buffer slot " +
+                    Integer.numberOfTrailingZeros(missing)
+                );
+            }
+        }
     }
 
     static final class OutputLayout {
@@ -231,6 +318,8 @@ public abstract class QShader {
         final int[] sizes   = new int[VERTEX_SHADER_MAX_OUTPUTS];
         final int   total;
         final int   declared;
+        final QRenderBuffer.GBufferFormat[] gbufferFormats = new QRenderBuffer.GBufferFormat[QRenderBuffer.GBUFFER_SLOTS];
+        final int   gbufferDeclared;
 
         /////////////////////////////////////////////////////////////////
         // PACKAGE METHODS
@@ -249,7 +338,13 @@ public abstract class QShader {
         OutputLayout(ShaderRequirement[] requirements) {
             int offset = 0;
             int mask   = 0;
+            int gmask  = 0;
             for (ShaderRequirement require : requirements) {
+                if (require.requireType == RequirementType.GBuffer) {
+                    gbufferFormats[require.slot] = require.gbufferFormat;
+                    gmask |= 1 << require.slot;
+                    continue;
+                }
                 if (require.requireType != RequirementType.Output) {
                     continue;
                 }
@@ -260,6 +355,7 @@ public abstract class QShader {
             }
             total = offset;
             declared = mask;
+            gbufferDeclared = gmask;
         }
     }
 
@@ -270,7 +366,8 @@ public abstract class QShader {
             Attribute,
             Uniform,
             Texture,
-            Output
+            Output,
+            GBuffer
         }
 
         /////////////////////////////////////////////////////////////////
@@ -280,6 +377,7 @@ public abstract class QShader {
         public String          purpose;
         public Class<? extends QUniform<?>> uniformClass;
         public int             components;
+        public QRenderBuffer.GBufferFormat gbufferFormat;
 
         /////////////////////////////////////////////////////////////////
         // CONSTRUCTOR
@@ -323,6 +421,24 @@ public abstract class QShader {
             requireType = _type;
             purpose     = _purpose;
             components  = _components;
+        }
+
+        public ShaderRequirement(
+            int      _slot,
+            RequirementType _type,
+            String   _purpose,
+            QRenderBuffer.GBufferFormat _gbufferFormat
+        ) {
+            if (_type != RequirementType.GBuffer) {
+                throw new QException(
+                    PointOfError.InvalidParameter,
+                    "Can ONLY specify g-buffer format if requirement type is GBuffer"
+                );
+            }
+            slot          = _slot;
+            requireType   = _type;
+            purpose       = _purpose;
+            gbufferFormat = _gbufferFormat;
         }
     }
 

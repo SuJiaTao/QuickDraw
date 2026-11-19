@@ -124,6 +124,12 @@ final class GeometryWorker {
                 continue;
             }
 
+            if (tri.getPosnZ(0) > nearClip &&
+                tri.getPosnZ(1) > nearClip &&
+                tri.getPosnZ(2) > nearClip) {
+                continue;
+            }
+
             Triangle[] clipTris = TriangleClipper.clip(tri, nearClip);
             for (Triangle clippedTri : clipTris) {
                 internalEmitTri(clippedTri, false, draw);
@@ -134,6 +140,12 @@ final class GeometryWorker {
     }
 
     private void internalEmitTri(Triangle tri, boolean shared, DrawState draw) {
+        ViewerState view = draw.state;
+        if (internalCheckOutside(tri, VCTR_INDEX_X, view.viewLeft, view.viewRight) ||
+            internalCheckOutside(tri, VCTR_INDEX_Y, view.viewBottom, view.viewTop)) {
+            return;
+        }
+
         int v0 = internalEmitVertex(tri, 0, shared, draw.state);
         int v1 = internalEmitVertex(tri, 1, shared, draw.state);
         int v2 = internalEmitVertex(tri, 2, shared, draw.state);
@@ -206,6 +218,13 @@ final class GeometryWorker {
         QVector3.add(rayToCenter, tri.getPosn(1));
         QVector3.add(rayToCenter, tri.getPosn(2));
         return (QVector3.dot(tri.normal, rayToCenter) > BACKFACE_CULL_MIN_DOT);
+    }
+
+    private static boolean internalCheckOutside(Triangle tri, int axis, float lo, float hi) {
+        float a = tri.getPosn(0)[axis] * -(1.0f / tri.getPosnZ(0));
+        float b = tri.getPosn(1)[axis] * -(1.0f / tri.getPosnZ(1));
+        float c = tri.getPosn(2)[axis] * -(1.0f / tri.getPosnZ(2));
+        return (a < lo && b < lo && c < lo) || (a > hi && b > hi && c > hi);
     }
 
     ////////////////////////////////////////////////////////////////

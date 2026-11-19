@@ -38,6 +38,7 @@ public final class QWindow {
         public ArrayList<Integer>   keyCodesDown = new ArrayList<>(KEY_BUFFER_INITIAL_SIZE);
         public ArrayList<Character> charsDown    = new ArrayList<>(KEY_BUFFER_INITIAL_SIZE);
         public boolean mouseDown = false;
+        public volatile int mouseButtonsDown = 0;
 
         /////////////////////////////////////////////////////////////////
         // CALLBACKS
@@ -47,10 +48,12 @@ public final class QWindow {
 
         public void mousePressed(MouseEvent arg0) {
             mouseDown = true;
+            mouseButtonsDown |= 1 << arg0.getButton( );
         }
 
         public void mouseReleased(MouseEvent arg0) {
             mouseDown = false;
+            mouseButtonsDown &= ~(1 << arg0.getButton( ));
         }
 
         public void keyPressed(KeyEvent arg0) {
@@ -149,6 +152,10 @@ public final class QWindow {
 
     public boolean isMouseClicked( ) {
         return listener.mouseDown;
+    }
+
+    public boolean isMouseButtonDown(int button) {
+        return (listener.mouseButtonsDown & (1 << button)) != 0;
     }
 
     public boolean isCharDownIgnoreCase(char charCode) {

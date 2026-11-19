@@ -228,6 +228,7 @@ final class RasterWorker {
         fctx.screenY = drawY;
         fctx.invDepth = invDepth;
         fctx.normal = raster.normal;
+        fctx.gbufferWritten = 0;
         float invW = 1.0f / invDepth;
         internalInterpolateFragmentInputs(w0 * invW, w1 * invW, w2 * invW, fctx.inputs);
 
@@ -238,11 +239,25 @@ final class RasterWorker {
             return;
         }
 
+        fctx.ensureGBufferWritten();
+        internalWriteGBuffer(pixel);
+
         // BLEND FRAGMENT TO BELOW COLOR AND WRITE TO RENDERTARGET
         if (depthWrite) {
             depthData[pixel] = invDepth;
         }
         colorData[pixel] = QColor.blend(colorData[pixel], fragColor.toInt());
+    }
+
+    private void internalWriteGBuffer(int pixel) {
+        for (int mask = fctx.layout.gbufferDeclared; mask != 0; mask &= mask - 1) {
+            int slot = Integer.numberOfTrailingZeros(mask);
+            if (fctx.layout.gbufferFormats[slot] == QRenderBuffer.GBufferFormat.Float3) {
+                System.arraycopy(fctx.gbufferFloats, slot * 3, renderTarget.getGBufferFloatData(slot), pixel * 3, 3);
+            } else {
+                renderTarget.getGBufferLongData(slot)[pixel] = fctx.gbufferLongs[slot];
+            }
+        }
     }
 
     ////////////////////////////////////////////////////////////////

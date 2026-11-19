@@ -5,7 +5,10 @@
 package ca.bael.QDraw;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -17,7 +20,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import ca.bael.QDraw.QException.PointOfError;
 import ca.bael.QDraw.QSampleable.SampleType;
 import ca.bael.QDraw.QShader.ShaderRequirement;
-import ca.bael.QDraw.QShader.ShaderRequirement.RequirementType;
 
 public final class QViewer {
     ////////////////////////////////////////////////////////////////
@@ -49,11 +51,17 @@ public final class QViewer {
     public static final boolean DEFAULT_DEPTH_TEST = true;
     public static final boolean DEFAULT_DEPTH_WRITE = true;
     private static final int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
-    private static final String[] WORKER_NAMES = { "Kitty", "Sharky", "Froggy", "Solo", "Tango", "Yote" };
+    private static final String[] WORKER_NAMES = {
+        "Kitty",  "Sharky", "Ouppy",  "Froggy", "Solo",   "Bango",  "Tango",
+        "Kiki",   "Bouba",  "Lala",   "Tiki",   "Yana",   "Yote",   "Boyfriend",
+        "Zeta",   "Yanis",  "Pipi",   "Taha",   "Poke",   "Mini",   "Zala",
+        "Potke",  "Lambda", "Saura",  "Boppe",  "Omua",   "Fauna",  "Talle"
+    };
+    private static final String[] WORKER_THREAD_NAMES = internalPickWorkerNames();
     private static final AtomicInteger WORKER_COUNT = new AtomicInteger();
     private static final ExecutorService WORKER_POOL = Executors.newFixedThreadPool(WORKER_THREADS, task -> {
-        String name = WORKER_NAMES[WORKER_COUNT.getAndIncrement() % WORKER_NAMES.length];
-        Thread thread = new Thread(task, String.format("QuickDrawWorker_%s_%04X", name, ThreadLocalRandom.current().nextInt(0x10000)));
+        String name = WORKER_THREAD_NAMES[WORKER_COUNT.getAndIncrement() % WORKER_THREAD_NAMES.length];
+        Thread thread = new Thread(task, "QuickDrawWorker_" + name);
         thread.setDaemon(true);
         return thread;
     });
@@ -80,6 +88,7 @@ public final class QViewer {
     private final ArrayList<DrawState> queuedDraws = new ArrayList<>();
     private final List<GeometryWorker> geometryWorkers = new ArrayList<>();
     private final List<RasterWorker> rasterWorkers = new ArrayList<>();
+    private QRenderBuffer renderTarget;
     private boolean clearPending;
 
     public final QTimer geometryTimer = new QTimer();
@@ -226,7 +235,22 @@ public final class QViewer {
 
     ////////////////////////////////////////////////////////////////
     // PRIVATE METHODS
+    private static String[] internalPickWorkerNames() {
+        List<String> shuffled = new ArrayList<>(List.of(WORKER_NAMES));
+        Collections.shuffle(shuffled);
+        Map<String, Integer> uses = new HashMap<>();
+        String[] names = new String[WORKER_THREADS];
+        for (int i = 0; i < WORKER_THREADS; i++) {
+            String name = i < shuffled.size() ? shuffled.get(i)
+                    : WORKER_NAMES[ThreadLocalRandom.current().nextInt(WORKER_NAMES.length)];
+            int use = uses.merge(name, 1, Integer::sum);
+            names[i] = use == 1 ? name : name + use;
+        }
+        return names;
+    }
+
     private void init(QRenderBuffer target) {
+        renderTarget = target;
         for (int i = 0; i < WORKER_THREADS; i++) {
             geometryWorkers.add(new GeometryWorker(target));
             rasterWorkers.add(new RasterWorker(target));
@@ -281,6 +305,17 @@ public final class QViewer {
                 case Output:
                     break;
 
+                case GBuffer:
+                    if (renderTarget.getGBufferFormat(require.slot) != require.gbufferFormat) {
+                        throw new QException(
+                                PointOfError.InvalidData,
+                                "Shader requires g-buffer slot " + require.slot +
+                                        " of format " + require.gbufferFormat +
+                                        ". Render target has " + renderTarget.getGBufferFormat(require.slot) +
+                                        ". Purpose: " + require.purpose);
+                    }
+                    break;
+
                 default:
                     throw new QException(
                             PointOfError.InvalidData,
@@ -315,8 +350,9 @@ public final class QViewer {
 
     private void internalProcessGeometryParallel() {
         AtomicInteger nextDraw = new AtomicInteger();
-        List<Callable<Void>> tasks = new ArrayList<>(geometryWorkers.size());
-        for (GeometryWorker worker : geometryWorkers) {
+        int taskCount = Math.min(geometryWorkers.size(), queuedDraws.size());
+        List<Callable<Void>> tasks = new ArrayList<>(taskCount);
+        for (GeometryWorker worker : geometryWorkers.subList(0, taskCount)) {
             tasks.add(() -> {
                 worker.process(queuedDraws, nextDraw);
                 return null;
