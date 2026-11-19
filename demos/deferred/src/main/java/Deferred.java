@@ -2,7 +2,7 @@
 // 2024
 // Deferred.java
 
-import java.awt.event.MouseEvent;
+import java.awt.event.KeyEvent;
 import java.util.Random;
 
 import ca.bael.QDraw.*;
@@ -20,9 +20,11 @@ public final class Deferred {
     public static final int   LATTICE_Z        = 16;
     public static final float LATTICE_SPACING  = 2.2f;
     public static final float MASCOT_SCALE     = 0.2f;
+    public static final float MASCOT_HEIGHT    = 9.6f * MASCOT_SCALE;
     public static final float CAMERA_YAW       = 45.0f;
     public static final float CAMERA_PITCH     = -35.264f;
-    public static final float CAMERA_DISTANCE  = 40.0f;
+    public static final float CAMERA_DISTANCE  = 3.0f * MASCOT_HEIGHT;
+    public static final float CAMERA_TURN_RATE = 60.0f;
     public static final int   LIGHT_COUNT      = 8;
     public static final float LIGHT_STRENGTH   = 3.0f;
     public static final float LIGHT_HEIGHT     = 3.0f;
@@ -34,10 +36,6 @@ public final class Deferred {
     public static final QMesh      SPHERE_MESH    = new QMesh(Deferred.class.getResource("/UVSphere_Low.obj").getPath());
     public static final QMesh      SCREEN_QUAD    = QMesh.screenQuad();
     public static final QTexture   MASCOT_TEXTURE = new QTexture(Deferred.class.getResource("/MascotFuzzy256.png").getPath());
-    public static final QMatrix4x4 VIEW           = QMatrix4x4.Identity()
-            .rotate(0.0f, CAMERA_YAW, 0.0f)
-            .rotate(CAMERA_PITCH, 0.0f, 0.0f)
-            .translate(0.0f, 0.0f, -CAMERA_DISTANCE);
     public static final QMaterial  LIT_MATERIAL   = new QMaterial(new QColor(0x28, 0x28, 0x28), QColor.White(), QColor.White(), 32.0f);
     public static final QScalar    MASCOT_ID      = new QScalar(GBufferShader.ID_MASCOT);
     public static final QScalar    MARKER_ID      = new QScalar(GBufferShader.ID_LIGHT_MARKER);
@@ -71,8 +69,15 @@ public final class Deferred {
         );
     }
 
-    private static QMatrix4x4 modelView(QVector3 position, float scale) {
-        return QMatrix4x4.multiply(QMatrix4x4.TRS(position, QVector3.Zero(), QVector3.One().multiply3(scale)), VIEW);
+    private static QMatrix4x4 viewMatrix(float yaw) {
+        return QMatrix4x4.Identity()
+                .rotate(0.0f, yaw, 0.0f)
+                .rotate(CAMERA_PITCH, 0.0f, 0.0f)
+                .translate(0.0f, 0.0f, -CAMERA_DISTANCE);
+    }
+
+    private static QMatrix4x4 modelView(QMatrix4x4 view, QVector3 position, float scale) {
+        return QMatrix4x4.multiply(QMatrix4x4.TRS(position, QVector3.Zero(), QVector3.One().multiply3(scale)), view);
     }
 
     public static void main(String[] args) {
@@ -93,30 +98,36 @@ public final class Deferred {
         lightPass.setCustomShader(new LightingShader(FB_WIDTH, FB_HEIGHT, -FB_ASPECT, FB_ASPECT, -1.0f, 1.0f));
 
         int     view       = LightingShader.VIEW_LIT;
-        boolean prevLeft   = false;
-        boolean prevRight  = false;
+        boolean prevUp     = false;
+        boolean prevDown   = false;
+        float   yaw        = CAMERA_YAW;
+        float   prevTime   = 0.0f;
         int     fpsFrames  = 0;
         long    fpsStart   = System.nanoTime();
         long    t0         = System.nanoTime();
         System.out.println("view: " + LightingShader.VIEW_NAMES[view]);
 
         while (true) {
-            boolean left  = window.isMouseButtonDown(MouseEvent.BUTTON1);
-            boolean right = window.isMouseButtonDown(MouseEvent.BUTTON3);
-            if ((left && !prevLeft) || (right && !prevRight)) {
+            boolean up   = window.isKeyDown(KeyEvent.VK_UP);
+            boolean down = window.isKeyDown(KeyEvent.VK_DOWN);
+            if ((up && !prevUp) || (down && !prevDown)) {
                 int count = LightingShader.VIEW_NAMES.length;
-                view = (view + (left && !prevLeft ? count - 1 : 1)) % count;
+                view = (view + (up && !prevUp ? count - 1 : 1)) % count;
                 System.out.println("view: " + LightingShader.VIEW_NAMES[view]);
             }
-            prevLeft  = left;
-            prevRight = right;
+            prevUp   = up;
+            prevDown = down;
             float time = (System.nanoTime() - t0) * 1e-9f;
+            float turn = (window.isKeyDown(KeyEvent.VK_RIGHT) ? 1.0f : 0.0f) - (window.isKeyDown(KeyEvent.VK_LEFT) ? 1.0f : 0.0f);
+            yaw += turn * CAMERA_TURN_RATE * (time - prevTime);
+            prevTime = time;
+            QMatrix4x4 viewMtr = viewMatrix(yaw);
 
             geomPass.clearFrame();
             for (int x = 0; x < LATTICE_X; x++) {
                 for (int y = 0; y < LATTICE_Y; y++) {
                     for (int z = 0; z < LATTICE_Z; z++) {
-                        geomPass.setMatrix(modelView(new QVector3(
+                        geomPass.setMatrix(modelView(viewMtr, new QVector3(
                             (x - 0.5f * (LATTICE_X - 1)) * LATTICE_SPACING,
                             (y - 0.5f * (LATTICE_Y - 1)) * LATTICE_SPACING,
                             (z - 0.5f * (LATTICE_Z - 1)) * LATTICE_SPACING), MASCOT_SCALE));
@@ -129,10 +140,10 @@ public final class Deferred {
             QLight[] lights = new QLight[LIGHT_COUNT];
             for (int i = 0; i < LIGHT_COUNT; i++) {
                 QVector3 world = lightWorldPosition(i, time);
-                geomPass.setMatrix(modelView(world, MARKER_SCALE));
+                geomPass.setMatrix(modelView(viewMtr, world, MARKER_SCALE));
                 geomPass.setUniformSlot(GBufferShader.ID_UNIFORM_SLOT, MARKER_ID);
                 geomPass.drawMesh(SPHERE_MESH);
-                lights[i] = new QLight(VIEW.transformPoint(world), LIGHT_STRENGTH);
+                lights[i] = new QLight(viewMtr.transformPoint(world), LIGHT_STRENGTH);
             }
             geomPass.flush();
 
