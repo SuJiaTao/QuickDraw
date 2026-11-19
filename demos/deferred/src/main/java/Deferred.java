@@ -113,6 +113,8 @@ public final class Deferred {
 
         QViewer lightPass = new QViewer(frameBuffer);
         lightPass.setRenderMode(RenderMode.CustomShader);
+        lightPass.setDepthTest(false);
+        lightPass.setDepthWrite(false);
         float halfX = 0.5f * LATTICE_X * LATTICE_SPACING;
         float halfZ = 0.5f * LATTICE_Z * LATTICE_SPACING;
         lightPass.setCustomShader(new LightingShader(FB_WIDTH, FB_HEIGHT, -FB_ASPECT, FB_ASPECT, -1.0f, 1.0f,
