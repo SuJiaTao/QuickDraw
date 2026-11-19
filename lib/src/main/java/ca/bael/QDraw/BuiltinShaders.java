@@ -17,6 +17,13 @@ import ca.bael.QDraw.QShader.ShaderRequirement.RequirementType;
 
 final class BuiltinShaders {
     ////////////////////////////////////////////////////////////////
+    // PRIVATE CLASSES
+    private record TexturedData(QShader.OutputSlot uvSlot) implements QDrawData { }
+    private record NormalData(QMatrix4x4 normalMtr, QShader.OutputSlot normalSlot) implements QDrawData { }
+    private record MaterialData(QMatrix4x4 normalMtr, QShader.OutputSlot posSlot,
+                                QShader.OutputSlot uvSlot, QShader.OutputSlot normalSlot) implements QDrawData { }
+
+    ////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
     public static QShader solidFill( ) {
         return new QShader( ) {
@@ -85,17 +92,15 @@ final class BuiltinShaders {
                 };
             }
 
-            private OutputSlot uvSlot;
-
-            public void beginDraw(VertexShaderContext context) {
-                uvSlot = context.outputSlot(DEFAULT_SHADER_UV_SLOT);
+            public QDrawData beginDraw(VertexShaderContext context) {
+                return new TexturedData(context.outputSlot(DEFAULT_SHADER_UV_SLOT));
             }
 
             public QVector3 vertexShader(
                 VertexShaderContext context
             ) {
                 QMatrix4x4 mtr = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class);
-                context.forward(uvSlot);
+                context.forward(context.drawData(TexturedData.class).uvSlot( ));
 
                 return mtr.transformPoint(context.attribVec3(DEFAULT_SHADER_POSITION_SLOT, context.position( )));
             }
@@ -103,6 +108,7 @@ final class BuiltinShaders {
             public QColor fragmentShader(
                 FragmentShaderContext context
             ) {
+                OutputSlot uvSlot = context.drawData(TexturedData.class).uvSlot( );
                 return context.color( ).set(context.texture(DEFAULT_SHADER_TEXTURE_SLOT).sample(
                     context.input(uvSlot, 0),
                     context.input(uvSlot, 1),
@@ -141,22 +147,21 @@ final class BuiltinShaders {
                 };
             }
 
-            private QMatrix4x4 normalMtr;
-            private OutputSlot normalSlot;
-            private final QVector3 normal = new QVector3( );
-
-            public void beginDraw(VertexShaderContext context) {
-                normalMtr = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class).normalMatrix( );
-                normalSlot = context.outputSlot(DEFAULT_SHADER_NORMAL_SLOT);
+            public QDrawData beginDraw(VertexShaderContext context) {
+                return new NormalData(
+                    context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class).normalMatrix( ),
+                    context.outputSlot(DEFAULT_SHADER_NORMAL_SLOT)
+                );
             }
 
             public QVector3 vertexShader(
                 VertexShaderContext context
             ) {
+                NormalData data = context.drawData(NormalData.class);
                 QMatrix4x4 mtr = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class);
                 context.output(
-                    normalSlot,
-                    normalMtr.transformDir(context.attribVec3(DEFAULT_SHADER_NORMAL_SLOT, normal)).normalize( )
+                    data.normalSlot( ),
+                    data.normalMtr( ).transformDir(context.attribVec3(DEFAULT_SHADER_NORMAL_SLOT)).normalize( )
                 );
 
                 return mtr.transformPoint(context.attribVec3(DEFAULT_SHADER_POSITION_SLOT, context.position( )));
@@ -165,7 +170,7 @@ final class BuiltinShaders {
             public QColor fragmentShader(
                 FragmentShaderContext context
             ) {
-                QVector3 normal = context.inputVec3(normalSlot);
+                QVector3 normal = context.inputVec3(context.drawData(NormalData.class).normalSlot( ));
 
                 return context.color( ).set(
                     (int)((1.0f + normal.getX( )) * 127.0f),
@@ -237,29 +242,26 @@ final class BuiltinShaders {
                 };
             }
 
-            private QMatrix4x4 normalMtr;
-            private OutputSlot posSlot;
-            private OutputSlot uvSlot;
-            private OutputSlot normalSlot;
-            private final QVector3 normal = new QVector3( );
-
-            public void beginDraw(VertexShaderContext context) {
-                normalMtr = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class).normalMatrix( );
-                posSlot    = context.outputSlot(DEFAULT_SHADER_POSITION_SLOT);
-                uvSlot     = context.outputSlot(DEFAULT_SHADER_UV_SLOT);
-                normalSlot = context.outputSlot(DEFAULT_SHADER_NORMAL_SLOT);
+            public QDrawData beginDraw(VertexShaderContext context) {
+                return new MaterialData(
+                    context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class).normalMatrix( ),
+                    context.outputSlot(DEFAULT_SHADER_POSITION_SLOT),
+                    context.outputSlot(DEFAULT_SHADER_UV_SLOT),
+                    context.outputSlot(DEFAULT_SHADER_NORMAL_SLOT)
+                );
             }
 
             public QVector3 vertexShader(
                 VertexShaderContext context
             ) {
+                MaterialData data = context.drawData(MaterialData.class);
                 QMatrix4x4 mtr    = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class);
                 QVector3   pos    = mtr.transformPoint(context.attribVec3(DEFAULT_SHADER_POSITION_SLOT, context.position( )));
-                normalMtr.transformDir(context.attribVec3(DEFAULT_SHADER_NORMAL_SLOT, normal)).normalize( );
+                QVector3   normal = data.normalMtr( ).transformDir(context.attribVec3(DEFAULT_SHADER_NORMAL_SLOT)).normalize( );
 
-                context.output(posSlot, pos);
-                context.forward(uvSlot);
-                context.output(normalSlot, normal);
+                context.output(data.posSlot( ), pos);
+                context.forward(data.uvSlot( ));
+                context.output(data.normalSlot( ), normal);
 
                 return pos;
             }
@@ -270,9 +272,10 @@ final class BuiltinShaders {
                 QSampleable tex = context.texture(DEFAULT_SHADER_TEXTURE_SLOT);
                 QMaterial   mat = context.uniform(DEFAULT_SHADER_MATERIAL_SLOT, QMaterial.class);
                 QLights  lights = context.uniform(DEFAULT_SHADER_LIGHTS_SLOT, QLights.class);
+                MaterialData data = context.drawData(MaterialData.class);
 
-                float[] uv     = context.input(uvSlot, new float[2]);
-                float[] normal = context.inputVec3(normalSlot).normalize( ).getComponents( );
+                float[] uv     = context.input(data.uvSlot( ), new float[2]);
+                float[] normal = context.inputVec3(data.normalSlot( )).normalize( ).getComponents( );
                 QColor texSampleColor = context.color( ).set(
                     tex == null ? 0xFFFFFFFF : tex.sample(uv[0], uv[1], context.sampleType)
                 );
@@ -280,7 +283,7 @@ final class BuiltinShaders {
                 float diffuseIntensity = 0f;
                 float specularIntensity = 0f;
 
-                final QVector3 POS_VEC = context.inputVec3(posSlot);
+                final QVector3 POS_VEC = context.inputVec3(data.posSlot( ));
 
                 QVector3 viewDir = POS_VEC.copy().multiply3(-1).normalize();
                 QVector3 toLight = new QVector3( );

@@ -10,6 +10,7 @@ final class DrawState {
     public final ViewerState          state;
     public final QShader              shader;
     public final QShader.OutputLayout layout;
+    public QDrawData                  data;
     public int                        triStart;
     public int                        triEnd;
     public float                      minY = Float.POSITIVE_INFINITY;

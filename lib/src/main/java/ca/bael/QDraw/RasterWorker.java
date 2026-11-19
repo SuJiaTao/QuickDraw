@@ -56,6 +56,7 @@ final class RasterWorker {
         fctx.fillColor  = draw.state.fillColor;
         fctx.target     = renderTarget;
         fctx.layout     = draw.layout;
+        fctx.drawData   = draw.data;
         if (fctx.inputs == null || fctx.inputs.length != draw.layout.total) {
             fctx.inputs = new float[draw.layout.total];
         }

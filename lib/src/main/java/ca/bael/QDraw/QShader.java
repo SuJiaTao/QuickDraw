@@ -39,6 +39,7 @@ public abstract class QShader {
         OutputLayout  layout;
         float[]       outputs;
         int           written;
+        QDrawData     drawData;
         final QVector3 position = new QVector3( );
 
         /////////////////////////////////////////////////////////////////
@@ -68,6 +69,10 @@ public abstract class QShader {
 
         public QSampleable texture(int slot) {
             return textures[slot];
+        }
+
+        public <T extends QDrawData> T drawData(Class<T> type) {
+            return type.cast(drawData);
         }
 
         public void output(int slot, QVector3 v) {
@@ -136,6 +141,7 @@ public abstract class QShader {
         float[]       inputs;
         QSampleable.SampleType sampleType;
         QColor        fillColor;
+        QDrawData     drawData;
         final QColor  color = new QColor( );
 
         /////////////////////////////////////////////////////////////////
@@ -195,6 +201,10 @@ public abstract class QShader {
 
         public QSampleable texture(int slot) {
             return textures[slot];
+        }
+
+        public <T extends QDrawData> T drawData(Class<T> type) {
+            return type.cast(drawData);
         }
 
         public int screenX( ) {
@@ -367,7 +377,8 @@ public abstract class QShader {
 
     /////////////////////////////////////////////////////////////////
     // OVERRIDABLE METHODS
-    public void beginDraw(VertexShaderContext context) {
+    public QDrawData beginDraw(VertexShaderContext context) {
+        return null;
     }
 
     public QVector3 vertexShader(

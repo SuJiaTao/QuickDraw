@@ -61,6 +61,7 @@ final class GeometryStage {
         vctx.uniforms = draw.state.slotUniforms;
         vctx.textures = draw.state.slotTextures;
         vctx.layout = draw.layout;
+        vctx.drawData = null;
         vctx.attributes = new float[slotAttribs.length][];
         for (int slot = 0; slot < slotAttribs.length; slot++) {
             if (slotAttribs[slot] != null) {
@@ -75,7 +76,8 @@ final class GeometryStage {
 
         vertexCache.prepare(slotAttribs, draw.layout.total);
 
-        draw.shader.beginDraw(vctx);
+        draw.data = draw.shader.beginDraw(vctx);
+        vctx.drawData = draw.data;
 
         draw.triStart = triQueue.triEnd;
 
