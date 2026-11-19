@@ -138,6 +138,52 @@ public final class QRenderBuffer extends QSampleable {
         return data[coordToDataIndex(x, y)];
     }
 
+    @Override
+    public void copyTo(QSampleable target) {
+        if (target instanceof QRenderBuffer dst && dst.width == width && dst.height == height) {
+            System.arraycopy(colorBuffer, 0, dst.colorBuffer, 0, colorBuffer.length);
+            return;
+        }
+        super.copyTo(target);
+    }
+
+    public void copyDepthTo(QRenderBuffer dst) {
+        internalEnsureSameSize(dst);
+        System.arraycopy(depthBuffer, 0, dst.depthBuffer, 0, depthBuffer.length);
+    }
+
+    public void copyGBuffersTo(QRenderBuffer dst) {
+        internalEnsureSameSize(dst);
+        for (int slot = 0; slot < GBUFFER_SLOTS; slot++) {
+            GBufferFormat format = getGBufferFormat(slot);
+            if (format == null) {
+                continue;
+            }
+            if (dst.getGBufferFormat(slot) != format) {
+                throw new QException(
+                    PointOfError.InvalidData,
+                    "G-buffer slot " + slot + " is " + format +
+                    " on source but " + dst.getGBufferFormat(slot) + " on destination"
+                );
+            }
+            if (format == GBufferFormat.Float3) {
+                System.arraycopy(gbufferFloats[slot], 0, dst.gbufferFloats[slot], 0, gbufferFloats[slot].length);
+            } else {
+                System.arraycopy(gbufferLongs[slot], 0, dst.gbufferLongs[slot], 0, gbufferLongs[slot].length);
+            }
+        }
+    }
+
+    private void internalEnsureSameSize(QRenderBuffer dst) {
+        if (dst.width != width || dst.height != height) {
+            throw new QException(
+                PointOfError.InvalidParameter,
+                "Render buffer sizes differ: " + width + "x" + height +
+                " vs " + dst.width + "x" + dst.height
+            );
+        }
+    }
+
     public void clearColorBuffer( ) {
         for (int i = 0; i < colorBuffer.length; i++) {
             colorBuffer[i] = CLEAR_COLOR;
