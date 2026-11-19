@@ -10,7 +10,7 @@ import ca.bael.QDraw.QException.PointOfError;
 
 // TODO: re-write to use AttriBuffer/Indexer to internally store data
 
-public final class QMesh extends QEncoding {
+public final class QMesh {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
     private static final int CMPS_PER_POSN   = 3;

@@ -6,9 +6,21 @@ package ca.bael.QDraw;
 
 import ca.bael.QDraw.QException.PointOfError;
 
-public final class QColor extends QEncoding implements QUniform<QColor> {
+public final class QColor implements QUniform<QColor> {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
+    // QColor is int
+    // 4-byte integer encoded with each byte as ARGB
+    private static final int COL_LSHIFT_OFST_A = 24;
+    private static final int COL_LSHIFT_OFST_R = 16;
+    private static final int COL_LSHIFT_OFST_G = 8;
+    private static final int COL_LSHIFT_OFST_B = 0;
+    private static final int COL_CHNL_BMASK    = 0x000000FF;
+    private static final int COL_BMASK_A       = COL_CHNL_BMASK << COL_LSHIFT_OFST_A;
+    private static final int COL_BMASK_R       = COL_CHNL_BMASK << COL_LSHIFT_OFST_R;
+    private static final int COL_BMASK_G       = COL_CHNL_BMASK << COL_LSHIFT_OFST_G;
+    private static final int COL_BMASK_B       = COL_CHNL_BMASK << COL_LSHIFT_OFST_B;
+
     public static QColor Black() { return new QColor(0x00, 0x00, 0x00); }
     public static QColor White() { return new QColor(0xFF, 0xFF, 0xFF); }
     public static QColor Red()   { return new QColor(0xFF, 0x00, 0x00); }

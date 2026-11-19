@@ -4,9 +4,25 @@
 
 package ca.bael.QDraw;
 
-public final class QMatrix4x4 extends QEncoding implements QUniform<QMatrix4x4> {
+import static ca.bael.QDraw.QVector3.VCTR_COMPARE_EPSILON;
+import static ca.bael.QDraw.QVector3.VCTR_INDEX_X;
+import static ca.bael.QDraw.QVector3.VCTR_INDEX_Y;
+import static ca.bael.QDraw.QVector3.VCTR_INDEX_Z;
+import static ca.bael.QDraw.QVector3.VCTR_NUM_CMPS;
+
+public final class QMatrix4x4 implements QUniform<QMatrix4x4> {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
+    // QMatrix4x4 is
+    // | <x1 y1 z1 w1>
+    //   <x2 y2 z2 w2>
+    //   <x3 y3 z3 w3>
+    //   <x4 y4 z4 w4> | : float[]
+    // size 16 float array representing a 4x4 matrix
+    private static final int MTR_NUM_ROWS    = 4;
+    private static final int MTR_NUM_COLUMNS = 4;
+    private static final int MTR_NUM_CMPS    = MTR_NUM_ROWS * MTR_NUM_COLUMNS;
+
     private static final float DEG_TO_RAD = (float)Math.PI / 180.0f;
 
     private static final float[] COMPONENTS_IDENTITY = {
@@ -33,7 +49,6 @@ public final class QMatrix4x4 extends QEncoding implements QUniform<QMatrix4x4> 
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
-    // (refer to QEncoding.java for encoding details)
     private float[] components = new float[MTR_NUM_CMPS];
 
     /////////////////////////////////////////////////////////////////

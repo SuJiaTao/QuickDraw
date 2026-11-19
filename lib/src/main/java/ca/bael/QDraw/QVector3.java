@@ -6,9 +6,18 @@ package ca.bael.QDraw;
 
 import ca.bael.QDraw.QException.PointOfError;
 
-public final class QVector3 extends QEncoding implements QUniform<QVector3> {
+public final class QVector3 implements QUniform<QVector3> {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
+    // QVector is
+    // | x y z | : float[]
+    // size 3 array of floats representing a 3-component vector
+    static final int   VCTR_INDEX_X         = 0;
+    static final int   VCTR_INDEX_Y         = 1;
+    static final int   VCTR_INDEX_Z         = 2;
+    static final int   VCTR_NUM_CMPS        = 3;
+    static final float VCTR_COMPARE_EPSILON = 0.0005f;
+
     private static final float[] COMPONENTS_ZERO = { 0.0f, 0.0f, 0.0f };
     private static final float[] COMPONENTS_ONE  = { 1.0f, 1.0f, 1.0f };
     private static final float[] COMPONENTS_X    = { 0.0f, 0.0f, 0.0f };
@@ -37,7 +46,6 @@ public final class QVector3 extends QEncoding implements QUniform<QVector3> {
     
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
-    // (refer to QEncoding.java for encoding details)
     private float[] components = new float[VCTR_NUM_CMPS];
 
     /////////////////////////////////////////////////////////////////

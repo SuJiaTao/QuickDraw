@@ -68,16 +68,17 @@ public class FuzzShader extends QShader {
         };
     }
 
-    private QMatrix4x4 normalMtr;
+    private record FuzzData(QMatrix4x4 normalMtr) implements QDrawData { }
 
-    public void beginDraw(VertexShaderContext vctx) {
-        normalMtr = vctx.uniform(SHADER_MATRIX_SLOT, QMatrix4x4.class).normalMatrix( );
+    public QDrawData beginDraw(VertexShaderContext vctx) {
+        return new FuzzData(vctx.uniform(SHADER_MATRIX_SLOT, QMatrix4x4.class).normalMatrix( ));
     }
 
     public QVector3 vertexShader(
         VertexShaderContext vctx
     ) {
         // TRANSFORM VERTEX AND NORMALS
+        QMatrix4x4 normalMtr = vctx.drawData(FuzzData.class).normalMtr( );
         QMatrix4x4 transform = vctx.uniform(SHADER_MATRIX_SLOT, QMatrix4x4.class);
         QVector3   vertexPos = transform.transformPoint(vctx.attribVec3(SHADER_POSITION_SLOT));
         QVector3   normal    = normalMtr.transformDir(vctx.attribVec3(SHADER_NORMAL_SLOT)).normalize( );
