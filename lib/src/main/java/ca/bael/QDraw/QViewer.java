@@ -86,6 +86,7 @@ public final class QViewer {
     private final ArrayList<DrawState> queuedDraws = new ArrayList<>();
     private final List<GeometryWorker> geometryWorkers = new ArrayList<>();
     private final List<RasterWorker> rasterWorkers = new ArrayList<>();
+    private QRenderBuffer renderTarget;
     private boolean clearPending;
 
     public final QTimer geometryTimer = new QTimer();
@@ -228,6 +229,7 @@ public final class QViewer {
     }
 
     private void init(QRenderBuffer target) {
+        renderTarget = target;
         for (int i = 0; i < WORKER_THREADS; i++) {
             geometryWorkers.add(new GeometryWorker(target));
             rasterWorkers.add(new RasterWorker(target));
@@ -280,6 +282,17 @@ public final class QViewer {
                     break;
 
                 case Output:
+                    break;
+
+                case GBuffer:
+                    if (renderTarget.getGBufferFormat(require.slot) != require.gbufferFormat) {
+                        throw new QException(
+                                PointOfError.InvalidData,
+                                "Shader requires g-buffer slot " + require.slot +
+                                        " of format " + require.gbufferFormat +
+                                        ". Render target has " + renderTarget.getGBufferFormat(require.slot) +
+                                        ". Purpose: " + require.purpose);
+                    }
                     break;
 
                 default:

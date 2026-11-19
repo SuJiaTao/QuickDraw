@@ -10,7 +10,15 @@ import ca.bael.QDraw.QException.PointOfError;
 
 public final class QRenderBuffer extends QSampleable {
     /////////////////////////////////////////////////////////////////
+    // PUBLIC ENUMS
+    public enum GBufferFormat {
+        Float3,
+        Long
+    }
+
+    /////////////////////////////////////////////////////////////////
     // CONSTANTS
+    public static final int GBUFFER_SLOTS = 4;
     private static final int   CLEAR_COLOR   = new QColor(0x00, 0x00, 0x00, 0x00).toInt();
     private static final float CLEAR_DEPTH   = 0.0f;
 
@@ -21,6 +29,8 @@ public final class QRenderBuffer extends QSampleable {
     private final int[]         colorBuffer;
     private final int           width;
     private final int           height;
+    private final float[][]     gbufferFloats = new float[GBUFFER_SLOTS][];
+    private final long[][]      gbufferLongs  = new long[GBUFFER_SLOTS][];
 
     /////////////////////////////////////////////////////////////////
     // CONSTRUCTOR
@@ -84,6 +94,50 @@ public final class QRenderBuffer extends QSampleable {
         return height;
     }
 
+    public void attachGBuffer(int slot, GBufferFormat format) {
+        gbufferFloats[slot] = format == GBufferFormat.Float3 ? new float[width * height * 3] : null;
+        gbufferLongs[slot]  = format == GBufferFormat.Long ? new long[width * height] : null;
+    }
+
+    public GBufferFormat getGBufferFormat(int slot) {
+        if (gbufferFloats[slot] != null) {
+            return GBufferFormat.Float3;
+        }
+        return gbufferLongs[slot] != null ? GBufferFormat.Long : null;
+    }
+
+    float[] getGBufferFloatData(int slot) {
+        return gbufferFloats[slot];
+    }
+
+    long[] getGBufferLongData(int slot) {
+        return gbufferLongs[slot];
+    }
+
+    public QVector3 getGBufferVec3(int slot, int x, int y, QVector3 out) {
+        float[] data = gbufferFloats[slot];
+        if (data == null) {
+            throw new QException(
+                PointOfError.BadState,
+                "G-buffer slot " + slot + " is not attached as " + GBufferFormat.Float3
+            );
+        }
+        int index = coordToDataIndex(x, y) * 3;
+        out.set(data[index], data[index + 1], data[index + 2]);
+        return out;
+    }
+
+    public long getGBufferLong(int slot, int x, int y) {
+        long[] data = gbufferLongs[slot];
+        if (data == null) {
+            throw new QException(
+                PointOfError.BadState,
+                "G-buffer slot " + slot + " is not attached as " + GBufferFormat.Long
+            );
+        }
+        return data[coordToDataIndex(x, y)];
+    }
+
     public void clearColorBuffer( ) {
         for (int i = 0; i < colorBuffer.length; i++) {
             colorBuffer[i] = CLEAR_COLOR;
@@ -97,7 +151,17 @@ public final class QRenderBuffer extends QSampleable {
     }
 
     void clearRows(int y0, int y1) {
-        Arrays.fill(colorBuffer, width * (height - y1), width * (height - y0), CLEAR_COLOR);
-        Arrays.fill(depthBuffer, width * (height - y1), width * (height - y0), CLEAR_DEPTH);
+        int from = width * (height - y1);
+        int to   = width * (height - y0);
+        Arrays.fill(colorBuffer, from, to, CLEAR_COLOR);
+        Arrays.fill(depthBuffer, from, to, CLEAR_DEPTH);
+        for (int slot = 0; slot < GBUFFER_SLOTS; slot++) {
+            if (gbufferFloats[slot] != null) {
+                Arrays.fill(gbufferFloats[slot], from * 3, to * 3, 0.0f);
+            }
+            if (gbufferLongs[slot] != null) {
+                Arrays.fill(gbufferLongs[slot], from, to, 0L);
+            }
+        }
     }
 }

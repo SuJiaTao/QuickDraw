@@ -163,6 +163,19 @@ public final class QMesh {
     public QAttribIndexer getUVIndexer( ) { return uvIndexer; }
     public QAttribIndexer getNormalIndexer( ) { return normalIndexer; }
 
+    public static QMesh screenQuad( ) {
+        float l = QViewer.DEFAULT_VIEWBOUND_LEFT;
+        float r = QViewer.DEFAULT_VIEWBOUND_RIGHT;
+        float b = QViewer.DEFAULT_VIEWBOUND_BOTTOM;
+        float t = QViewer.DEFAULT_VIEWBOUND_TOP;
+        return new QMesh(
+            new float[] { l, b, -1.0f,  r, b, -1.0f,  r, t, -1.0f,  l, t, -1.0f },
+            new float[] { 0.0f, 0.0f,  1.0f, 0.0f,  1.0f, 1.0f,  0.0f, 1.0f },
+            new float[] { 0.0f, 0.0f, 1.0f },
+            new int[][] { { 0, 0, 0,  1, 1, 0,  2, 2, 0,  3, 3, 0 } }
+        );
+    }
+
     /////////////////////////////////////////////////////////////////
     // PRIVATE METHODS
     private void initMesh(
