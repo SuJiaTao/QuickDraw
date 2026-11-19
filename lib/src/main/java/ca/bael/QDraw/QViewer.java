@@ -65,11 +65,22 @@ public final class QViewer extends QEncoding {
                     "vertex transform matrix",
                     QMatrix4x4.class
                 )
-            };}
+            };
+        }
 
-    public QVector3 vertexShader(VertexShaderContext context){QMatrix4x4 mtr=(QMatrix4x4)context.uniforms[DEFAULT_SHADER_MATRIX_SLOT];return QMatrix4x4.multiply(mtr,new QVector3(context.attributes[DEFAULT_SHADER_POSITION_SLOT]));}
+        public QVector3 vertexShader(
+            VertexShaderContext context
+        ) {
+            QMatrix4x4 mtr = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class);
+            return mtr.transformPoint(context.attribVec3(DEFAULT_SHADER_POSITION_SLOT, context.position( )));
+        }
 
-    public QColor fragmentShader(FragmentShaderContext context){return fillColor;}};
+        public QColor fragmentShader(
+            FragmentShaderContext context
+        ) {
+            return fillColor;
+        }
+    };
 
     private final QShader TEXTURED_SHADER = new QShader( ) {
         public ShaderRequirement[] requirements( ) {
@@ -94,16 +105,35 @@ public final class QViewer extends QEncoding {
                     DEFAULT_SHADER_TEXTURE_SLOT, 
                     RequirementType.Texture, 
                     "mesh texture"
+                ),
+                new ShaderRequirement(
+                    DEFAULT_SHADER_UV_SLOT,
+                    RequirementType.Output,
+                    "uv",
+                    2
                 )
-            };}
+            };
+        }
 
-    public QVector3 vertexShader(VertexShaderContext context){QMatrix4x4 mtr=(QMatrix4x4)context.uniforms[DEFAULT_SHADER_MATRIX_SLOT];QVector3 pos=new QVector3(context.attributes[DEFAULT_SHADER_POSITION_SLOT]);forwardAttributeToFragShader(context,DEFAULT_SHADER_UV_SLOT);
+        public QVector3 vertexShader(
+            VertexShaderContext context
+        ) {
+            QMatrix4x4 mtr = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class);
+            context.forward(DEFAULT_SHADER_UV_SLOT);
 
-    return QMatrix4x4.multiply(mtr,pos);}
+            return mtr.transformPoint(context.attribVec3(DEFAULT_SHADER_POSITION_SLOT, context.position( )));
+        }
 
-    public QColor fragmentShader(FragmentShaderContext context){QSampleable tex=context.textures[DEFAULT_SHADER_TEXTURE_SLOT];float[]uv=new float[2];getOutputFromVertShader(context,DEFAULT_SHADER_UV_SLOT,uv);
-
-    return new QColor(tex.sample(uv[0],uv[1],sampleType));}};
+        public QColor fragmentShader(
+            FragmentShaderContext context
+        ) {
+            return context.color( ).set(context.texture(DEFAULT_SHADER_TEXTURE_SLOT).sample(
+                context.input(DEFAULT_SHADER_UV_SLOT, 0),
+                context.input(DEFAULT_SHADER_UV_SLOT, 1),
+                sampleType
+            ));
+        }
+    };
 
     private final QShader NORMAL_SHADER = new QShader( ) {
         public ShaderRequirement[] requirements( ) {
@@ -123,12 +153,47 @@ public final class QViewer extends QEncoding {
                     RequirementType.Uniform, 
                     "vertex transform matrix",
                     QMatrix4x4.class
+                ),
+                new ShaderRequirement(
+                    DEFAULT_SHADER_NORMAL_SLOT,
+                    RequirementType.Output,
+                    "normal",
+                    3
                 )
-            };}
+            };
+        }
 
-    public QVector3 vertexShader(VertexShaderContext context){QMatrix4x4 mtr=(QMatrix4x4)context.uniforms[DEFAULT_SHADER_MATRIX_SLOT];QMatrix4x4 rotMtr=mtr.extractRotation();QMath.mul3_4x4(context.attributes[DEFAULT_SHADER_NORMAL_SLOT],rotMtr.getComponents());forwardAttributeToFragShader(context,DEFAULT_SHADER_NORMAL_SLOT);return QMatrix4x4.multiply(mtr,new QVector3(context.attributes[DEFAULT_SHADER_POSITION_SLOT]));}
+        private QMatrix4x4 normalMtr;
+        private final QVector3 normal = new QVector3( );
 
-    public QColor fragmentShader(FragmentShaderContext context){float[]normal=new float[VCTR_NUM_CMPS];getOutputFromVertShader(context,DEFAULT_SHADER_NORMAL_SLOT,normal);return new QColor((int)((1.0f+normal[VCTR_INDEX_X])*127.0f),(int)((1.0f+normal[VCTR_INDEX_Y])*127.0f),(int)((1.0f+normal[VCTR_INDEX_Z])*127.0f));}};
+        public void beginDraw(VertexShaderContext context) {
+            normalMtr = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class).normalMatrix( );
+        }
+
+        public QVector3 vertexShader(
+            VertexShaderContext context
+        ) {
+            QMatrix4x4 mtr = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class);
+            context.output(
+                DEFAULT_SHADER_NORMAL_SLOT,
+                normalMtr.transformDir(context.attribVec3(DEFAULT_SHADER_NORMAL_SLOT, normal)).normalize( )
+            );
+
+            return mtr.transformPoint(context.attribVec3(DEFAULT_SHADER_POSITION_SLOT, context.position( )));
+        }
+
+        public QColor fragmentShader(
+            FragmentShaderContext context
+        ) {
+            QVector3 normal = context.inputVec3(DEFAULT_SHADER_NORMAL_SLOT);
+
+            return context.color( ).set(
+                (int)((1.0f + normal.getX( )) * 127.0f),
+                (int)((1.0f + normal.getY( )) * 127.0f),
+                (int)((1.0f + normal.getZ( )) * 127.0f)
+            );
+        }
+    };
 
     private final QShader MATERIAL_SHADER = new QShader( ) {
         public ShaderRequirement[] requirements( ) {
@@ -168,46 +233,61 @@ public final class QViewer extends QEncoding {
                     RequirementType.Uniform, 
                     "mesh material",
                     QMaterial.class
+                ),
+                new ShaderRequirement(
+                    DEFAULT_SHADER_POSITION_SLOT,
+                    RequirementType.Output,
+                    "view-space position",
+                    3
+                ),
+                new ShaderRequirement(
+                    DEFAULT_SHADER_UV_SLOT,
+                    RequirementType.Output,
+                    "uv",
+                    2
+                ),
+                new ShaderRequirement(
+                    DEFAULT_SHADER_NORMAL_SLOT,
+                    RequirementType.Output,
+                    "normal",
+                    3
                 )
             };
+        }
+
+        private QMatrix4x4 normalMtr;
+        private final QVector3 normal = new QVector3( );
+
+        public void beginDraw(VertexShaderContext context) {
+            normalMtr = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class).normalMatrix( );
         }
 
         public QVector3 vertexShader(
             VertexShaderContext context
         ) {
-            QMatrix4x4 mtr = (QMatrix4x4)context.uniforms[DEFAULT_SHADER_MATRIX_SLOT];
-            QVector3   pos = new QVector3(context.attributes[DEFAULT_SHADER_POSITION_SLOT]);
-            pos = QMatrix4x4.multiply(mtr, pos);
+            QMatrix4x4 mtr    = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class);
+            QVector3   pos    = mtr.transformPoint(context.attribVec3(DEFAULT_SHADER_POSITION_SLOT, context.position( )));
+            normalMtr.transformDir(context.attribVec3(DEFAULT_SHADER_NORMAL_SLOT, normal)).normalize( );
 
-            QMatrix4x4 rotMtr = mtr.extractRotation( );
-            QMath.mul3_4x4(
-                context.attributes[DEFAULT_SHADER_NORMAL_SLOT], 
-                rotMtr.getComponents( )
-            );
-            
-            setOutputToFragShader(context, DEFAULT_SHADER_POSITION_SLOT, pos.getComponents( ));
-            forwardAttributeToFragShader(context, DEFAULT_SHADER_UV_SLOT);
-            forwardAttributeToFragShader(context, DEFAULT_SHADER_NORMAL_SLOT);
-            
+            context.output(DEFAULT_SHADER_POSITION_SLOT, pos);
+            context.forward(DEFAULT_SHADER_UV_SLOT);
+            context.output(DEFAULT_SHADER_NORMAL_SLOT, normal);
+
             return pos;
         }
 
         public QColor fragmentShader(
             FragmentShaderContext context
         ) {
-            QSampleable tex = context.textures[DEFAULT_SHADER_TEXTURE_SLOT];
-            QMaterial   mat = (QMaterial)context.uniforms[DEFAULT_SHADER_MATERIAL_SLOT];
-            QLight[] lights = (QLight[])context.uniforms[DEFAULT_SHADER_LIGHTS_SLOT];
+            QSampleable tex = context.texture(DEFAULT_SHADER_TEXTURE_SLOT);
+            QMaterial   mat = context.uniform(DEFAULT_SHADER_MATERIAL_SLOT, QMaterial.class);
+            QLight[] lights = context.uniform(DEFAULT_SHADER_LIGHTS_SLOT, QLight[].class);
 
-            float[] pos    = new float[3];
-            float[] uv     = new float[2];
-            float[] normal = new float[3];
-            getOutputFromVertShader(context, DEFAULT_SHADER_POSITION_SLOT, pos);
-            getOutputFromVertShader(context, DEFAULT_SHADER_UV_SLOT, uv);
-            getOutputFromVertShader(context, DEFAULT_SHADER_NORMAL_SLOT, normal);
-            float normMag = QMath.fastmag3(normal);
-            QMath.mult3(normal, 1/normMag);
-            QColor texSampleColor = tex == null ? QColor.White() : new QColor(tex.sample(uv[0], uv[1], sampleType));
+            float[] uv     = context.input(DEFAULT_SHADER_UV_SLOT, new float[2]);
+            float[] normal = context.inputVec3(DEFAULT_SHADER_NORMAL_SLOT).fastNormalize( ).getComponents( );
+            QColor texSampleColor = context.color( ).set(
+                tex == null ? 0xFFFFFFFF : tex.sample(uv[0], uv[1], sampleType)
+            );
             QColor ambientColor = mat == null? QColor.Black() : mat.ambient;
             QColor diffuseColor = mat == null? QColor.White() : mat.diffuse;
             QColor specularColor = mat == null? QColor.White() : mat.specular; 
@@ -216,9 +296,9 @@ public final class QViewer extends QEncoding {
             float diffuseIntensity = 0f;
             float specularIntensity = 0f;
 
-            final QVector3 POS_VEC = new QVector3(pos);
+            final QVector3 POS_VEC = context.inputVec3(DEFAULT_SHADER_POSITION_SLOT);
 
-            QVector3 viewDir = POS_VEC.multiply3(-1).fastNormalize();
+            QVector3 viewDir = POS_VEC.copy().multiply3(-1).fastNormalize();
             QVector3 dirFaceToLight, halfVec;
             
             for (QLight light : lights) {
@@ -230,11 +310,11 @@ public final class QViewer extends QEncoding {
                 float distToLight = dirFaceToLight.fastMagnitude( );
                 dirFaceToLight.multiply3(1.0f / distToLight);
 
-                diffuseIntensity += Math.max(0f, QMath.dot3(dirFaceToLight.getComponents(), normal));
+                diffuseIntensity += Math.max(0f, QVector3.dot(dirFaceToLight.getComponents(), normal));
                 // do we clamp intensity?
-                // reflect = dirFaceToLight.sub(new QVector3(normal).multiply3(2f * QMath.dot3(normal, dirFaceToLight.getComponents()))); 
+                // reflect = dirFaceToLight.sub(new QVector3(normal).multiply3(2f * QVector3.dot(normal, dirFaceToLight.getComponents()))); 
                 halfVec = dirFaceToLight.add(viewDir).fastNormalize();
-                specularIntensity += Math.pow(Math.max(0f, QMath.dot3(halfVec.getComponents(), normal)), shininess);
+                specularIntensity += Math.pow(Math.max(0f, QVector3.dot(halfVec.getComponents(), normal)), shininess);
             }
 
             texSampleColor.set( (int)(texSampleColor.getR()* Math.min(1f, ambientColor.getR() / 255f + diffuseIntensity * diffuseColor.getR() / 255f) + specularColor.getR() / 255f * specularIntensity), 
@@ -263,6 +343,15 @@ public final class QViewer extends QEncoding {
     private Object[] slotUniforms = new Object[SHADER_UNIFORM_SLOTS];
     private QSampleable[] slotTextures = new QSampleable[SHADER_TEXTURE_SLOTS];
     private QAttribIndexer[] slotAttribs = new QAttribIndexer[SHADER_VERTEX_ATTRIB_SLOTS];
+    private final QShader.VertexShaderContext vctx = new QShader.VertexShaderContext();
+    private final QShader.FragmentShaderContext fctx = new QShader.FragmentShaderContext();
+    private final RasterSetup raster = new RasterSetup();
+    private final float[] edge01 = new float[VCTR_NUM_CMPS];
+    private final float[] edge02 = new float[VCTR_NUM_CMPS];
+    private final float[] rayToCenter = new float[VCTR_NUM_CMPS];
+    private final Triangle workTri = new Triangle(0);
+    private final VertexCache vertexCache = new VertexCache();
+    private QShader drawShader;
 
     ////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
@@ -369,13 +458,14 @@ public final class QViewer extends QEncoding {
         ////////////////////////////////////////////////////////////////
         // PUBLIC MEMBERS
         public float[] posn;
-        public float[][] shaderOutputs;
+        public float[] shaderOutputs;
 
         ////////////////////////////////////////////////////////////////
         // PUBLIC METHODS
         public void project() {
             posn[VCTR_INDEX_Z] = 1.0f / posn[VCTR_INDEX_Z];
-            QMath.mult2(posn, -posn[VCTR_INDEX_Z]);
+            posn[VCTR_INDEX_X] *= -posn[VCTR_INDEX_Z];
+            posn[VCTR_INDEX_Y] *= -posn[VCTR_INDEX_Z];
         }
 
         public void findClippedShaderOutputs(
@@ -389,21 +479,13 @@ public final class QViewer extends QEncoding {
             // as a reference
             // - vISrc or vFSrc might actually be THIS vertex, so we calculate everything
             // to an auxillary buffer before updating shaderOutputs
-            float[][] tempShaderOutputs = new float[vISrc.shaderOutputs.length][];
+            float[] tempShaderOutputs = new float[vISrc.shaderOutputs.length];
             float facI = 1.0f - factor;
             float facF = factor;
 
             for (int i = 0; i < tempShaderOutputs.length; i++) {
-
-                if (vISrc.shaderOutputs[i] == null) {
-                    continue;
-                }
-                tempShaderOutputs[i] = new float[vISrc.shaderOutputs[i].length];
-
-                for (int comp = 0; comp < tempShaderOutputs[i].length; comp++) {
-                    tempShaderOutputs[i][comp] = vISrc.shaderOutputs[i][comp] * facI +
-                            vFSrc.shaderOutputs[i][comp] * facF;
-                }
+                tempShaderOutputs[i] = vISrc.shaderOutputs[i] * facI +
+                        vFSrc.shaderOutputs[i] * facF;
             }
 
             shaderOutputs = tempShaderOutputs;
@@ -412,33 +494,14 @@ public final class QViewer extends QEncoding {
         ////////////////////////////////////////////////////////////////
         // CONSTRUCTORS
         public Vertex() {
-            posn = QMath.new3();
         }
 
         public Vertex(Vertex toCopy) {
-            posn = QMath.new3();
-            QMath.copy3(
+            posn = new float[VCTR_NUM_CMPS];
+            QVector3.copy(
                     posn,
                     toCopy.posn);
-
-            // NOTE:
-            // toCopy could be THIS vertex, so create a temp before assinging
-            float[][] tempShaderOutputs = new float[toCopy.shaderOutputs.length][];
-            for (int i = 0; i < tempShaderOutputs.length; i++) {
-                if (toCopy.shaderOutputs[i] == null) {
-                    continue;
-                }
-
-                tempShaderOutputs[i] = new float[toCopy.shaderOutputs[i].length];
-                System.arraycopy(
-                        toCopy.shaderOutputs[i],
-                        0,
-                        tempShaderOutputs[i],
-                        0,
-                        toCopy.shaderOutputs[i].length);
-            }
-
-            shaderOutputs = tempShaderOutputs;
+            shaderOutputs = toCopy.shaderOutputs.clone( );
         }
     }
 
@@ -450,10 +513,8 @@ public final class QViewer extends QEncoding {
         ////////////////////////////////////////////////////////////////
         // PUBLIC MEMBERS
         public int triNum;
-        public Vertex[] verts = new Vertex[] {
-                new Vertex(), new Vertex(), new Vertex()
-        };
-        public float[] normal = new float[VCTR_NUM_CMPS];
+        public Vertex[] verts;
+        public float[] normal;
 
         ////////////////////////////////////////////////////////////////
         // PUBLIC METHODS
@@ -468,7 +529,7 @@ public final class QViewer extends QEncoding {
         }
 
         public void setPosn(int vertNum, float[] inVals) {
-            QMath.copy3(verts[vertNum].posn, inVals);
+            QVector3.copy(verts[vertNum].posn, inVals);
         }
 
         public float getPosnX(int vertNum) {
@@ -499,12 +560,14 @@ public final class QViewer extends QEncoding {
         // CONSTRUCTORS
         public Triangle(int _num) {
             triNum = _num;
+            verts = new Vertex[] { new Vertex(), new Vertex(), new Vertex() };
+            normal = new float[VCTR_NUM_CMPS];
         }
 
         public Triangle(Triangle toCopy) {
             triNum = toCopy.triNum;
             normal = new float[VCTR_NUM_CMPS];
-            QMath.copy3(normal, toCopy.normal);
+            QVector3.copy(normal, toCopy.normal);
 
             verts = new Vertex[VERTS_PER_TRI];
             for (int i = 0; i < verts.length; i++) {
@@ -532,14 +595,117 @@ public final class QViewer extends QEncoding {
         }
     }
 
+    private static final class RasterSetup {
+        ////////////////////////////////////////////////////////////////
+        // PUBLIC MEMBERS
+        public float[] out0, out1, out2;
+        public float[] normal;
+        public float z0, z1, z2;
+        public float p2x, p2y;
+        public float db0dx, db0dy, db1dx, db1dy;
+
+        ////////////////////////////////////////////////////////////////
+        // PUBLIC METHODS
+        public void set(Triangle tri) {
+            // refer to
+            // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_rasterizetri.c
+            float p0x = tri.getPosnX(0);
+            float p0y = tri.getPosnY(0);
+            float p1x = tri.getPosnX(1);
+            float p1y = tri.getPosnY(1);
+            p2x = tri.getPosnX(2);
+            p2y = tri.getPosnY(2);
+            float invDenom = 1.0f / ((p1y - p2y) * (p0x - p2x) + (p2x - p1x) * (p0y - p2y));
+            db0dx = (p1y - p2y) * invDenom;
+            db0dy = (p2x - p1x) * invDenom;
+            db1dx = (p2y - p0y) * invDenom;
+            db1dy = (p0x - p2x) * invDenom;
+            z0 = tri.getPosnZ(0);
+            z1 = tri.getPosnZ(1);
+            z2 = tri.getPosnZ(2);
+            out0 = tri.getVertex(0).shaderOutputs;
+            out1 = tri.getVertex(1).shaderOutputs;
+            out2 = tri.getVertex(2).shaderOutputs;
+            normal = tri.normal;
+        }
+
+        public float b0At(float x, float y) {
+            return db0dx * (x - p2x) + db0dy * (y - p2y);
+        }
+
+        public float b1At(float x, float y) {
+            return db1dx * (x - p2x) + db1dy * (y - p2y);
+        }
+    }
+
+    private static final class VertexCache {
+        ////////////////////////////////////////////////////////////////
+        // PRIVATE MEMBERS
+        private int[]   indicies;
+        private int[]   stamp   = new int[0];
+        private float[] posn    = new float[0];
+        private float[] outputs = new float[0];
+        private int     drawId  = 0;
+        private int     total;
+
+        ////////////////////////////////////////////////////////////////
+        // PUBLIC METHODS
+        public void prepare(QAttribIndexer[] slots, int outputTotal) {
+            drawId++;
+            total = outputTotal;
+            indicies = null;
+            int size = 0;
+            for (QAttribIndexer indexer : slots) {
+                if (indexer == null) {
+                    continue;
+                }
+                if (indicies == null) {
+                    indicies = indexer.getIndicies();
+                    size = indexer.getAttribCount();
+                } else if (indexer.getIndicies() != indicies) {
+                    indicies = null;
+                    return;
+                }
+            }
+            if (stamp.length < size) {
+                stamp = new int[size];
+                posn = new float[size * VCTR_NUM_CMPS];
+            }
+            if (outputs.length < size * total) {
+                outputs = new float[size * total];
+            }
+        }
+
+        public int indexOf(int triNum, int triVertNum) {
+            return indicies == null ? -1 : indicies[triNum * VERTS_PER_TRI + triVertNum];
+        }
+
+        public boolean load(int idx, Vertex vert) {
+            if (idx < 0 || stamp[idx] != drawId) {
+                return false;
+            }
+            System.arraycopy(posn, idx * VCTR_NUM_CMPS, vert.posn, 0, VCTR_NUM_CMPS);
+            System.arraycopy(outputs, idx * total, vert.shaderOutputs, 0, total);
+            return true;
+        }
+
+        public void store(int idx, Vertex vert) {
+            if (idx < 0) {
+                return;
+            }
+            stamp[idx] = drawId;
+            System.arraycopy(vert.posn, 0, posn, idx * VCTR_NUM_CMPS, VCTR_NUM_CMPS);
+            System.arraycopy(vert.shaderOutputs, 0, outputs, idx * total, total);
+        }
+    }
+
     ////////////////////////////////////////////////////////////////
     // PRIVATE METHODS
     private void init(QRenderBuffer target) {
         renderTarget = target;
     }
 
-    private void internalEnsureShaderRequirements(QShader shader) {
-        QShader.ShaderRequirement[] requirements = shader.requirements();
+    private void internalEnsureShaderRequirements(ShaderRequirement[] requirements) {
         for (ShaderRequirement require : requirements) {
             switch (require.requireType) {
                 case Attribute:
@@ -582,6 +748,9 @@ public final class QViewer extends QEncoding {
                                 "Shader requires texture slot " + require.slot +
                                         ". Purpose: " + require.purpose);
                     }
+                    break;
+
+                case Output:
                     break;
 
                 default:
@@ -644,32 +813,66 @@ public final class QViewer extends QEncoding {
                     "No vertex attribute slots set!");
         }
 
+        drawShader = internalGetRelevantShader();
+        ShaderRequirement[] requirements = drawShader.requirements();
+        internalEnsureShaderRequirements(requirements);
+        QShader.OutputLayout outputLayout = new QShader.OutputLayout(requirements);
+
+        vctx.uniforms = slotUniforms;
+        vctx.textures = slotTextures;
+        vctx.layout = outputLayout;
+        vctx.attributes = new float[slotAttribs.length][];
+        for (int slot = 0; slot < slotAttribs.length; slot++) {
+            if (slotAttribs[slot] != null) {
+                vctx.attributes[slot] = new float[slotAttribs[slot].getComponentsPerAttrib()];
+            }
+        }
+
+        fctx.uniforms = slotUniforms;
+        fctx.textures = slotTextures;
+        fctx.target = renderTarget;
+        fctx.layout = outputLayout;
+        fctx.inputs = new float[outputLayout.total];
+
+        for (Vertex vert : workTri.verts) {
+            vert.posn = new float[VCTR_NUM_CMPS];
+            vert.shaderOutputs = new float[outputLayout.total];
+        }
+
+        vertexCache.prepare(slotAttribs, outputLayout.total);
+
+        drawShader.beginDraw(vctx);
+
         for (int triNum = 0; triNum < triCount; triNum++) {
             // GENERATE TRIANGLE
-            Triangle tri = new Triangle(triNum);
+            Triangle tri = workTri;
+            tri.triNum = triNum;
             internalProcessVertex(tri, 0);
             internalProcessVertex(tri, 1);
             internalProcessVertex(tri, 2);
 
             // GENERATE TRIANGLE NORMAL
-            float[] d01 = new float[VCTR_NUM_CMPS];
-            QMath.copy3(d01, tri.getPosn(1));
-            QMath.sub3(d01, tri.getPosn(0));
-
-            float[] d02 = new float[VCTR_NUM_CMPS];
-            QMath.copy3(d02, tri.getPosn(2));
-            QMath.sub3(d02, tri.getPosn(0));
-
-            float[] tempNormal = QMath.cross3(d01, d02);
-            QMath.mult3(tempNormal, 1.0f / QMath.mag3(tempNormal));
-            QMath.copy3(tri.normal, tempNormal);
+            QVector3.copy(edge01, tri.getPosn(1));
+            QVector3.sub(edge01, tri.getPosn(0));
+            QVector3.copy(edge02, tri.getPosn(2));
+            QVector3.sub(edge02, tri.getPosn(0));
+            QVector3.cross(tri.normal, edge01, edge02);
 
             // CULL IF BACKFACING
             if (internalCheckBackfacing(tri)) {
                 continue;
             }
 
+            QVector3.scale(tri.normal, 1.0f / QVector3.magnitude(tri.normal));
+
             // CLIP AND RENDER
+            if (tri.getPosnZ(0) <= nearClip &&
+                tri.getPosnZ(1) <= nearClip &&
+                tri.getPosnZ(2) <= nearClip) {
+                internalDrawTri(tri);
+                continue;
+            }
+
             Triangle[] clipTris = internalClipTri(tri);
             for (Triangle clippedTri : clipTris) {
                 internalDrawTri(clippedTri);
@@ -679,10 +882,14 @@ public final class QViewer extends QEncoding {
     }
 
     private void internalProcessVertex(Triangle tri, int triVertNum) {
-        QShader.VertexShaderContext vctx = new QShader.VertexShaderContext();
-        vctx.uniforms = slotUniforms;
-        vctx.textures = slotTextures;
-        vctx.attributes = new float[slotAttribs.length][];
+        Vertex vert = tri.verts[triVertNum];
+        int    idx  = vertexCache.indexOf(tri.triNum, triVertNum);
+        if (vertexCache.load(idx, vert)) {
+            return;
+        }
+
+        vctx.written = 0;
+        vctx.outputs = vert.shaderOutputs;
 
         // POPULATE VERTEX SHADER INPUTS
         for (int slot = 0; slot < slotAttribs.length; slot++) {
@@ -693,7 +900,6 @@ public final class QViewer extends QEncoding {
             }
 
             // populate attribute slot using indexer
-            vctx.attributes[slot] = new float[indexer.getComponentsPerAttrib()];
             indexer.index(
                     tri.triNum,
                     triVertNum,
@@ -702,25 +908,19 @@ public final class QViewer extends QEncoding {
         }
 
         // CALL SHADER
-        QShader shader = internalGetRelevantShader();
-        internalEnsureShaderRequirements(shader);
-        QVector3 vertShaderOut = shader.vertexShader(vctx);
-        tri.verts[triVertNum].posn = vertShaderOut.getComponents();
-        tri.verts[triVertNum].shaderOutputs = vctx.outputsToFragShader;
+        QVector3.copy(vert.posn, drawShader.vertexShader(vctx).getComponents());
+        vctx.ensureOutputsWritten();
+        vertexCache.store(idx, vert);
     }
 
     private boolean internalCheckBackfacing(Triangle tri) {
         // NOTE:
         // if the dot product between the normal is > 0 for the ray
         // from the camera to the center of the tri, then it's backfacing
-        float[] rayToCenter = QMath.new3();
-        QMath.add3(rayToCenter, tri.getPosn(0));
-        QMath.add3(rayToCenter, tri.getPosn(1));
-        QMath.add3(rayToCenter, tri.getPosn(2));
-        final float inv3 = 1.0f / 3.0f;
-        QMath.mult3(rayToCenter, inv3);
-        QMath.mult3(rayToCenter, 1.0f / QMath.fastmag3(rayToCenter));
-        return (QMath.dot3(tri.normal, rayToCenter) > BACKFACE_CULL_MIN_DOT);
+        QVector3.copy(rayToCenter, tri.getPosn(0));
+        QVector3.add(rayToCenter, tri.getPosn(1));
+        QVector3.add(rayToCenter, tri.getPosn(2));
+        return (QVector3.dot(tri.normal, rayToCenter) > BACKFACE_CULL_MIN_DOT);
     }
 
     private Triangle[] internalClipTri(Triangle tri) {
@@ -808,16 +1008,8 @@ public final class QViewer extends QEncoding {
         // NOTE:
         // takes a starting, ending, and middle position, generates
         // interpolation factor between pI to pF (0 for pI, 1 for pF)
-        float[] temp = QMath.new3();
-        QMath.copy3(temp, pF);
-        QMath.sub3(temp, pI);
-        float magTotal = QMath.fastmag3(temp);
-
-        QMath.copy3(temp, pClip);
-        QMath.sub3(temp, pI);
-        float magIntersect = QMath.fastmag3(temp);
-
-        return magIntersect / magTotal;
+        return (pClip[VCTR_INDEX_Z] - pI[VCTR_INDEX_Z]) /
+               (pF[VCTR_INDEX_Z] - pI[VCTR_INDEX_Z]);
     }
 
     private Triangle[] internalClipTriCase1(Triangle tri, ClipState clipState) {
@@ -1051,30 +1243,21 @@ public final class QViewer extends QEncoding {
         // - after being cut, the top two verticies will be sorted from left to right
 
         Triangle sortedTri = internalSortTriVertsByHeight(tri);
+        raster.set(sortedTri);
 
         float invSlope20 = (sortedTri.getPosnX(0) - sortedTri.getPosnX(2)) /
                 (sortedTri.getPosnY(0) - sortedTri.getPosnY(2));
         float dY21 = sortedTri.getPosnY(1) - sortedTri.getPosnY(2);
+        float midX = sortedTri.getPosnX(2) + (invSlope20 * dY21);
+        float flatXL = Math.min(sortedTri.getPosnX(1), midX);
+        float flatXR = Math.max(sortedTri.getPosnX(1), midX);
 
-        float[] midPoint = new float[] {
-                sortedTri.getPosnX(2) + (invSlope20 * dY21),
-                sortedTri.getPosnY(1),
-                0.0f // Z value can be ignored as interpolation uses unsplit tri
-        };
-
-        // flatTopTri is (1, mid, 2)
-        Triangle flatTopTri = new Triangle(sortedTri);
-        flatTopTri.swapVerts(0, 1); // (0 1 2) -> (1 0 2)
-        flatTopTri.setPosn(1, midPoint); // (1 0 2) -> (1 mid 2)
-
-        // flatBottomTri is (1, mid, 0)
-        Triangle flatBottomTri = new Triangle(sortedTri);
-        flatBottomTri.swapVerts(0, 1); // (0 1 2) -> (1 0 2)
-        flatBottomTri.swapVerts(1, 2); // (1 0 2) -> (1 2 0)
-        flatBottomTri.setPosn(1, midPoint); // (1 2 0) -> (1 mid 0)
-
-        internalDrawFlatTopTri(flatTopTri, sortedTri);
-        internalDrawFlatBottomTri(flatBottomTri, sortedTri);
+        internalDrawFlatTopTri(
+                flatXL, flatXR, sortedTri.getPosnY(1),
+                sortedTri.getPosnX(2), sortedTri.getPosnY(2));
+        internalDrawFlatBottomTri(
+                flatXL, flatXR, sortedTri.getPosnY(1),
+                sortedTri.getPosnX(0), sortedTri.getPosnY(0));
 
     }
 
@@ -1094,196 +1277,131 @@ public final class QViewer extends QEncoding {
 
     }
 
-    private void internalDrawFlatTopTri(Triangle flatTri, Triangle sortedTri) {
+    private void internalDrawFlatTopTri(
+            float flatXL, float flatXR, float flatY,
+            float apexX, float apexY) {
 
         // NOTE:
-        // - vertex arrangement is as follows:
-        // 0 -> LEFT, 1 -> RIGHT, 2 -> BOTTOM POINT
-        // - flattop triangle is drawn from bottom to top
+        // - flattop triangle is drawn from the bottom apex up to the flat edge
 
-        // sort top 2 verticies from left to right
-        if (flatTri.getPosnX(0) > flatTri.getPosnX(1)) {
-            flatTri.swapVerts(1, 0);
-        }
-
-        float invDY = 1.0f / (flatTri.getPosnY(0) - flatTri.getPosnY(2));
+        float invDY = 1.0f / (flatY - apexY);
         if (Float.isNaN(invDY)) {
             return;
         }
 
-        float invSlope20 = (flatTri.getPosnX(0) - flatTri.getPosnX(2)) * invDY;
-        float invSlope21 = (flatTri.getPosnX(1) - flatTri.getPosnX(2)) * invDY;
+        float invSlopeLeft  = (flatXL - apexX) * invDY;
+        float invSlopeRight = (flatXR - apexX) * invDY;
 
-        int Y_START = Math.max((int) flatTri.getPosnY(2), 0);
-        int Y_END = Math.min((int) flatTri.getPosnY(0), renderTarget.getHeight() - 1);
+        int Y_START = Math.max((int) Math.ceil(apexY - 0.5f), 0);
+        int Y_END = Math.min((int) Math.ceil(flatY - 0.5f), renderTarget.getHeight());
 
-        for (int drawY = Y_START; drawY <= Y_END; drawY++) {
+        for (int drawY = Y_START; drawY < Y_END; drawY++) {
 
-            float distY = Math.max(0.0f, drawY - flatTri.getPosnY(2));
+            float distY = (drawY + 0.5f) - apexY;
             int X_START = Math.max(
-                    (int) (flatTri.getPosnX(2) + (invSlope20 * distY)),
+                    (int) Math.ceil(apexX + (invSlopeLeft * distY) - 0.5f),
                     0);
             int X_END = Math.min(
-                    (int) (flatTri.getPosnX(2) + (invSlope21 * distY)),
-                    renderTarget.getWidth() - 1);
+                    (int) Math.ceil(apexX + (invSlopeRight * distY) - 0.5f),
+                    renderTarget.getWidth());
 
-            for (int drawX = X_START; drawX <= X_END; drawX++) {
-                internalDrawFragment(drawX, drawY, sortedTri);
-            }
+            internalDrawSpan(X_START, X_END, drawY);
 
         }
 
     }
 
-    private void internalDrawFlatBottomTri(Triangle flatTri, Triangle sortedTri) {
+    private void internalDrawFlatBottomTri(
+            float flatXL, float flatXR, float flatY,
+            float apexX, float apexY) {
 
         // NOTE:
-        // - vertex arrangement is as follows:
-        // 0 -> LEFT, 1 -> RIGHT, 2 -> TOP POINT
-        // - flatbottom triangle is drawn from bottom to top
+        // - flatbottom triangle is drawn from the flat edge up to the top apex
 
-        // sort bottom 2 verticies from left to right
-        if (flatTri.getPosnX(0) > flatTri.getPosnX(1)) {
-            flatTri.swapVerts(1, 0);
-        }
-
-        float invDY = 1.0f / (flatTri.getPosnY(2) - flatTri.getPosnY(0));
+        float invDY = 1.0f / (apexY - flatY);
         if (Float.isNaN(invDY)) {
             return;
         }
 
-        float invSlope02 = (flatTri.getPosnX(2) - flatTri.getPosnX(0)) * invDY;
-        float invSlope12 = (flatTri.getPosnX(2) - flatTri.getPosnX(1)) * invDY;
+        float invSlopeLeft  = (apexX - flatXL) * invDY;
+        float invSlopeRight = (apexX - flatXR) * invDY;
 
-        int Y_START = Math.max((int) flatTri.getPosnY(0), 0);
-        int Y_END = Math.min((int) flatTri.getPosnY(2), renderTarget.getHeight() - 1);
+        int Y_START = Math.max((int) Math.ceil(flatY - 0.5f), 0);
+        int Y_END = Math.min((int) Math.ceil(apexY - 0.5f), renderTarget.getHeight());
 
-        for (int drawY = Y_START; drawY <= Y_END; drawY++) {
+        for (int drawY = Y_START; drawY < Y_END; drawY++) {
 
-            float distY = Math.max(0.0f, drawY - flatTri.getPosnY(0));
+            float distY = (drawY + 0.5f) - flatY;
             int X_START = Math.max(
-                    (int) (flatTri.getPosnX(0) + (invSlope02 * distY)),
+                    (int) Math.ceil(flatXL + (invSlopeLeft * distY) - 0.5f),
                     0);
             int X_END = Math.min(
-                    (int) (flatTri.getPosnX(1) + (invSlope12 * distY)),
-                    renderTarget.getWidth() - 1);
+                    (int) Math.ceil(flatXR + (invSlopeRight * distY) - 0.5f),
+                    renderTarget.getWidth());
 
-            for (int drawX = X_START; drawX <= X_END; drawX++) {
-                internalDrawFragment(drawX, drawY, sortedTri);
-            }
+            internalDrawSpan(X_START, X_END, drawY);
 
         }
 
     }
 
-    private void internalFindBaryWeights(
-            int drawX,
-            int drawY,
-            Triangle tri,
-            float[] out) {
-        // refer to
-        // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_rasterizetri.c
-
-        float p0x = tri.getPosnX(0);
-        float p0y = tri.getPosnY(0);
-        float p1x = tri.getPosnX(1);
-        float p1y = tri.getPosnY(1);
-        float p2x = tri.getPosnX(2);
-        float p2y = tri.getPosnY(2);
-        float invDenom = 1.0f /
-                (((p1y - p2y) *
-                        (p0x - p2x)) +
-                        ((p2x - p1x) *
-                                (p0y - p2y)));
-        float d3x = (float) drawX - p2x;
-        float d3y = (float) drawY - p2y;
-
-        out[0] = ((p1y - p2y) * (d3x) +
-                (p2x - p1x) * (d3y)) *
-                invDenom;
-        out[0] = Math.min(1.0f, Math.max(0.0f, out[0])); // clamp
-
-        out[1] = ((p2y - p0y) * (d3x) +
-                (p0x - p2x) * (d3y)) *
-                invDenom;
-        out[1] = Math.min(1.0f, Math.max(0.0f, out[1])); // clamp
-
-        out[2] = 1.0f - out[1] - out[0];
+    private void internalDrawSpan(int xStart, int xEnd, int drawY) {
+        float centerX = xStart + 0.5f;
+        float centerY = drawY + 0.5f;
+        float b0 = raster.b0At(centerX, centerY);
+        float b1 = raster.b1At(centerX, centerY);
+        for (int drawX = xStart; drawX < xEnd; drawX++) {
+            internalDrawFragment(drawX, drawY, b0, b1);
+            b0 += raster.db0dx;
+            b1 += raster.db1dx;
+        }
     }
 
-    private float[][] internalInterpolateFragmentInputs(
-            float[] baryWeights,
-            Triangle tri) {
-        // NOTE:
-        // in principle, all vertex outputs/fragment inputs should be formatted
-        // the same, so we will use v0 as a reference
-        Vertex v0 = tri.getVertex(0);
-        float[][] buffer = new float[v0.shaderOutputs.length][];
-
-        for (int slot = 0; slot < buffer.length; slot++) {
-
-            float[] outputSlot = v0.shaderOutputs[slot];
-            if (outputSlot == null) {
-                continue;
-            }
-            buffer[slot] = new float[outputSlot.length];
-
-            // NOTE:
-            // do a perspective-correct interpolation of each vertex output
-            float[] output0 = tri.getVertex(0).shaderOutputs[slot];
-            float[] output1 = tri.getVertex(1).shaderOutputs[slot];
-            float[] output2 = tri.getVertex(2).shaderOutputs[slot];
-
-            // refer to
-            // https://github.com/SuJiaTao/Caesium/blob/master/csmint_pl_rasterizetri.c
-            int compCount = outputSlot.length;
-            float w0 = tri.getPosnZ(0) * baryWeights[0];
-            float w1 = tri.getPosnZ(1) * baryWeights[1];
-            float w2 = tri.getPosnZ(2) * baryWeights[2];
-            float invWSum = 1.0f / (w0 + w1 + w2);
-            for (int comp = 0; comp < compCount; comp++) {
-                buffer[slot][comp] = (w0 * output0[comp] +
-                        w1 * output1[comp] +
-                        w2 * output2[comp]) * invWSum;
-            }
+    private void internalInterpolateFragmentInputs(
+            float a0,
+            float a1,
+            float a2,
+            float[] buffer) {
+        float[] output0 = raster.out0;
+        float[] output1 = raster.out1;
+        float[] output2 = raster.out2;
+        for (int i = 0; i < buffer.length; i++) {
+            buffer[i] = a0 * output0[i] + a1 * output1[i] + a2 * output2[i];
         }
-
-        return buffer;
     }
 
     private void internalDrawFragment(
             int drawX,
             int drawY,
-            Triangle triangle) {
+            float b0,
+            float b1) {
 
-        float[] weights = new float[VERTS_PER_TRI];
-        internalFindBaryWeights(drawX, drawY, triangle, weights);
+        float[] depthData = renderTarget.getDepthData();
+        int[]   colorData = renderTarget.getColorData();
+        int     pixel     = renderTarget.coordToDataIndex(drawX, drawY);
 
-        float invDepth = triangle.getPosnZ(0) * weights[0] +
-                triangle.getPosnZ(1) * weights[1] +
-                triangle.getPosnZ(2) * weights[2];
+        float w0 = raster.z0 * b0;
+        float w1 = raster.z1 * b1;
+        float w2 = raster.z2 * (1.0f - b0 - b1);
+        float invDepth = w0 + w1 + w2;
 
         // NOTE:
         // since all depths are negative and inverted, the further value
         // will be a smaller negative and hence greater. therefore the failing
         // depth test will be greater than the previous depth
-        if (invDepth > renderTarget.getDepth(drawX, drawY) - DEPTH_TEST_EPSILON) {
+        if (invDepth > depthData[pixel] - DEPTH_TEST_EPSILON) {
             return;
         }
 
         // CALL FRAGMENT SHADER
-        QShader.FragmentShaderContext fctx = new QShader.FragmentShaderContext();
-        fctx.uniforms = slotUniforms;
-        fctx.textures = slotTextures;
-        fctx.target = renderTarget;
         fctx.screenX = drawX;
         fctx.screenY = drawY;
         fctx.invDepth = invDepth;
-        fctx.normal = new QVector3(triangle.normal);
-        fctx.inputsFromVertexShader = internalInterpolateFragmentInputs(weights, triangle);
+        fctx.normal = raster.normal;
+        float invW = 1.0f / invDepth;
+        internalInterpolateFragmentInputs(w0 * invW, w1 * invW, w2 * invW, fctx.inputs);
 
-        QShader shader = internalGetRelevantShader();
-        QColor fragColor = shader.fragmentShader(fctx);
+        QColor fragColor = drawShader.fragmentShader(fctx);
 
         // DISCARD IF FRAGMENT IS TRANSPARENT
         if ((fragColor.getA()) == 0) {
@@ -1291,12 +1409,8 @@ public final class QViewer extends QEncoding {
         }
 
         // BLEND FRAGMENT TO BELOW COLOR AND WRITE TO RENDERTARGET
-        QColor blendedColor = QShader.blendColor(
-                new QColor(renderTarget.getColor(drawX, drawY)),
-                fragColor);
-
-        renderTarget.setDepth(drawX, drawY, invDepth);
-        renderTarget.setColor(drawX, drawY, blendedColor.toInt());
+        depthData[pixel] = invDepth;
+        colorData[pixel] = QColor.blend(colorData[pixel], fragColor.toInt());
     }
 
     ////////////////////////////////////////////////////////////////

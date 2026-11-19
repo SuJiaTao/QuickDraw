@@ -60,19 +60,25 @@ public final class QAttribIndexer {
         return attribBuffer.getComponentsPerAttrib( );
     }
 
+    public int getAttribCount( ) {
+        return attribBuffer.getAttribCount( );
+    }
+
     public void index(
         int           triNum,
         int           vertNum,
         int           offsetOut,
         float[]       bufferOut
     ) {
-        int[] triIndicies = new int[INDICIES_PER_TRI];
-        getTriIndicies(0, triIndicies, triNum);
-        attribBuffer.getAttrib(offsetOut, bufferOut, triIndicies[vertNum]);
+        attribBuffer.getAttrib(offsetOut, bufferOut, attribIndexBuffer[getTriBaseOffset(triNum) + vertNum]);
     }
 
     /////////////////////////////////////////////////////////////////
     // CONSTRUCTORS
+    public QAttribIndexer(QAttribIndexer shareIndicies) {
+        attribIndexBuffer = shareIndicies.attribIndexBuffer;
+    }
+
     public QAttribIndexer(int[] inIndicies, int numIndicies) {
         if ((numIndicies % INDICIES_PER_TRI) != 0) {
             throw new QException(

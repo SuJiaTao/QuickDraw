@@ -46,26 +46,45 @@ public class FuzzShader extends QShader {
                     SHADER_TEXTURE_SLOT, 
                     RequirementType.Texture, 
                     "face texture"
+            ),
+            new ShaderRequirement(
+                    SHADER_POSITION_SLOT, 
+                    RequirementType.Output, 
+                    "view-space position",
+                    3
+            ),
+            new ShaderRequirement(
+                    SHADER_UV_SLOT, 
+                    RequirementType.Output, 
+                    "uv",
+                    2
+            ),
+            new ShaderRequirement(
+                    SHADER_NORMAL_SLOT, 
+                    RequirementType.Output, 
+                    "normal",
+                    3
             )
         };
+    }
+
+    private QMatrix4x4 normalMtr;
+
+    public void beginDraw(VertexShaderContext vctx) {
+        normalMtr = vctx.uniform(SHADER_MATRIX_SLOT, QMatrix4x4.class).normalMatrix( );
     }
 
     public QVector3 vertexShader(
         VertexShaderContext vctx
     ) {
         // TRANSFORM VERTEX AND NORMALS
-        QVector3   vertexPos = new QVector3(vctx.attributes[SHADER_POSITION_SLOT]);
-        QMatrix4x4 transform = (QMatrix4x4)vctx.uniforms[SHADER_MATRIX_SLOT];
-        QMatrix4x4 rotMtr = transform.extractRotation( );
-        QMath.mul3_4x4(
-            vctx.attributes[SHADER_NORMAL_SLOT], 
-            rotMtr.getComponents( )
-        );
-        
-        vertexPos = QMatrix4x4.multiply(transform, vertexPos);
-        setOutputToFragShader(vctx, SHADER_POSITION_SLOT, vertexPos.getComponents( ));
-        forwardAttributeToFragShader(vctx, SHADER_UV_SLOT);
-        forwardAttributeToFragShader(vctx, SHADER_NORMAL_SLOT);
+        QMatrix4x4 transform = vctx.uniform(SHADER_MATRIX_SLOT, QMatrix4x4.class);
+        QVector3   vertexPos = transform.transformPoint(vctx.attribVec3(SHADER_POSITION_SLOT));
+        QVector3   normal    = normalMtr.transformDir(vctx.attribVec3(SHADER_NORMAL_SLOT)).normalize( );
+
+        vctx.output(SHADER_POSITION_SLOT, vertexPos);
+        vctx.forward(SHADER_UV_SLOT);
+        vctx.output(SHADER_NORMAL_SLOT, normal);
 
         return vertexPos;
     }
@@ -74,13 +93,10 @@ public class FuzzShader extends QShader {
         FragmentShaderContext fctx
     ) {
         // RETRIEVE FRAG INFO
-        float[] pos    = new float[3];
-        float[] uv     = new float[2];
-        float[] normal = new float[3];
-        getOutputFromVertShader(fctx, SHADER_POSITION_SLOT, pos);
-        getOutputFromVertShader(fctx, SHADER_UV_SLOT, uv);
-        getOutputFromVertShader(fctx, SHADER_NORMAL_SLOT, normal);
-        QSampleable tex = fctx.textures[SHADER_TEXTURE_SLOT];
+        QVector3    pos    = fctx.inputVec3(SHADER_POSITION_SLOT);
+        float[]     uv     = fctx.input(SHADER_UV_SLOT, new float[2]);
+        QVector3    normal = fctx.inputVec3(SHADER_NORMAL_SLOT);
+        QSampleable tex    = fctx.texture(SHADER_TEXTURE_SLOT);
         
         // WIGGLE UVS
         final float randDir       = seededRandom(fctx);
@@ -98,18 +114,18 @@ public class FuzzShader extends QShader {
         // APPLY SIMPLE PHONG SHADING
         float ambient      = 0.4f;
         float diffuseAccum = 0.0f;
-        QLight[] lights  = (QLight[])fctx.uniforms[SHADER_LIGHTS_SLOT];
+        QLight[] lights  = fctx.uniform(SHADER_LIGHTS_SLOT, QLight[].class);
         for (QLight light : lights) {
             QVector3 dFaceLight = QVector3.sub(
                 light.position,
-                new QVector3(pos)
+                pos
             );
 
             float dist = dFaceLight.fastMagnitude( );
             dFaceLight.multiply3(1.0f / dist);
 
             float diffuse = Math.max(0.0f, QVector3.dot(
-                new QVector3(normal).add(randOffset), 
+                normal.copy( ).add(randOffset), 
                 dFaceLight
             ));
             
@@ -118,9 +134,6 @@ public class FuzzShader extends QShader {
             diffuseAccum += (diffuse + phong) * (light.strength / dist);
         }
         
-        return multiplyColor(
-            texCol, 
-            Math.min(1.0f, ambient + diffuseAccum)
-        );
+        return texCol.multiply(Math.min(1.0f, ambient + diffuseAccum));
     }
 }

@@ -7,6 +7,7 @@ package ca.bael.QDraw;
 import java.util.concurrent.atomic.AtomicLong;
 
 import ca.bael.QDraw.QException.PointOfError;
+import ca.bael.QDraw.QShader.ShaderRequirement.RequirementType;
 
 public abstract class QShader {
     /////////////////////////////////////////////////////////////////
@@ -19,24 +20,182 @@ public abstract class QShader {
     // PUBLIC CLASSES
     public static final class VertexShaderContext {
         /////////////////////////////////////////////////////////////////
-        // PUBLIC MEMBERS
-        public Object[]   uniforms;
-        public QSampleable[] textures;
-        public float[][]  attributes;
-        public float[][]  outputsToFragShader = new float[VERTEX_SHADER_MAX_OUTPUTS][];
+        // PACKAGE MEMBERS
+        Object[]      uniforms;
+        QSampleable[] textures;
+        float[][]     attributes;
+        OutputLayout  layout;
+        float[]       outputs;
+        int           written;
+        final QVector3 position = new QVector3( );
+
+        /////////////////////////////////////////////////////////////////
+        // PUBLIC METHODS
+        public QVector3 attribVec3(int slot) {
+            return new QVector3(attributes[slot]);
+        }
+
+        public QVector3 attribVec3(int slot, QVector3 out) {
+            float[] attrib = attributes[slot];
+            out.set(attrib[0], attrib[1], attrib.length > 2 ? attrib[2] : 0.0f);
+            return out;
+        }
+
+        public QVector3 position( ) {
+            return position;
+        }
+
+        public float[] attrib(int slot, float[] out) {
+            System.arraycopy(attributes[slot], 0, out, 0, attributes[slot].length);
+            return out;
+        }
+
+        public <T> T uniform(int slot, Class<T> type) {
+            return type.cast(uniforms[slot]);
+        }
+
+        public QSampleable texture(int slot) {
+            return textures[slot];
+        }
+
+        public void output(int slot, QVector3 v) {
+            output(slot, v.getComponents( ));
+        }
+
+        public void output(int slot, float... v) {
+            int offset = layout.checkedOffset(slot);
+            if (v.length != layout.sizes[slot]) {
+                throw new QException(
+                    PointOfError.InvalidParameter,
+                    "Output slot " + slot + " declared " + layout.sizes[slot] +
+                    " components. Given was " + v.length
+                );
+            }
+            System.arraycopy(v, 0, outputs, offset, v.length);
+            written |= 1 << slot;
+        }
+
+        void ensureOutputsWritten( ) {
+            int missing = layout.declared & ~written;
+            if (missing != 0) {
+                throw new QException(
+                    PointOfError.InvalidData,
+                    "Vertex shader did not write declared output slot " +
+                    Integer.numberOfTrailingZeros(missing)
+                );
+            }
+        }
+
+        public void forward(int attribSlot) {
+            output(attribSlot, attributes[attribSlot]);
+        }
     }
 
     public static final class FragmentShaderContext {
         /////////////////////////////////////////////////////////////////
-        // PUBLIC MEMBERS
-        public Object[]   uniforms;
-        public QSampleable[] textures;
-        public QRenderBuffer target;
-        public int        screenX;
-        public int        screenY;
-        public float      invDepth;
-        public QVector3   normal;
-        public float[][]  inputsFromVertexShader = new float[VERTEX_SHADER_MAX_OUTPUTS][];
+        // PACKAGE MEMBERS
+        Object[]      uniforms;
+        QSampleable[] textures;
+        QRenderBuffer target;
+        int           screenX;
+        int           screenY;
+        float         invDepth;
+        float[]       normal;
+        OutputLayout  layout;
+        float[]       inputs;
+        final QColor  color = new QColor( );
+
+        /////////////////////////////////////////////////////////////////
+        // PUBLIC METHODS
+        public QColor color( ) {
+            return color;
+        }
+
+        public QVector3 inputVec3(int slot) {
+            return inputVec3(slot, new QVector3( ));
+        }
+
+        public QVector3 inputVec3(int slot, QVector3 out) {
+            int offset = layout.checkedOffset(slot);
+            out.set(
+                inputs[offset],
+                inputs[offset + 1],
+                layout.sizes[slot] > 2 ? inputs[offset + 2] : 0.0f
+            );
+            return out;
+        }
+
+        public float input(int slot, int comp) {
+            return inputs[layout.checkedOffset(slot) + comp];
+        }
+
+        public float[] input(int slot, float[] out) {
+            System.arraycopy(inputs, layout.checkedOffset(slot), out, 0, layout.sizes[slot]);
+            return out;
+        }
+
+        public <T> T uniform(int slot, Class<T> type) {
+            return type.cast(uniforms[slot]);
+        }
+
+        public QSampleable texture(int slot) {
+            return textures[slot];
+        }
+
+        public int screenX( ) {
+            return screenX;
+        }
+
+        public int screenY( ) {
+            return screenY;
+        }
+
+        public float invDepth( ) {
+            return invDepth;
+        }
+
+        public QVector3 faceNormal( ) {
+            return new QVector3(normal);
+        }
+    }
+
+    static final class OutputLayout {
+        /////////////////////////////////////////////////////////////////
+        // PACKAGE MEMBERS
+        final int[] offsets = new int[VERTEX_SHADER_MAX_OUTPUTS];
+        final int[] sizes   = new int[VERTEX_SHADER_MAX_OUTPUTS];
+        final int   total;
+        final int   declared;
+
+        /////////////////////////////////////////////////////////////////
+        // PACKAGE METHODS
+        int checkedOffset(int slot) {
+            if (sizes[slot] == 0) {
+                throw new QException(
+                    PointOfError.InvalidParameter,
+                    "Output slot " + slot + " was not declared in requirements()"
+                );
+            }
+            return offsets[slot];
+        }
+
+        /////////////////////////////////////////////////////////////////
+        // CONSTRUCTOR
+        OutputLayout(ShaderRequirement[] requirements) {
+            int offset = 0;
+            int mask   = 0;
+            for (ShaderRequirement require : requirements) {
+                if (require.requireType != RequirementType.Output) {
+                    continue;
+                }
+                offsets[require.slot] = offset;
+                sizes[require.slot]   = require.components;
+                offset += require.components;
+                mask |= 1 << require.slot;
+            }
+            total = offset;
+            declared = mask;
+        }
     }
 
     public static final class ShaderRequirement {
@@ -45,7 +204,8 @@ public abstract class QShader {
         public static enum RequirementType {
             Attribute,
             Uniform,
-            Texture
+            Texture,
+            Output
         }
 
         /////////////////////////////////////////////////////////////////
@@ -54,6 +214,7 @@ public abstract class QShader {
         public RequirementType requireType;
         public String          purpose;
         public Class<?>        uniformClass;
+        public int             components;
 
         /////////////////////////////////////////////////////////////////
         // CONSTRUCTOR
@@ -80,46 +241,28 @@ public abstract class QShader {
             purpose      = _purpose;
             uniformClass = _uniformClass;
         }
+
+        public ShaderRequirement(
+            int      _slot,
+            RequirementType _type,
+            String   _purpose,
+            int      _components
+        ) {
+            if (_type != RequirementType.Output) {
+                throw new QException(
+                    PointOfError.InvalidParameter,
+                    "Can ONLY specify component count if requirement type is Output"
+                );
+            }
+            slot        = _slot;
+            requireType = _type;
+            purpose     = _purpose;
+            components  = _components;
+        }
     }
 
     /////////////////////////////////////////////////////////////////
     // BUILT IN SHADER FUNCTIONS
-    public static void setOutputToFragShader(
-        VertexShaderContext vertCtx,
-        int outputSlot, 
-        float[] inBuffer
-    ) {
-        vertCtx.outputsToFragShader[outputSlot] = new float[inBuffer.length];
-        System.arraycopy(
-            inBuffer, 
-            0, 
-            vertCtx.outputsToFragShader[outputSlot], 
-            0, 
-            inBuffer.length
-        );
-    }
-
-    public static void forwardAttributeToFragShader(
-        VertexShaderContext vertCtx,
-        int attribSlot
-    ) {
-        setOutputToFragShader(vertCtx, attribSlot, vertCtx.attributes[attribSlot]);
-    }
-
-    public static void getOutputFromVertShader(
-        FragmentShaderContext fragCtx,
-        int inputSlot, 
-        float[] outBuffer
-    ) {
-        System.arraycopy(
-            fragCtx.inputsFromVertexShader[inputSlot], 
-            0, 
-            outBuffer, 
-            0, 
-            fragCtx.inputsFromVertexShader[inputSlot].length
-        );
-    }
-
     private static AtomicLong _seedUniquifier = new AtomicLong(0x5EED);
     public static float random( ) {
         return seededRandom((int)(_seedUniquifier.incrementAndGet( ) + System.nanoTime( )));
@@ -167,66 +310,24 @@ public abstract class QShader {
         );
     }
 
-    public static QColor blendColor(QColor bottom, QColor top) {
-        int tFac = top.getA();
-        if (tFac == 0xFF) return top;
-
-        int bFac = 0xFF - tFac;
-        if (bFac == 0xFF) return bottom;
-
-        // NOTE: unsigned lshift 8 is equivalent to division by 255
-        return new QColor(
-            (top.getR() * tFac + bottom.getR() * bFac) >>> 8,
-            (top.getG() * tFac + bottom.getG() * bFac) >>> 8,
-            (top.getB() * tFac + bottom.getB() * bFac) >>> 8
-        );
+    /////////////////////////////////////////////////////////////////
+    // OVERRIDABLE METHODS
+    public void beginDraw(VertexShaderContext context) {
     }
 
-    public static QColor addColor(QColor color1, QColor color2) {
-        return new QColor(
-            (color1.getR() + color1.getR()),
-            (color1.getG() + color2.getG()),
-            (color1.getB() + color2.getB())
-        );
+    public QVector3 vertexShader(
+        VertexShaderContext context
+    ) {
+        return context.attribVec3(QViewer.DEFAULT_SHADER_POSITION_SLOT, context.position( ));
     }
 
-    public static QColor multiplyColor(QColor color1, QColor color2) {
-        return new QColor(
-            (color1.getR() * color1.getR()) >>> 8,
-            (color1.getG() * color2.getG()) >>> 8,
-            (color1.getB() * color2.getB()) >>> 8
-        );
-    }
-
-    public static QColor multiplyColor(QColor color, float factor) {
-        int iFac = (int)(factor * 255.0f);
-        return new QColor(
-            (color.getR() * iFac) >>> 8,
-            (color.getG() * iFac) >>> 8,
-            (color.getB() * iFac) >>> 8
-        );
-    }
-
-    public static QColor multiplyColor(QColor color, float facR, float facG, float facB) {
-        int iFacR = (int)(facR * 255.0f);
-        int iFacG = (int)(facG * 255.0f);
-        int iFacB = (int)(facB * 255.0f);
-        return new QColor(
-            (color.getR() * iFacR) >>> 8,
-            (color.getG() * iFacG) >>> 8,
-            (color.getB() * iFacB) >>> 8
-        );
+    public QColor fragmentShader(
+        FragmentShaderContext context
+    ) {
+        return context.color( ).set(0xFF, 0x00, 0xFF, 0xFF);
     }
 
     /////////////////////////////////////////////////////////////////
     // ABSTRACT METHODS
     public abstract ShaderRequirement[] requirements( );
-
-    public abstract QVector3 vertexShader(
-        VertexShaderContext context
-    );
-
-    public abstract QColor fragmentShader(
-        FragmentShaderContext context
-    );
 }

@@ -51,31 +51,35 @@ Defined in [`settings.gradle`](settings.gradle):
 
 ### Data Encodings & Math
 - **[`QEncoding.java`](lib/src/main/java/ca/bael/QDraw/QEncoding.java)**: Base class holding shared constants for 32-bit `ARGB` color bitmasks/shifts (`COL_*`), 3-component vector indices (`VCTR_*`, `VCTR_COMPARE_EPSILON = 0.0005f`), and 4x4 matrix dimensions (`MTR_*`). Also documents standard codebase abbreviations and comment notation.
-- **[`QMath.java`](lib/src/main/java/ca/bael/QDraw/QMath.java)**: Static low-level float array operations (`copy2`, `copy3`, `copy4x4`, `cross3`, `dot3`, `add3`, `sub3`, `mult2`, `mult3`, `mul3_4x4`, `mul4x4`) with offset overloads to avoid array allocations.
-  - Trigonometric helpers `cosf(degrees)` and `sinf(degrees)` take **degrees**, not radians.
-  - Fast magnitude approximations (`fastmag2`, `fastmag3`) approximate Euclidean length without `Math.sqrt`.
 - **[`QVector3.java`](lib/src/main/java/ca/bael/QDraw/QVector3.java)**: 3-float vector wrapper supporting both in-place mutation (`vec.add(other)`, `vec.multiply3(fac)`) and static non-mutating operations (`QVector3.add(v1, v2)`). Note: static factory methods `QVector3.X()`, `Y()`, `Z()` currently return zero-initialized vectors (`COMPONENTS_X/Y/Z` are `{0,0,0}`); check callers before changing them.
+  - Package-private static in-place `float[]` helpers (`copy`, `add`, `sub`, `scale`, `dot`, `cross`, `magnitude`, `sqrMagnitude`, `fastMagnitude`) are used by `QViewer` internals on raw position/normal arrays. `fastMagnitude` approximates Euclidean length without `Math.sqrt`.
 - **[`QMatrix4x4.java`](lib/src/main/java/ca/bael/QDraw/QMatrix4x4.java)**: 16-float matrix indexed via `col + 4 * row`. Supports `Identity()`, `Zero()`, `scaleMatrix`, `translationMatrix`, `rotationMatrix` (angles in degrees), `TRS(translation, rotation, scale)`, and decomposition (`extractTranslation`, `extractScale`, `extractRotation`).
+  - `transformPoint(v)` applies the 3x3 part plus translation; `transformDir(v)` applies only the 3x3 part (use for normals/directions). Both mutate `v` in place and accept `float[]` or `QVector3`. The projective row is ignored.
+  - `normalMatrix()` returns the inverse-transpose of the 3x3 part (correct for non-uniform scale); normals transformed with it must be re-normalized.
+  - Trigonometric helpers `cosDeg(degrees)` and `sinDeg(degrees)` take **degrees**, not radians.
 
 ### Geometry & Attributes
 - **[`QAttribBuffer.java`](lib/src/main/java/ca/bael/QDraw/QAttribBuffer.java)**: Contiguous `float[]` buffer storing `attribCount` attributes of `compsPerAttrib` floats each.
-- **[`QAttribIndexer.java`](lib/src/main/java/ca/bael/QDraw/QAttribIndexer.java)**: Holds `int[]` triangle vertex indices (length must be a multiple of 3) referencing a `QAttribBuffer`.
-- **[`QMesh.java`](lib/src/main/java/ca/bael/QDraw/QMesh.java)**: Manages position (3 floats), UV (2 floats), and normal (3 floats) `QAttribBuffer`/`QAttribIndexer` pairs.
+- **[`QAttribIndexer.java`](lib/src/main/java/ca/bael/QDraw/QAttribIndexer.java)**: Holds `int[]` triangle vertex indices (length must be a multiple of 3) referencing a `QAttribBuffer`. `new QAttribIndexer(other)` shares `other`'s index array.
+- **[`QMesh.java`](lib/src/main/java/ca/bael/QDraw/QMesh.java)**: Manages position (3 floats), UV (2 floats), and normal (3 floats) `QAttribBuffer`/`QAttribIndexer` pairs. At load, each unique (position, uv, normal) tuple becomes one vertex and all three indexers share a single index array.
   - Can be constructed from raw arrays or a Wavefront `.obj` file path (`new QMesh(String objFilePath)`).
   - The `.obj` parser requires `v`, `vt`, `vn`, and face definitions formatted as `f p/uv/n ...` (1-indexed, must include normals). Faces with more than 3 vertices are triangulated via triangle-fan tessellation.
 
 ### Color, Textures, and Render Buffers
 - **[`QColor.java`](lib/src/main/java/ca/bael/QDraw/QColor.java)**: 32-bit `ARGB` color wrapper (`0xAARRGGBB`). Channel values are `0..255`.
+  - Color math (`blend`, `add`, `multiply`) exists as static methods on packed `int` ARGB (allocation-free, used by the pipeline) and as in-place chainable instance methods. Results are opaque (`A = 0xFF`) and channels saturate at `0..255`.
 - **[`QSampleable.java`](lib/src/main/java/ca/bael/QDraw/QSampleable.java)**: Abstract 2D pixel source/target supporting UV sampling (`SampleType.Cutoff`, `Clamp`, `Repeat`) and functional pixel transforms (`mapColor`, `mapColorSpacial`, `copyTo`).
 - **[`QTexture.java`](lib/src/main/java/ca/bael/QDraw/QTexture.java)**: Subclasses `QSampleable`. Stores pixel data in **16x16 (`CHUNK_WIDTH x CHUNK_HEIGHT`) spatial chunks** (`translateIndex(x, y)`) using bitwise shifts/masks to maximize CPU cache locality during 2D UV sampling. Y coordinates are flipped on image load so `(0, 0)` corresponds to the bottom-left corner. Supports saving to `.png`.
 - **[`QRenderBuffer.java`](lib/src/main/java/ca/bael/QDraw/QRenderBuffer.java)**: Subclasses `QSampleable`. Wraps a `BufferedImage` (`TYPE_INT_ARGB` backed by `DataBufferInt`) and a `float[]` depth buffer. `coordToDataIndex(x, y)` inverts `y` so `(0, 0)` is bottom-left.
 
 ### Shaders, Lighting, and Rendering Pipeline
-- **[`QShader.java`](lib/src/main/java/ca/bael/QDraw/QShader.java)**: Abstract base class for shaders. Subclasses implement:
-  - `ShaderRequirement[] requirements()` declaring required `Attribute`, `Uniform` (with expected `Class<?>`), and `Texture` slots.
-  - `QVector3 vertexShader(VertexShaderContext context)` returning transformed vertex position and writing varyings via `setOutputToFragShader` / `forwardAttributeToFragShader`.
-  - `QColor fragmentShader(FragmentShaderContext context)` reading interpolated varyings via `getOutputFromVertShader` and returning fragment `QColor`.
-  - Also provides fast XORSHIFT deterministic PRNG (`seededRandom`, `seededRandomVector`) and integer color math (`blendColor`, `addColor`, `multiplyColor`).
+- **[`QShader.java`](lib/src/main/java/ca/bael/QDraw/QShader.java)**: Abstract base class for shaders. Subclasses must implement `requirements()` and may override the rest:
+  - `ShaderRequirement[] requirements()` declaring required `Attribute`, `Uniform` (with expected `Class<?>`), `Texture` slots, and `Output` slots (with component count). Every slot written by `output`/`forward` must be declared as an `Output`, and every declared `Output` must be written on each `vertexShader` call (the pipeline throws `QException` otherwise); declared outputs are packed into one flat per-vertex array.
+  - `QVector3 vertexShader(VertexShaderContext context)` (default: returns the position attribute from `QViewer.DEFAULT_SHADER_POSITION_SLOT` untransformed) reading inputs via `attribVec3`/`attrib`/`uniform`/`texture`, writing outputs via `output`/`forward`, and returning the transformed vertex position. `context.position()` is a reusable vector to build the returned position in (`attribVec3(slot, out)` fills an existing vector).
+  - `QColor fragmentShader(FragmentShaderContext context)` (default: opaque magenta `(255, 0, 255, 255)` as a "not implemented" marker) reading interpolated outputs via `inputVec3`/`input`, plus `uniform`/`texture`/`screenX`/`screenY`/`invDepth`/`faceNormal`, and returning the fragment `QColor`. `context.color()` is a reusable color to return instead of `new QColor(...)`.
+  - Reusable `position()`/`color()` objects hold the previous call's values: always `set` them before reading, and never retain them after returning.
+  - Optional `beginDraw(VertexShaderContext context)` runs once per draw after uniforms/textures are bound and before any vertex is processed; use it to precompute per-draw values (e.g. a normal matrix). Only `uniform`/`texture` are meaningful there. Values stored in shader fields make that shader instance unsafe to share across concurrently drawing viewers.
+  - Also provides fast XORSHIFT deterministic PRNG (`seededRandom`, `seededRandomVector`).
 - **[`QLight.java`](lib/src/main/java/ca/bael/QDraw/QLight.java)** & **[`QMaterial.java`](lib/src/main/java/ca/bael/QDraw/QMaterial.java)**: Data structures for point/directional lights and Blinn-Phong material properties (`ambient`, `diffuse`, `specular`, `shininess`).
 - **[`QViewer.java`](lib/src/main/java/ca/bael/QDraw/QViewer.java)**: The software rendering pipeline.
   - Built-in render modes (`RenderMode`): `SolidFill`, `Textured`, `Normal`, `Material` (Blinn-Phong), and `CustomShader`.
@@ -85,8 +89,8 @@ Defined in [`settings.gradle`](settings.gradle):
     - Textures (`0..15`): `0` = primary `QSampleable`.
   - **Pipeline stages in `internalDraw()`**:
     1. Validates vertex attribute indexers have matching triangle counts and checks `QShader.requirements()`.
-    2. Executes `vertexShader` for each of the 3 triangle vertices.
-    3. Computes face normal (`cross3`) and culls backfacing triangles (`dot3(normal, rayToCenter) > 0`).
+    2. Executes `vertexShader` for each of the 3 triangle vertices. When all bound indexers share one index array (as `QMesh` produces), results are cached per index for the duration of the draw, so vertex shaders must be deterministic in their attributes and uniforms.
+    3. Computes face normal (`QVector3.cross`) and culls backfacing triangles (`QVector3.dot(normal, rayToCenter) > 0`).
     4. Clips triangles against `nearClip` (`Z > nearClip` is behind the camera; visible geometry has negative Z). Clips 1-vertex-behind into 2 triangles (quad) and 2-vertices-behind into 1 triangle, linearly interpolating shader outputs and preserving clockwise winding order.
     5. Projects vertices (`posn[Z] = 1.0f / posn[Z]`, `posn[X,Y] *= -posn[Z]`) and maps `viewBounds` to screen coordinates.
     6. Sorts vertices by Y, splits into flat-top and flat-bottom triangles, rasterizes scanlines, computes perspective-correct barycentric weights, tests inverted-Z depth (`invDepth <= currentDepth - DEPTH_TEST_EPSILON`), invokes `fragmentShader`, discards fully transparent fragments (`A == 0`), alpha-blends with existing framebuffer color, and updates depth and color buffers.

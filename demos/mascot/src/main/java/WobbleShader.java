@@ -37,6 +37,12 @@ public final class WobbleShader extends QShader {
                     QViewer.DEFAULT_SHADER_TEXTURE_SLOT, 
                     RequirementType.Texture, 
                     "face texture"
+            ),
+            new ShaderRequirement(
+                    QViewer.DEFAULT_SHADER_UV_SLOT,
+                    RequirementType.Output,
+                    "uv",
+                    2
             )
         };
     }
@@ -45,18 +51,18 @@ public final class WobbleShader extends QShader {
         VertexShaderContext vctx
     ) {
         // GET SHADER INPUTS
-        QVector3   vertexPos = new QVector3(vctx.attributes[QViewer.DEFAULT_SHADER_POSITION_SLOT]);
-        QMatrix4x4 transform = 
-            new QMatrix4x4((QMatrix4x4)vctx.uniforms[QViewer.DEFAULT_SHADER_MATRIX_SLOT]);
-        Float      dt        = ((Float)vctx.uniforms[SHADER_TIME_SLOT]) * 0.35f;
+        QVector3   vertexPos = vctx.attribVec3(QViewer.DEFAULT_SHADER_POSITION_SLOT);
+        QMatrix4x4 transform =
+            new QMatrix4x4(vctx.uniform(QViewer.DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class));
+        Float      dt        = vctx.uniform(SHADER_TIME_SLOT, Float.class) * 0.35f;
 
         // FORWARD UV DATA
-        forwardAttributeToFragShader(vctx, QViewer.DEFAULT_SHADER_UV_SLOT);
+        vctx.forward(QViewer.DEFAULT_SHADER_UV_SLOT);
 
         // CALCULATE WOBBLE FACTOR
-        float offsetX = 0.03f * QMath.cosf( dt + (vertexPos.getY() * 35.0f) );
-        float offsetY = 0.12f * QMath.sinf( 35.0f + (dt + vertexPos.getX() * 70.0f) * 0.5f );
-        float offsetZ = 0.15f * QMath.sinf( 90.0f + dt + (vertexPos.getY() * 35.0f) ); 
+        float offsetX = 0.03f * QMatrix4x4.cosDeg( dt + (vertexPos.getY() * 35.0f) );
+        float offsetY = 0.12f * QMatrix4x4.sinDeg( 35.0f + (dt + vertexPos.getX() * 70.0f) * 0.5f );
+        float offsetZ = 0.15f * QMatrix4x4.sinDeg( 90.0f + dt + (vertexPos.getY() * 35.0f) ); 
 
         // WOBBLE
         transform.multiply(QMatrix4x4.translationMatrix(offsetX, offsetY, offsetZ));
@@ -67,9 +73,8 @@ public final class WobbleShader extends QShader {
         FragmentShaderContext fragInfo
     ) {
         // GET INPUTS
-        QSampleable tex = fragInfo.textures[QViewer.DEFAULT_SHADER_TEXTURE_SLOT];
-        float[]     uv  = new float[2];
-        getOutputFromVertShader(fragInfo, QViewer.DEFAULT_SHADER_UV_SLOT, uv);
+        QSampleable tex = fragInfo.texture(QViewer.DEFAULT_SHADER_TEXTURE_SLOT);
+        float[]     uv  = fragInfo.input(QViewer.DEFAULT_SHADER_UV_SLOT, new float[2]);
 
         // SAMPLE TEXTURE
         return new QColor(tex.sample(uv[0], uv[1], SampleType.Repeat)).setA(200);

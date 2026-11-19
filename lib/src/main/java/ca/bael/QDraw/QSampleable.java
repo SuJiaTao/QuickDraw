@@ -79,12 +79,6 @@ public abstract class QSampleable {
             case Repeat:
                 u = u - (float)Math.floor((float)u);
                 v = v - (float)Math.floor((float)v);
-                if (u < 0.0f) {
-                    u = 1.0f + u;
-                }
-                if (v > 1.0f) {
-                    v = 1.0f + v;
-                }
                 break;
         
             default:
