@@ -73,7 +73,7 @@ public final class QViewer {
         "Yanis",     "Pipi",      "Taha",      "Poke",      "Mini",
         "Zala",      "Potke",     "Lambda",    "Saura",     "Boppe",
         "Omua",      "Fauna",     "Talle",     "Coco",      "Bobo",
-        "Zaffa",     "Ibrahim",   "Connaught", "Persus",    "Foxtrot",
+        "Zaffa",     "Ibrahim",   "Connaught", "Perseus",   "Foxtrot",
         "Jojo",      "Sparky",    "Bingo",     "Zotch",     "Blip",
         "Fafa",      "Nolla",     "Dati",      "Dropsitz",  "Gonitz",
         "Kango",     "Teapot",    "Bolo",      "Emerie",    "Vergumtrix",
