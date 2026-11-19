@@ -2,32 +2,31 @@
 // 2023-2026
 // QWindow.java
 
-package ca.bael.QDraw;
+package ca.bael.QDraw.awt;
 
-import java.awt.*;
+import java.awt.Dimension;
+import java.awt.Frame;
 import java.awt.event.*;
 import javax.swing.*;
 import java.util.*;
+import ca.bael.QDraw.QException;
 import ca.bael.QDraw.QException.PointOfError;
+import ca.bael.QDraw.QImage;
+import ca.bael.QDraw.QPresenter;
+import ca.bael.QDraw.QTimer;
+import ca.bael.QDraw.QVector3;
 
-public final class QWindow {
-    /////////////////////////////////////////////////////////////////
-    // CONSTANTS
-    private static final int   NUM_BUFFERS = 2;
-
+public final class QWindow implements QPresenter {
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
-    private JFrame        window;
-    private Graphics2D    windowGraphics; 
-    private QRenderBuffer renderBuffer;
-    private int           windowWidth;
-    private int           windowHeight;
-    private InputListener listener;
+    private final JFrame        window;
+    private final QSwingCanvas  canvas;
+    private final InputListener listener;
 
     /////////////////////////////////////////////////////////////////
     // PUBLIC MEMBERS
-    public final QTimer drawTimer = new QTimer( );
-    public final QTimer showTimer = new QTimer( );
+    public final QTimer drawTimer;
+    public final QTimer showTimer;
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE CLASSES
@@ -89,22 +88,22 @@ public final class QWindow {
             );
         }
 
-        windowWidth  = width;
-        windowHeight = height;
+        canvas = new QSwingCanvas( );
+        canvas.setPreferredSize(new Dimension(width, height));
+        drawTimer = canvas.drawTimer;
+        showTimer = canvas.showTimer;
 
         window = new JFrame(title);
-        window.setSize(width, height);
+        window.add(canvas);
+        window.pack( );
         window.setResizable(false);
         window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         window.setVisible(true);
-        window.addKeyListener(null);
 
         listener = new InputListener( );
-        window.addKeyListener(listener);
-        window.addMouseListener(listener);
-
-        window.createBufferStrategy(NUM_BUFFERS);
-        windowGraphics = (Graphics2D)window.getBufferStrategy().getDrawGraphics();
+        canvas.addKeyListener(listener);
+        canvas.addMouseListener(listener);
+        canvas.requestFocus( );
     }
 
     /////////////////////////////////////////////////////////////////
@@ -113,33 +112,9 @@ public final class QWindow {
         return window;
     }
 
-    public void setRenderBuffer(QRenderBuffer buffer) {
-        renderBuffer = buffer;
-    }
-
-    public void updateFrame( ) {
-        if (renderBuffer == null) {
-            return;
-        }
-
-        drawTimer.start( );
-        windowGraphics.setRenderingHint(
-            RenderingHints.KEY_INTERPOLATION,
-            RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR
-        );
-        windowGraphics.drawImage(
-            renderBuffer.getBufferedImage(),
-            0,
-            0,
-            windowWidth,
-            windowHeight,
-            null
-        );
-
-        drawTimer.stop( );
-        showTimer.start( );
-        window.getBufferStrategy().show();
-        showTimer.stop( );
+    @Override
+    public void present(QImage frame) {
+        canvas.present(frame);
     }
 
     public boolean isKeyDown(int keyCode) {

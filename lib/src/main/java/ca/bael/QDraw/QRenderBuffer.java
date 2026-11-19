@@ -4,7 +4,6 @@
 
 package ca.bael.QDraw;
 
-import java.awt.image.*;
 import java.util.Arrays;
 import ca.bael.QDraw.QException.PointOfError;
 
@@ -24,9 +23,8 @@ public final class QRenderBuffer extends QSampleable {
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
-    private final BufferedImage buffer;
     private final float[]       depthBuffer;
-    private final int[]         colorBuffer;
+    private final QImage        color;
     private final int           width;
     private final int           height;
     private final float[][]     gbufferFloats = new float[GBUFFER_SLOTS][];
@@ -44,9 +42,8 @@ public final class QRenderBuffer extends QSampleable {
 
         this.width    = width;
         this.height   = height;
-        buffer        = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         depthBuffer   = new float[width * height];
-        colorBuffer   = ((DataBufferInt)(buffer.getRaster().getDataBuffer())).getData();
+        color         = new QImage(width, height);
     
         clearColorBuffer();
         clearDepthBuffer();
@@ -54,20 +51,20 @@ public final class QRenderBuffer extends QSampleable {
 
     /////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
-    public BufferedImage getBufferedImage( ) {
-        return buffer;
+    public QImage getColorImage( ) {
+        return color;
     }
 
     public int[] getColorData( ) {
-        return colorBuffer;
+        return color.getPixels( );
     }
 
     public int getColor(int x, int y) {
-        return colorBuffer[coordToDataIndex(x, y)];
+        return color.getColor(x, y);
     }
 
     public void setColor(int x, int y, int c) {
-        colorBuffer[coordToDataIndex(x, y)] = c;
+        color.setColor(x, y, c);
     }
 
     public float[] getDepthData( ) {
@@ -83,7 +80,7 @@ public final class QRenderBuffer extends QSampleable {
     }
 
     public int coordToDataIndex(int x, int y) {
-        return x + (width * (height - y - 1));
+        return color.coordToDataIndex(x, y);
     }
 
     public int getWidth( ) {
@@ -140,11 +137,7 @@ public final class QRenderBuffer extends QSampleable {
 
     @Override
     public void copyTo(QSampleable target) {
-        if (target instanceof QRenderBuffer dst && dst.width == width && dst.height == height) {
-            System.arraycopy(colorBuffer, 0, dst.colorBuffer, 0, colorBuffer.length);
-            return;
-        }
-        super.copyTo(target);
+        color.copyTo(target instanceof QRenderBuffer dst ? dst.color : target);
     }
 
     public void copyDepthTo(QRenderBuffer dst) {
@@ -185,9 +178,7 @@ public final class QRenderBuffer extends QSampleable {
     }
 
     public void clearColorBuffer( ) {
-        for (int i = 0; i < colorBuffer.length; i++) {
-            colorBuffer[i] = CLEAR_COLOR;
-        }
+        Arrays.fill(color.getPixels( ), CLEAR_COLOR);
     }
 
     public void clearDepthBuffer( ) {
@@ -199,7 +190,7 @@ public final class QRenderBuffer extends QSampleable {
     void clearRows(int y0, int y1) {
         int from = width * (height - y1);
         int to   = width * (height - y0);
-        Arrays.fill(colorBuffer, from, to, CLEAR_COLOR);
+        Arrays.fill(color.getPixels( ), from, to, CLEAR_COLOR);
         Arrays.fill(depthBuffer, from, to, CLEAR_DEPTH);
         for (int slot = 0; slot < GBUFFER_SLOTS; slot++) {
             if (gbufferFloats[slot] != null) {

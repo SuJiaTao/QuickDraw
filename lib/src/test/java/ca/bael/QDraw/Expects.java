@@ -6,6 +6,9 @@ package ca.bael.QDraw;
 
 import org.junit.jupiter.api.Test;
 
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
+
 import ca.bael.QDraw.QColor.Channel;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -31,13 +34,27 @@ public final class Expects {
 
     @Test 
     void RenderBufferTest() {
-        assertEquals(Boolean.valueOf(true), Boolean.valueOf(new QRenderBuffer(5, 5).getBufferedImage() != null));
+        assertEquals(5 * 5, new QRenderBuffer(5, 5).getColorImage().getPixels().length);
         assertEquals(5 * 5, new QRenderBuffer(5, 5).getColorData().length);
         assertEquals(10 * 5, new QRenderBuffer(10, 5).getColorData().length);
         assertEquals(5 * 7, new QRenderBuffer(5, 7).getColorData().length);
         assertEquals(5 * 5, new QRenderBuffer(5, 5).getDepthData().length);
         assertEquals(10 * 5, new QRenderBuffer(10, 5).getDepthData().length);
         assertEquals(5 * 7, new QRenderBuffer(5, 7).getDepthData().length);
+    }
+
+    @Test
+    void ImageTest() {
+        QImage img = QImage.wrap(new int[] { 0x11223344, 0x55667788 }, 1, 2);
+        IntBuffer ints = IntBuffer.allocate(2);
+        img.writeTo(ints, QImage.PixelLayout.RGBA, true);
+        assertArrayEquals(new int[] { 0x66778855, 0x22334411 }, ints.array());
+        ByteBuffer bytes = ByteBuffer.allocate(8);
+        img.writeTo(bytes, QImage.PixelLayout.BGRA, false);
+        assertArrayEquals(new byte[] { 0x44, 0x33, 0x22, 0x11, (byte)0x88, 0x77, 0x66, 0x55 }, bytes.array());
+        QImage copy = new QImage(1, 2);
+        img.copyTo(copy);
+        assertArrayEquals(img.getPixels(), copy.getPixels());
     }
 
     @Test 

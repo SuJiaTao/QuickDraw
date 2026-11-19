@@ -8,7 +8,7 @@ import ca.bael.QDraw.QRenderBuffer;
 import ca.bael.QDraw.QTexture;
 import ca.bael.QDraw.QVector3;
 import ca.bael.QDraw.QViewer;
-import ca.bael.QDraw.QWindow;
+import ca.bael.QDraw.awt.QWindow;
 import ca.bael.QDraw.QViewer.RenderMode;
 
 public final class Profile {
@@ -68,7 +68,7 @@ public final class Profile {
                     viewer.flush( );
                     texTimer.endTime();
 
-                    window.updateFrame( );
+                    window.present(frameBuffer.getColorImage( ));
 
                     // PROFILE RB
                     viewer.clearFrame( );
@@ -80,7 +80,7 @@ public final class Profile {
                     viewer.flush( );
                     rbTimer.endTime();
 
-                    window.updateFrame( );
+                    window.present(frameBuffer.getColorImage( ));
 
                 } else {
 
@@ -94,7 +94,7 @@ public final class Profile {
                     viewer.flush( );
                     rbTimer.endTime();
 
-                    window.updateFrame( );
+                    window.present(frameBuffer.getColorImage( ));
 
                     // PROFILE TEX
                     viewer.clearFrame( );
@@ -106,7 +106,7 @@ public final class Profile {
                     viewer.flush( );
                     texTimer.endTime();
 
-                    window.updateFrame( );
+                    window.present(frameBuffer.getColorImage( ));
 
                 }
 
@@ -123,7 +123,6 @@ public final class Profile {
     public static void main(String[] args) {
         window      = new QWindow("Profiling Tests", WINDOW_WIDTH, WINDOW_HEIGHT);
         frameBuffer = new QRenderBuffer(FB_WIDTH, FB_HEIGHT);
-        window.setRenderBuffer(frameBuffer);
         viewer      = new QViewer(frameBuffer);
         viewer.setViewBounds(-FB_ASPECT, FB_ASPECT, -1.0f, 1.0f);
         viewer.setRenderMode(RenderMode.Textured);

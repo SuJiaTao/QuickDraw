@@ -3,6 +3,7 @@
 // Sceneview.java
 
 import ca.bael.QDraw.*;
+import ca.bael.QDraw.awt.QWindow;
 import ca.bael.QDraw.QViewer.RenderMode;
 
 public final class Sceneview {
@@ -19,7 +20,6 @@ public final class Sceneview {
         
         QRenderBuffer frameBuffer = new QRenderBuffer(RESOLUTION_X, RESOLUTION_Y);
         QWindow window = new QWindow("Scene View", WINDOW_WIDTH, WINDOW_HEIGHT);
-        window.setRenderBuffer(frameBuffer);
 
         QViewer viewer = new QViewer(frameBuffer);
         viewer.setNearClip(-0.05f);
@@ -154,7 +154,7 @@ public final class Sceneview {
             viewer.drawMesh(mesh1);
             viewer.flush( );
 
-            window.updateFrame( );
+            window.present(frameBuffer.getColorImage( ));
         }
     }
 }

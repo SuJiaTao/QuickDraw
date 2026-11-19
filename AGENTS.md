@@ -24,7 +24,7 @@ Always use the Gradle Wrapper (`./gradlew`) at the repository root:
 | Run MakeFuzzTexture demo | `./gradlew :demos:make-fuzz-texture:run` | Headless-safe texture generator utility |
 | Run Profile benchmark | `./gradlew :demos:profile:run` | Benchmarks `QTexture` vs. `QRenderBuffer` (requires GUI display) |
 
-> **Headless Environment Note**: `QWindow` constructs a `javax.swing.JFrame` and initializes an AWT `BufferStrategy`. Running `:demos:sceneview:run`, `:demos:mascot:run`, or `:demos:profile:run` in a headless environment without an X11/Wayland display will throw `java.awt.HeadlessException`. `:lib:test` and `:demos:make-fuzz-texture:run` do not create windows and can run headlessly.
+> **Headless Environment Note**: `QWindow`/`QSwingCanvas` construct a `javax.swing.JFrame` and initializes an AWT `BufferStrategy`. Running `:demos:sceneview:run`, `:demos:mascot:run`, or `:demos:profile:run` in a headless environment without an X11/Wayland display will throw `java.awt.HeadlessException`. `:lib:test` and `:demos:make-fuzz-texture:run` do not create windows and can run headlessly.
 
 ---
 
@@ -72,7 +72,8 @@ Defined in [`settings.gradle`](settings.gradle):
   - Color math (`blend`, `add`, `multiply`) exists as static methods on packed `int` ARGB (allocation-free, used by the pipeline) and as in-place chainable instance methods. Results are opaque (`A = 0xFF`) and channels saturate at `0..255`.
 - **[`QSampleable.java`](lib/src/main/java/ca/bael/QDraw/QSampleable.java)**: Abstract 2D pixel source/target supporting UV sampling (`SampleType.Cutoff`, `Clamp`, `Repeat`) and functional pixel transforms (`mapColor`, `mapColorSpacial`, `copyTo`).
 - **[`QTexture.java`](lib/src/main/java/ca/bael/QDraw/QTexture.java)**: Subclasses `QSampleable`. Stores pixel data in **16x16 (`CHUNK_WIDTH x CHUNK_HEIGHT`) spatial chunks** (`translateIndex(x, y)`) using bitwise shifts/masks to maximize CPU cache locality during 2D UV sampling. Y coordinates are flipped on image load so `(0, 0)` corresponds to the bottom-left corner. Supports saving to `.png`.
-- **[`QRenderBuffer.java`](lib/src/main/java/ca/bael/QDraw/QRenderBuffer.java)**: Subclasses `QSampleable`. Wraps a `BufferedImage` (`TYPE_INT_ARGB` backed by `DataBufferInt`) and a `float[]` depth buffer. `coordToDataIndex(x, y)` inverts `y` so `(0, 0)` is bottom-left. `copyTo` (color only) is a single array copy for same-size `QRenderBuffer`s; `copyDepthTo`/`copyGBuffersTo` copy depth and every source-attached G-buffer slot (formats must match). Copy only after the source's `flush()`, and never into a buffer whose viewer has a pending `clearFrame()`.
+- **[`QRenderBuffer.java`](lib/src/main/java/ca/bael/QDraw/QRenderBuffer.java)**: Subclasses `QSampleable`. Holds a `QImage` color plane and a `float[]` depth buffer (no AWT types). `coordToDataIndex(x, y)` inverts `y` so `(0, 0)` is bottom-left. `copyTo` (color only) is a single array copy for same-size `QRenderBuffer`s; `copyDepthTo`/`copyGBuffersTo` copy depth and every source-attached G-buffer slot (formats must match). Copy only after the source's `flush()`, and never into a buffer whose viewer has a pending `clearFrame()`. Its color plane is a `QImage` (`getColorImage()`); `getColorData()`/`coordToDataIndex` delegate to it.
+- **[`QImage.java`](lib/src/main/java/ca/bael/QDraw/QImage.java)**: Subclasses `QSampleable`. Linear packed `0xAARRGGBB` (non-premultiplied) `int[]`, stored top row first in memory with bottom-left API coordinates. `wrap` does not copy. `writeTo(IntBuffer|ByteBuffer, PixelLayout, flipY)` exports with a channel swizzle (`ARGB`, `BGRA`, `RGBA`, `ABGR`): for `IntBuffer` the first named channel is the most significant byte; for `ByteBuffer` bytes are written in the named order regardless of buffer byte order. `flipY` writes the bottom row first (OpenGL). Writes are relative puts at the buffer's position.
 
 ### Shaders, Lighting, and Rendering Pipeline
 - **[`QShader.java`](lib/src/main/java/ca/bael/QDraw/QShader.java)**: Abstract base class for shaders. Subclasses must implement `requirements()` and may override the rest:
@@ -103,7 +104,12 @@ Defined in [`settings.gradle`](settings.gradle):
     4. Clips triangles against `nearClip` (`Z > nearClip` is behind the camera; visible geometry has negative Z). Clips 1-vertex-behind into 2 triangles (quad) and 2-vertices-behind into 1 triangle, linearly interpolating shader outputs and preserving clockwise winding order.
     5. Projects vertices (`posn[Z] = 1.0f / posn[Z]`, `posn[X,Y] *= -posn[Z]`) and maps `viewBounds` to screen coordinates.
     6. Sorts vertices by Y, splits into flat-top and flat-bottom triangles, rasterizes scanlines, computes perspective-correct barycentric weights, tests inverted-Z depth (`invDepth < currentDepth`, skipped when `setDepthTest(false)`), invokes `fragmentShader`, discards fully transparent fragments (`A == 0`), alpha-blends with existing framebuffer color, and updates color, plus depth unless `setDepthWrite(false)`.
-- **[`QWindow.java`](lib/src/main/java/ca/bael/QDraw/QWindow.java)**: Swing `JFrame` wrapper with a 2-buffer `BufferStrategy` and `InputListener` for polling keyboard (`isKeyDown`, `isCharDownIgnoreCase`, `getInputWASDVector`, `getInputArrowKeysVector`) and mouse state.
+- **[`QPresenter.java`](lib/src/main/java/ca/bael/QDraw/QPresenter.java)**: Core interface, `present(QImage frame)`. Synchronous: the caller may modify the image after it returns.
+- **`ca.bael.QDraw.awt`** (AWT/Swing bridge, keeps the core package AWT-free apart from `QTexture` image loading):
+  - [`QAwt`](lib/src/main/java/ca/bael/QDraw/awt/QAwt.java): `asBufferedImage(image, useAlpha)` is a zero-copy `TYPE_INT_ARGB`/`TYPE_INT_RGB` view over the image's `int[]`; `drawScaled` draws with a `Scaling` policy (`Stretch`, `Fit`, `IntegerScale`; letterboxed in black, nearest-neighbor).
+  - [`QSwingCanvas`](lib/src/main/java/ca/bael/QDraw/awt/QSwingCanvas.java): `Canvas` presenter using active rendering through a 2-buffer `BufferStrategy`, drawn on the calling thread; presents nothing until displayable.
+  - [`QSwingPanel`](lib/src/main/java/ca/bael/QDraw/awt/QSwingPanel.java): `JComponent` presenter for embedding in Swing UIs; `present` copies the frame and calls `repaint()`, painted on the EDT.
+  - [`QWindow`](lib/src/main/java/ca/bael/QDraw/awt/QWindow.java): non-resizable `JFrame` whose client area is the requested size, holding a `QSwingCanvas`; implements `QPresenter` and polls keyboard/mouse (`isKeyDown`, `isCharDownIgnoreCase`, `getInputWASDVector`, `getInputArrowKeysVector`, ...) via an `InputListener` on the canvas.
 - **[`QException.java`](lib/src/main/java/ca/bael/QDraw/QException.java)**: Unchecked `RuntimeException` subclass parameterized by `PointOfError` (`NullParameter`, `InvalidParameter`, `MalformedData`, `InvalidData`, `BadState`).
 
 ---
@@ -112,7 +118,7 @@ Defined in [`settings.gradle`](settings.gradle):
 
 1. **`QViewer.drawMesh()` Clears All Slots After Drawing**:
    - Calling `viewer.drawMesh(mesh)` automatically calls `clearTextureSlots()`, `clearUniformSlots()`, and `clearVertexAttribSlots()` (which also clears the index buffer) after `draw()`. Any uniforms (matrices, lights, materials) and textures **must be re-bound before each `drawMesh()` call**.
-   - `draw()`/`drawMesh()` only **queue** the draw (shader requirements are still checked immediately). Nothing is rendered until `flush()`, which must be called before the render buffer is read or presented (e.g. before `QWindow.updateFrame()`). `clearFrame()` flushes first.
+   - `draw()`/`drawMesh()` only **queue** the draw (shader requirements are still checked immediately). Nothing is rendered until `flush()`, which must be called before the render buffer is read or presented (e.g. before `QWindow.present(...)`). `clearFrame()` flushes first.
    - Queued draws capture viewer state (render mode, shader, fill color, sample type, near clip, view bounds, depth/color write, cull and blend mode, slots). Uniform values are copied via `QUniform.snapshot()`, so they may be modified right after `drawMesh()`; textures, meshes, and shader instances are captured by reference and must not be modified until `flush()`.
    - Errors raised while shading (e.g. unwritten outputs) surface from `flush()`, not `drawMesh()`.
    - `clearFrame()` is deferred too: the buffers are cleared at the start of the next `flush()` (each raster worker clears its own rows), not immediately.
@@ -123,6 +129,6 @@ Defined in [`settings.gradle`](settings.gradle):
 3. **Uniform Type Checking**:
    - `QViewer.internalEnsureShaderRequirements` checks uniform types using exact class equality (`slotUniforms[slot].getClass() != require.uniformClass`). Pass the exact class expected by the shader (e.g., `QMatrix4x4.class`, `QLights.class`, `QMaterial.class`, `QScalar.class`).
 4. **Unit Tests (`Expects.java`)**:
-   - Unit tests in [`lib/src/test/java/ca/bael/QDraw/Expects.java`](lib/src/test/java/ca/bael/QDraw/Expects.java) (`ColorTest`, `RenderBufferTest`, `VectorTest`, `MatrixTest`, and `MathTest`) use JUnit Jupiter (`@Test`). When adding new tests, annotate them with `@Test` (non-static) and run `./gradlew :lib:test` to verify execution.
+   - Unit tests in [`lib/src/test/java/ca/bael/QDraw/Expects.java`](lib/src/test/java/ca/bael/QDraw/Expects.java) (`ColorTest`, `RenderBufferTest`, `ImageTest`, `VectorTest`, `MatrixTest`, `QuaternionTest`, and `MathTest`) use JUnit Jupiter (`@Test`). When adding new tests, annotate them with `@Test` (non-static) and run `./gradlew :lib:test` to verify execution.
 5. **Code Formatting Style**:
    - Maintain the existing file header comments, `/////////////////////////////////////////////////////////////////` section dividers, and the `package-info.java` abbreviation/notation conventions when editing files in `lib/src/main/java/ca/bael/QDraw/`.

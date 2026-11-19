@@ -18,7 +18,7 @@ import ca.bael.QDraw.QTexture;
 import ca.bael.QDraw.QVector3;
 import ca.bael.QDraw.QViewer;
 import ca.bael.QDraw.QViewer.RenderMode;
-import ca.bael.QDraw.QWindow;
+import ca.bael.QDraw.awt.QWindow;
 
 public final class Deferred {
     public static final int   WINDOW_WIDTH     = 1200;
@@ -105,7 +105,6 @@ public final class Deferred {
         gbuffer.attachGBuffer(GBufferShader.NORMAL_GBUFFER, GBufferFormat.Float3);
         gbuffer.attachGBuffer(GBufferShader.UV_GBUFFER, GBufferFormat.Float3);
         gbuffer.attachGBuffer(GBufferShader.ID_GBUFFER, GBufferFormat.Long);
-        window.setRenderBuffer(frameBuffer);
 
         QViewer geomPass = new QViewer(gbuffer, FB_ASPECT);
         geomPass.setRenderMode(RenderMode.CustomShader);
@@ -179,7 +178,7 @@ public final class Deferred {
             lightPass.setUniformSlot(LightingShader.INV_VIEW_UNIFORM_SLOT, inverseViewMatrix(yaw));
             lightPass.drawMesh(SCREEN_QUAD);
             lightPass.flush();
-            window.updateFrame();
+            window.present(frameBuffer.getColorImage());
 
             fpsFrames++;
             long now = System.nanoTime();

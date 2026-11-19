@@ -165,7 +165,8 @@ public class QTexture extends QSampleable {
             );
         }
 
-        BufferedImage tempImage = toRenderBuffer().getBufferedImage();
+        BufferedImage tempImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        tempImage.setRGB(0, 0, width, height, toRenderBuffer().getColorData(), 0, width);
 
         try {
             boolean result = ImageIO.write(tempImage, "png", outFile);
