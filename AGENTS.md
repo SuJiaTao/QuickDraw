@@ -92,7 +92,8 @@ Defined in [`settings.gradle`](settings.gradle):
     - Attributes (`0..7`): `0` = position, `1` = UV, `2` = normal.
     - Uniforms (`0..15`): `0` = transform `QMatrix4x4`, `1` = `QLights`, `2` = `QMaterial`. Only `QUniform` values can be bound.
     - Textures (`0..15`): `0` = primary `QSampleable`.
-  - **Pipeline stages in `internalDraw()`**:
+  - `flush()` runs stages 1–5 for every queued draw first (emitting screen-space vertices and triangle records into a reusable `TriangleQueue`), then runs stage 6 over all emitted triangles in draw order.
+  - **Pipeline stages in `internalProcessGeometry()` / `internalRasterize()`**:
     1. Validates vertex attribute indexers have matching triangle counts and checks `QShader.requirements()`.
     2. Executes `vertexShader` for each of the 3 triangle vertices. When all bound indexers share one index array (as `QMesh` produces), results are cached per index for the duration of the draw, so vertex shaders must be deterministic in their attributes and uniforms.
     3. Computes face normal (`QVector3.cross`) and culls backfacing triangles (`QVector3.dot(normal, rayToCenter) > 0`).
