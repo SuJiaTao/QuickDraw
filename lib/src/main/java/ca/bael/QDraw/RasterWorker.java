@@ -1,5 +1,5 @@
 // Bailey JT Brown
-// 2023-2024
+// 2023-2026
 // RasterWorker.java
 
 package ca.bael.QDraw;
@@ -26,6 +26,8 @@ final class RasterWorker {
     private int stripEnd;
     private boolean depthTest;
     private boolean depthWrite;
+    private boolean colorWrite;
+    private QViewer.BlendMode blendMode;
 
     ////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
@@ -61,6 +63,8 @@ final class RasterWorker {
         fctx.drawData   = draw.data;
         depthTest       = draw.state.depthTest;
         depthWrite      = draw.state.depthWrite;
+        colorWrite      = draw.state.colorWrite;
+        blendMode       = draw.state.blendMode;
         if (fctx.inputs == null || fctx.inputs.length != draw.layout.total) {
             fctx.inputs = new float[draw.layout.total];
         }
@@ -246,7 +250,14 @@ final class RasterWorker {
         if (depthWrite) {
             depthData[pixel] = invDepth;
         }
-        colorData[pixel] = QColor.blend(colorData[pixel], fragColor.toInt());
+        if (colorWrite) {
+            int src = fragColor.toInt();
+            colorData[pixel] = switch (blendMode) {
+                case Alpha    -> QColor.blend(colorData[pixel], src);
+                case Additive -> QColor.add(colorData[pixel], QColor.multiply(src, fragColor.getA() / 255.0f));
+                case Replace  -> src;
+            };
+        }
     }
 
     private void internalWriteGBuffer(int pixel) {

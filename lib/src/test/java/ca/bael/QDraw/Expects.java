@@ -1,7 +1,7 @@
 package ca.bael.QDraw;
 // Bailey JT Brown
 
-// 2023-2024
+// 2023-2026
 // Expects.java
 
 import org.junit.jupiter.api.Test;
@@ -151,6 +151,20 @@ public final class Expects {
         assertEquals(
                 new QMatrix4x4().scale(new QVector3(1.0f, 2.0f, 3.0f)),
                 QMatrix4x4.scale(new QMatrix4x4(), new QVector3(1.0f, 2.0f, 3.0f)));
+        QMatrix4x4 trs = QMatrix4x4.TRS(
+                new QVector3(1.0f, -2.0f, 3.0f),
+                new QVector3(10.0f, 20.0f, 30.0f),
+                new QVector3(1.0f, 2.0f, 0.5f));
+        assertEquals(QMatrix4x4.Identity(), QMatrix4x4.multiply(trs, trs.inverse()));
+    }
+
+    @Test
+    void QuaternionTest() {
+        QVector3 axisX = new QVector3(1.0f, 0.0f, 0.0f);
+        QVector3 axisZ = new QVector3(0.0f, 0.0f, 1.0f);
+        assertEquals(QMatrix4x4.rotationMatrix(30.0f, 0.0f, 0.0f), QQuaternion.fromAxisAngle(axisX, 30.0f).toMatrix());
+        assertEquals(QMatrix4x4.rotationMatrix(0.0f, 0.0f, -90.0f), QQuaternion.fromAxisAngle(axisZ, -90.0f).toMatrix());
+        assertEquals(new QVector3(0.0f, 1.0f, 0.0f), QQuaternion.fromAxisAngle(axisZ, -90.0f).rotate(new QVector3(1.0f, 0.0f, 0.0f)));
     }
 
     @Test 

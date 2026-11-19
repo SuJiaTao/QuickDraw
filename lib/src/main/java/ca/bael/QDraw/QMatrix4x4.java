@@ -1,5 +1,5 @@
 // Bailey JT Brown
-// 2023-2024
+// 2023-2026
 // QMatrix4x4.java
 
 package ca.bael.QDraw;
@@ -336,6 +336,22 @@ public final class QMatrix4x4 implements QUniform<QMatrix4x4> {
             c2[0] * invDet, c2[1] * invDet, c2[2] * invDet, 0.0f,
             0.0f,           0.0f,           0.0f,           1.0f
         });
+    }
+
+    public QMatrix4x4 inverse( ) {
+        float[] n = normalMatrix( ).components;
+        QMatrix4x4 inv = new QMatrix4x4(new float[] {
+            n[0], n[4], n[8],  0.0f,
+            n[1], n[5], n[9],  0.0f,
+            n[2], n[6], n[10], 0.0f,
+            0.0f, 0.0f, 0.0f,  1.0f
+        });
+        float[] t = { -components[3], -components[7], -components[11] };
+        inv.transformDir(t);
+        inv.components[3]  = t[VCTR_INDEX_X];
+        inv.components[7]  = t[VCTR_INDEX_Y];
+        inv.components[11] = t[VCTR_INDEX_Z];
+        return inv;
     }
 
     public QMatrix4x4 extractRotation( ) {

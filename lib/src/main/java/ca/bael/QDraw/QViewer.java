@@ -1,5 +1,5 @@
 // Bailey JT Brown
-// 2023-2024
+// 2023-2026
 // QViwer.java
 
 package ca.bael.QDraw;
@@ -32,6 +32,18 @@ public final class QViewer {
         CustomShader
     };
 
+    public enum CullMode {
+        Back,
+        Front,
+        None
+    };
+
+    public enum BlendMode {
+        Alpha,
+        Additive,
+        Replace
+    };
+
     ////////////////////////////////////////////////////////////////
     // CONSTANTS
     public static final float MIN_NEAR_CLIP = -0.005f;
@@ -50,6 +62,9 @@ public final class QViewer {
     public static final QColor DEFAULT_FILL_COLOR = QColor.White();
     public static final boolean DEFAULT_DEPTH_TEST = true;
     public static final boolean DEFAULT_DEPTH_WRITE = true;
+    public static final boolean DEFAULT_COLOR_WRITE = true;
+    public static final CullMode DEFAULT_CULL_MODE = CullMode.Back;
+    public static final BlendMode DEFAULT_BLEND_MODE = BlendMode.Alpha;
     private static final int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
     private static final String[] WORKER_NAMES = {
         "Kitty",  "Sharky", "Ouppy",  "Froggy", "Solo",   "Bango",  "Tango",
@@ -107,6 +122,11 @@ public final class QViewer {
         state.viewTop = top;
     }
 
+    public void setFieldOfView(float fovYDegrees, float aspect) {
+        float top = (float)Math.tan(Math.toRadians(0.5f * fovYDegrees));
+        setViewBounds(-aspect * top, aspect * top, -top, top);
+    }
+
     public void setRenderMode(RenderMode mode) {
         renderMode = mode;
     }
@@ -129,6 +149,18 @@ public final class QViewer {
 
     public void setDepthWrite(boolean enabled) {
         state.depthWrite = enabled;
+    }
+
+    public void setColorWrite(boolean enabled) {
+        state.colorWrite = enabled;
+    }
+
+    public void setCullMode(CullMode mode) {
+        state.cullMode = mode;
+    }
+
+    public void setBlendMode(BlendMode mode) {
+        state.blendMode = mode;
     }
 
     public void setUniformSlot(

@@ -1,5 +1,5 @@
 // Bailey JT Brown
-// 2024
+// 2024-2026
 // QMaterial.java
 
 package ca.bael.QDraw;

@@ -1,5 +1,5 @@
 // Bailey JT Brown
-// 2023-2024
+// 2023-2026
 // GeometryWorker.java
 
 package ca.bael.QDraw;
@@ -108,8 +108,8 @@ final class GeometryWorker {
             QVector3.sub(edge02, tri.getPosn(0));
             QVector3.cross(tri.normal, edge01, edge02);
 
-            // CULL IF BACKFACING
-            if (internalCheckBackfacing(tri)) {
+            // CULL BY FACING
+            if (internalCheckCulled(tri, draw.state.cullMode)) {
                 continue;
             }
 
@@ -210,14 +210,18 @@ final class GeometryWorker {
         vertexCache.store(idx, vert);
     }
 
-    private boolean internalCheckBackfacing(Triangle tri) {
+    private boolean internalCheckCulled(Triangle tri, QViewer.CullMode cullMode) {
+        if (cullMode == QViewer.CullMode.None) {
+            return false;
+        }
         // NOTE:
         // if the dot product between the normal is > 0 for the ray
         // from the camera to the center of the tri, then it's backfacing
         QVector3.copy(rayToCenter, tri.getPosn(0));
         QVector3.add(rayToCenter, tri.getPosn(1));
         QVector3.add(rayToCenter, tri.getPosn(2));
-        return (QVector3.dot(tri.normal, rayToCenter) > BACKFACE_CULL_MIN_DOT);
+        float facing = QVector3.dot(tri.normal, rayToCenter);
+        return cullMode == QViewer.CullMode.Back ? facing > BACKFACE_CULL_MIN_DOT : facing < -BACKFACE_CULL_MIN_DOT;
     }
 
     private static boolean internalCheckOutside(Triangle tri, int axis, float lo, float hi) {

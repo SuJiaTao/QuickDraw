@@ -1,5 +1,5 @@
 // Bailey JT Brown
-// 2024
+// 2024-2026
 // TimerInstance.java
 
 public final class TimerInstance {

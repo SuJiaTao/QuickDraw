@@ -56,7 +56,9 @@ Defined in [`settings.gradle`](settings.gradle):
 - **[`QMatrix4x4.java`](lib/src/main/java/ca/bael/QDraw/QMatrix4x4.java)**: 16-float matrix indexed via `col + 4 * row`. Supports `Identity()`, `Zero()`, `scaleMatrix`, `translationMatrix`, `rotationMatrix` (angles in degrees), `TRS(translation, rotation, scale)`, and decomposition (`extractTranslation`, `extractScale`, `extractRotation`).
   - `transformPoint(v)` applies the 3x3 part plus translation; `transformDir(v)` applies only the 3x3 part (use for normals/directions). Both mutate `v` in place and accept `float[]` or `QVector3`. The projective row is ignored.
   - `normalMatrix()` returns the inverse-transpose of the 3x3 part (correct for non-uniform scale); normals transformed with it must be re-normalized.
+  - `inverse()` returns the affine inverse (3x3 inverse plus inverted translation; the projective row is ignored).
   - Trigonometric helpers `cosDeg(degrees)` and `sinDeg(degrees)` take **degrees**, not radians.
+- **[`QQuaternion.java`](lib/src/main/java/ca/bael/QDraw/QQuaternion.java)**: Orientation quaternion. `fromAxisAngle` (degrees, same sign convention as `QMatrix4x4.rotationMatrix`), `rotateLocal`/`rotateGlobal` (body vs world axis, re-normalized), static Hamilton `multiply(a, b)`, `rotate(v)` in place, `toMatrix()`.
 
 ### Geometry & Attributes
 - **[`QAttribBuffer.java`](lib/src/main/java/ca/bael/QDraw/QAttribBuffer.java)**: Fixed-size, writable `float[]` buffer storing `attribCount` attributes of `compsPerAttrib` floats each. `new QAttribBuffer(comps, count)` is zero-filled, `wrap(data, comps)` does not copy, `set(i, ...)` writes one attribute.
@@ -88,6 +90,7 @@ Defined in [`settings.gradle`](settings.gradle):
 - **[`QLights.java`](lib/src/main/java/ca/bael/QDraw/QLights.java)** / **[`QScalar.java`](lib/src/main/java/ca/bael/QDraw/QScalar.java)**: `QUniform` wrappers for a light array (`count()`, `get(i)`) and an immutable number (`floatValue()`, `intValue()`, `doubleValue()`; constructed from any numeric primitive).
 - **[`QViewer.java`](lib/src/main/java/ca/bael/QDraw/QViewer.java)**: The software rendering pipeline.
   - Built-in render modes (`RenderMode`): `SolidFill`, `Textured`, `Normal`, `Material` (Blinn-Phong), and `CustomShader`.
+  - Per-draw raster state: `setCullMode(CullMode.Back|Front|None)`, `setBlendMode(BlendMode.Alpha|Additive|Replace)` (additive is alpha-weighted), `setColorWrite`, `setDepthTest`, `setDepthWrite`. `setFieldOfView(fovYDegrees, aspect)` sets symmetric view bounds.
   - Default slots:
     - Attributes (`0..7`): `0` = position, `1` = UV, `2` = normal.
     - Uniforms (`0..15`): `0` = transform `QMatrix4x4`, `1` = `QLights`, `2` = `QMaterial`. Only `QUniform` values can be bound.
@@ -110,7 +113,7 @@ Defined in [`settings.gradle`](settings.gradle):
 1. **`QViewer.drawMesh()` Clears All Slots After Drawing**:
    - Calling `viewer.drawMesh(mesh)` automatically calls `clearTextureSlots()`, `clearUniformSlots()`, and `clearVertexAttribSlots()` (which also clears the index buffer) after `draw()`. Any uniforms (matrices, lights, materials) and textures **must be re-bound before each `drawMesh()` call**.
    - `draw()`/`drawMesh()` only **queue** the draw (shader requirements are still checked immediately). Nothing is rendered until `flush()`, which must be called before the render buffer is read or presented (e.g. before `QWindow.updateFrame()`). `clearFrame()` flushes first.
-   - Queued draws capture viewer state (render mode, shader, fill color, sample type, near clip, view bounds, slots). Uniform values are copied via `QUniform.snapshot()`, so they may be modified right after `drawMesh()`; textures, meshes, and shader instances are captured by reference and must not be modified until `flush()`.
+   - Queued draws capture viewer state (render mode, shader, fill color, sample type, near clip, view bounds, depth/color write, cull and blend mode, slots). Uniform values are copied via `QUniform.snapshot()`, so they may be modified right after `drawMesh()`; textures, meshes, and shader instances are captured by reference and must not be modified until `flush()`.
    - Errors raised while shading (e.g. unwritten outputs) surface from `flush()`, not `drawMesh()`.
    - `clearFrame()` is deferred too: the buffers are cleared at the start of the next `flush()` (each raster worker clears its own rows), not immediately.
    - `flush()` runs on a shared daemon thread pool, one worker per core: geometry workers each take whole draws, then (after that phase completes) raster workers each own horizontal strips of rows. `beginDraw`, `vertexShader` and `fragmentShader` are all called concurrently from several threads on the same shader instance, so they must not write to shader fields or other shared state; read per-draw values from `context.drawData(...)`.
