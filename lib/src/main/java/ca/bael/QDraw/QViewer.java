@@ -316,8 +316,9 @@ public final class QViewer {
 
     private void internalProcessGeometryParallel() {
         AtomicInteger nextDraw = new AtomicInteger();
-        List<Callable<Void>> tasks = new ArrayList<>(geometryWorkers.size());
-        for (GeometryWorker worker : geometryWorkers) {
+        int taskCount = Math.min(geometryWorkers.size(), queuedDraws.size());
+        List<Callable<Void>> tasks = new ArrayList<>(taskCount);
+        for (GeometryWorker worker : geometryWorkers.subList(0, taskCount)) {
             tasks.add(() -> {
                 worker.process(queuedDraws, nextDraw);
                 return null;
