@@ -2,6 +2,8 @@
 // 2024-2026
 // Sceneview.java
 
+import java.awt.event.KeyEvent;
+
 import ca.bael.QDraw.*;
 import ca.bael.QDraw.awt.QWindow;
 import ca.bael.QDraw.QViewer.RenderMode;
@@ -50,16 +52,16 @@ public final class Sceneview {
             lastTime = currentTime;
 
             // UPDATE RENDER MODE BASED ON INPUTS
-            if (window.isCharDownIgnoreCase('U')) {
+            if (window.isKeyDown(KeyEvent.VK_U)) {
                 rMode = RenderMode.CustomShader;
             }
-            if (window.isCharDownIgnoreCase('I')) {
+            if (window.isKeyDown(KeyEvent.VK_I)) {
                 rMode = RenderMode.Material;
             }
-            if (window.isCharDownIgnoreCase('O')) {
+            if (window.isKeyDown(KeyEvent.VK_O)) {
                 rMode = RenderMode.Normal;
             }
-            if (window.isCharDownIgnoreCase('P')) {
+            if (window.isKeyDown(KeyEvent.VK_P)) {
                 rMode = RenderMode.Textured;
             }
 
