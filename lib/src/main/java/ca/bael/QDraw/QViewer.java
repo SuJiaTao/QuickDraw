@@ -11,6 +11,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import ca.bael.QDraw.QException.PointOfError;
@@ -45,9 +46,12 @@ public final class QViewer {
 
     public static final RenderMode DEFAULT_RENDER_MODE = RenderMode.Textured;
     public static final QColor DEFAULT_FILL_COLOR = QColor.White();
-    private static final int RASTER_THREADS = Runtime.getRuntime().availableProcessors();
-    private static final ExecutorService RASTER_POOL = Executors.newFixedThreadPool(RASTER_THREADS, task -> {
-        Thread thread = new Thread(task, "QViewer-raster");
+    private static final int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
+    private static final String[] WORKER_NAMES = { "Kitty", "Sharky", "Froggy", "Solo", "Tango", "Yote" };
+    private static final AtomicInteger WORKER_COUNT = new AtomicInteger();
+    private static final ExecutorService WORKER_POOL = Executors.newFixedThreadPool(WORKER_THREADS, task -> {
+        String name = WORKER_NAMES[WORKER_COUNT.getAndIncrement() % WORKER_NAMES.length];
+        Thread thread = new Thread(task, String.format("QuickDrawWorker_%s_%04X", name, ThreadLocalRandom.current().nextInt(0x10000)));
         thread.setDaemon(true);
         return thread;
     });
@@ -71,10 +75,9 @@ public final class QViewer {
     private QShader customShader = null;
     private RenderMode renderMode = DEFAULT_RENDER_MODE;
 
-    private final TriangleQueue triQueue = new TriangleQueue();
-    private GeometryStage geometry;
     private final ArrayList<DrawState> queuedDraws = new ArrayList<>();
-    private final List<RasterWorker> workers = new ArrayList<>();
+    private final List<GeometryWorker> geometryWorkers = new ArrayList<>();
+    private final List<RasterWorker> rasterWorkers = new ArrayList<>();
     private boolean clearPending;
 
     public final QTimer geometryTimer = new QTimer();
@@ -172,9 +175,8 @@ public final class QViewer {
     public void flush() {
         try {
             geometryTimer.start();
-            triQueue.reset();
-            for (DrawState queued : queuedDraws) {
-                geometry.process(queued);
+            if (!queuedDraws.isEmpty()) {
+                internalProcessGeometryParallel();
             }
             geometryTimer.stop();
             rasterTimer.start();
@@ -204,9 +206,9 @@ public final class QViewer {
     ////////////////////////////////////////////////////////////////
     // PRIVATE METHODS
     private void init(QRenderBuffer target) {
-        geometry = new GeometryStage(target, triQueue);
-        for (int i = 0; i < RASTER_THREADS; i++) {
-            workers.add(new RasterWorker(target));
+        for (int i = 0; i < WORKER_THREADS; i++) {
+            geometryWorkers.add(new GeometryWorker(target));
+            rasterWorkers.add(new RasterWorker(target));
         }
     }
 
@@ -290,17 +292,33 @@ public final class QViewer {
         }
     }
 
+    private void internalProcessGeometryParallel() {
+        AtomicInteger nextDraw = new AtomicInteger();
+        List<Callable<Void>> tasks = new ArrayList<>(geometryWorkers.size());
+        for (GeometryWorker worker : geometryWorkers) {
+            tasks.add(() -> {
+                worker.process(queuedDraws, nextDraw);
+                return null;
+            });
+        }
+        internalRunParallel(tasks);
+    }
+
     private void internalRasterizeParallel() {
         AtomicInteger nextStrip = new AtomicInteger();
-        List<Callable<Void>> tasks = new ArrayList<>(workers.size());
-        for (RasterWorker worker : workers) {
+        List<Callable<Void>> tasks = new ArrayList<>(rasterWorkers.size());
+        for (RasterWorker worker : rasterWorkers) {
             tasks.add(() -> {
                 worker.rasterize(queuedDraws, nextStrip, clearPending);
                 return null;
             });
         }
+        internalRunParallel(tasks);
+    }
+
+    private static void internalRunParallel(List<Callable<Void>> tasks) {
         try {
-            for (Future<Void> result : RASTER_POOL.invokeAll(tasks)) {
+            for (Future<Void> result : WORKER_POOL.invokeAll(tasks)) {
                 result.get();
             }
         } catch (ExecutionException e) {
@@ -313,7 +331,7 @@ public final class QViewer {
             throw new QException(PointOfError.BadState, e.getCause().toString());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new QException(PointOfError.BadState, "Interrupted while rasterizing");
+            throw new QException(PointOfError.BadState, "Interrupted while flushing");
         }
     }
 

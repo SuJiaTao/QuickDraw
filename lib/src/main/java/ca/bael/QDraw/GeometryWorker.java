@@ -1,6 +1,6 @@
 // Bailey JT Brown
 // 2023-2024
-// GeometryStage.java
+// GeometryWorker.java
 
 package ca.bael.QDraw;
 
@@ -9,9 +9,12 @@ import static ca.bael.QDraw.QVector3.VCTR_INDEX_Y;
 import static ca.bael.QDraw.QVector3.VCTR_INDEX_Z;
 import static ca.bael.QDraw.QVector3.VCTR_NUM_CMPS;
 
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import ca.bael.QDraw.QException.PointOfError;
 
-final class GeometryStage {
+final class GeometryWorker {
     ////////////////////////////////////////////////////////////////
     // CONSTANTS
     private static final float BACKFACE_CULL_MIN_DOT = 0.0f;
@@ -19,7 +22,7 @@ final class GeometryStage {
     ////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
     private final QRenderBuffer renderTarget;
-    private final TriangleQueue triQueue;
+    private final TriangleQueue triQueue = new TriangleQueue();
     private final QShader.VertexShaderContext vctx = new QShader.VertexShaderContext();
     private final float[] edge01 = new float[VCTR_NUM_CMPS];
     private final float[] edge02 = new float[VCTR_NUM_CMPS];
@@ -29,7 +32,16 @@ final class GeometryStage {
 
     ////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
-    public void process(DrawState draw) {
+    public void process(List<DrawState> queuedDraws, AtomicInteger nextDraw) {
+        triQueue.reset();
+        for (int i = nextDraw.getAndIncrement(); i < queuedDraws.size(); i = nextDraw.getAndIncrement()) {
+            internalProcessDraw(queuedDraws.get(i));
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////
+    // PRIVATE METHODS
+    private void internalProcessDraw(DrawState draw) {
         if (renderTarget == null) {
             throw new QException(
                     PointOfError.BadState,
@@ -122,8 +134,6 @@ final class GeometryStage {
         draw.triEnd = triQueue.triEnd;
     }
 
-    ////////////////////////////////////////////////////////////////
-    // PRIVATE METHODS
     private void internalEmitTri(Triangle tri, boolean shared, DrawState draw) {
         int v0 = internalEmitVertex(tri, 0, shared, draw.state);
         int v1 = internalEmitVertex(tri, 1, shared, draw.state);
@@ -205,8 +215,7 @@ final class GeometryStage {
 
     ////////////////////////////////////////////////////////////////
     // CONSTRUCTORS
-    public GeometryStage(QRenderBuffer renderTarget, TriangleQueue triQueue) {
+    public GeometryWorker(QRenderBuffer renderTarget) {
         this.renderTarget = renderTarget;
-        this.triQueue     = triQueue;
     }
 }

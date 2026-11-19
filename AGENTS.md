@@ -92,8 +92,8 @@ Defined in [`settings.gradle`](settings.gradle):
     - Attributes (`0..7`): `0` = position, `1` = UV, `2` = normal.
     - Uniforms (`0..15`): `0` = transform `QMatrix4x4`, `1` = `QLights`, `2` = `QMaterial`. Only `QUniform` values can be bound.
     - Textures (`0..15`): `0` = primary `QSampleable`.
-  - `flush()` runs stages 1–5 for every queued draw first (emitting screen-space vertices and triangle records into a reusable `TriangleQueue`), then runs stage 6 over all emitted triangles in draw order.
-  - **Pipeline stages in `GeometryStage.process()` (1-5) / `RasterWorker` (6)**:
+  - `flush()` runs stages 1–5 for every queued draw first (in parallel across draws, each geometry worker emitting screen-space vertices and triangle records into its own reusable `TriangleQueue`), then runs stage 6 over all emitted triangles in draw order.
+  - **Pipeline stages in `GeometryWorker` (1-5) / `RasterWorker` (6)**:
     1. Validates vertex attribute indexers have matching triangle counts and checks `QShader.requirements()`.
     2. Executes `vertexShader` for each of the 3 triangle vertices. When all bound indexers share one index array (as `QMesh` produces), results are cached per index for the duration of the draw, so vertex shaders must be deterministic in their attributes and uniforms.
     3. Computes face normal (`QVector3.cross`) and culls backfacing triangles (`QVector3.dot(normal, rayToCenter) > 0`).
@@ -113,7 +113,7 @@ Defined in [`settings.gradle`](settings.gradle):
    - Queued draws capture viewer state (render mode, shader, fill color, sample type, near clip, view bounds, slots). Uniform values are copied via `QUniform.snapshot()`, so they may be modified right after `drawMesh()`; textures, meshes, and shader instances are captured by reference and must not be modified until `flush()`.
    - Errors raised while shading (e.g. unwritten outputs) surface from `flush()`, not `drawMesh()`.
    - `clearFrame()` is deferred too: the buffers are cleared at the start of the next `flush()` (each raster worker clears its own rows), not immediately.
-   - Rasterization runs on a shared daemon thread pool, one worker per core, each owning horizontal strips of rows. `fragmentShader` is called concurrently from several threads, so it must not write to shader fields or other shared state; read per-draw values from `context.drawData(...)`.
+   - `flush()` runs on a shared daemon thread pool, one worker per core: geometry workers each take whole draws, then (after that phase completes) raster workers each own horizontal strips of rows. `beginDraw`, `vertexShader` and `fragmentShader` are all called concurrently from several threads on the same shader instance, so they must not write to shader fields or other shared state; read per-draw values from `context.drawData(...)`.
 2. **Coordinate System & Camera Space**:
    - The camera looks down the **negative Z-axis** (`nearClip` defaults to `-0.005f` and is clamped via `Math.min(MIN_NEAR_CLIP, val)`). Geometry in front of the camera has `Z < nearClip`.
    - Screen space and texture space have `(0, 0)` at the **bottom-left**.
