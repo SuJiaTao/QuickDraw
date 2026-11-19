@@ -18,10 +18,22 @@ public abstract class QShader {
 
     /////////////////////////////////////////////////////////////////
     // PUBLIC CLASSES
+    public static final class OutputSlot {
+        final int slot;
+        final int offset;
+        final int size;
+
+        OutputSlot(int _slot, int _offset, int _size) {
+            slot   = _slot;
+            offset = _offset;
+            size   = _size;
+        }
+    }
+
     public static final class VertexShaderContext {
         /////////////////////////////////////////////////////////////////
         // PACKAGE MEMBERS
-        Object[]      uniforms;
+        QUniform<?>[] uniforms;
         QSampleable[] textures;
         float[][]     attributes;
         OutputLayout  layout;
@@ -50,7 +62,7 @@ public abstract class QShader {
             return out;
         }
 
-        public <T> T uniform(int slot, Class<T> type) {
+        public <T extends QUniform<T>> T uniform(int slot, Class<T> type) {
             return type.cast(uniforms[slot]);
         }
 
@@ -62,16 +74,31 @@ public abstract class QShader {
             output(slot, v.getComponents( ));
         }
 
+        public OutputSlot outputSlot(int slot) {
+            return new OutputSlot(slot, layout.checkedOffset(slot), layout.sizes[slot]);
+        }
+
         public void output(int slot, float... v) {
-            int offset = layout.checkedOffset(slot);
-            if (v.length != layout.sizes[slot]) {
+            write(slot, layout.checkedOffset(slot), layout.sizes[slot], v);
+        }
+
+        public void output(OutputSlot slot, QVector3 v) {
+            output(slot, v.getComponents( ));
+        }
+
+        public void output(OutputSlot slot, float... v) {
+            write(slot.slot, slot.offset, slot.size, v);
+        }
+
+        private void write(int slot, int offset, int size, float[] v) {
+            if (v.length != size) {
                 throw new QException(
                     PointOfError.InvalidParameter,
-                    "Output slot " + slot + " declared " + layout.sizes[slot] +
+                    "Output slot " + slot + " declared " + size +
                     " components. Given was " + v.length
                 );
             }
-            System.arraycopy(v, 0, outputs, offset, v.length);
+            System.arraycopy(v, 0, outputs, offset, size);
             written |= 1 << slot;
         }
 
@@ -89,12 +116,16 @@ public abstract class QShader {
         public void forward(int attribSlot) {
             output(attribSlot, attributes[attribSlot]);
         }
+
+        public void forward(OutputSlot slot) {
+            output(slot, attributes[slot.slot]);
+        }
     }
 
     public static final class FragmentShaderContext {
         /////////////////////////////////////////////////////////////////
         // PACKAGE MEMBERS
-        Object[]      uniforms;
+        QUniform<?>[] uniforms;
         QSampleable[] textures;
         QRenderBuffer target;
         int           screenX;
@@ -134,7 +165,29 @@ public abstract class QShader {
             return out;
         }
 
-        public <T> T uniform(int slot, Class<T> type) {
+        public QVector3 inputVec3(OutputSlot slot) {
+            return inputVec3(slot, new QVector3( ));
+        }
+
+        public QVector3 inputVec3(OutputSlot slot, QVector3 out) {
+            out.set(
+                inputs[slot.offset],
+                inputs[slot.offset + 1],
+                slot.size > 2 ? inputs[slot.offset + 2] : 0.0f
+            );
+            return out;
+        }
+
+        public float input(OutputSlot slot, int comp) {
+            return inputs[slot.offset + comp];
+        }
+
+        public float[] input(OutputSlot slot, float[] out) {
+            System.arraycopy(inputs, slot.offset, out, 0, slot.size);
+            return out;
+        }
+
+        public <T extends QUniform<T>> T uniform(int slot, Class<T> type) {
             return type.cast(uniforms[slot]);
         }
 
@@ -213,7 +266,7 @@ public abstract class QShader {
         public int             slot;
         public RequirementType requireType;
         public String          purpose;
-        public Class<?>        uniformClass;
+        public Class<? extends QUniform<?>> uniformClass;
         public int             components;
 
         /////////////////////////////////////////////////////////////////
@@ -228,7 +281,7 @@ public abstract class QShader {
             int      _slot, 
             RequirementType _type, 
             String   _purpose, 
-            Class<?> _uniformClass
+            Class<? extends QUniform<?>> _uniformClass
         ) {
             if (_type != RequirementType.Uniform) {
                 throw new QException(

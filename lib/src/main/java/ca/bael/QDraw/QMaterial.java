@@ -4,13 +4,19 @@
 
 package ca.bael.QDraw;
 
-public class QMaterial {
+public class QMaterial implements QUniform<QMaterial> {
     /////////////////////////////////////////////////////////////////
     // PUBLIC MEMBERS
     public QColor ambient;
     public QColor diffuse;
     public QColor specular;
     public float  shininess;
+
+    /////////////////////////////////////////////////////////////////
+    // PUBLIC METHODS
+    public QMaterial snapshot( ) {
+        return new QMaterial(ambient, diffuse, specular, shininess);
+    }
 
     /////////////////////////////////////////////////////////////////
     // CONSTRUCTOR

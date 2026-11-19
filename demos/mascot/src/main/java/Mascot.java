@@ -27,15 +27,24 @@ public final class Mascot {
 
     private static int  fpsFrames = 0;
     private static long fpsWindowStart = System.nanoTime();
+    private static long fpsFlushNanos = 0;
 
     public static void presentFrame() {
+        long flushStart = System.nanoTime();
+        eyes.flush();
+        fpsFlushNanos += System.nanoTime() - flushStart;
         window.updateFrame();
         fpsFrames++;
         long now = System.nanoTime();
         if (now - fpsWindowStart >= 1_000_000_000L) {
             double ms = (now - fpsWindowStart) / 1e6;
-            System.out.printf("%d fps (%.2f ms/frame)%n", fpsFrames, ms / fpsFrames);
+            System.out.printf("%d fps (%.2f ms/frame, %.2f ms flush, %.2f ms draw, %.2f ms show)%n",
+                fpsFrames, ms / fpsFrames, fpsFlushNanos / 1e6 / fpsFrames,
+                window.drawNanos / 1e6 / fpsFrames, window.showNanos / 1e6 / fpsFrames);
             fpsFrames = 0;
+            fpsFlushNanos = 0;
+            window.drawNanos = 0;
+            window.showNanos = 0;
             fpsWindowStart = now;
         }
     }
@@ -103,10 +112,10 @@ public final class Mascot {
                                         QColor.White(),
                                         1024));
             eyes.setLights(
-                    new QLight[] {
+                    new QLights(
                             new QLight(new QVector3(3.0f, 2.0f, 3.0f), 3.5f),
                             new QLight(new QVector3(3.0f, -2.0f, -5.0f), 1.0f)
-                    });
+                    ));
             eyes.setMatrix(m1);
             eyes.drawMesh(MASCOT_MESH);
 
@@ -201,9 +210,9 @@ public final class Mascot {
                     new QVector3(0.0f, time, 0.0f),
                     QVector3.One().multiply3(0.25f));
 
-            Float dt = (float) (System.currentTimeMillis() - t0);
+            float dt = (float) (System.currentTimeMillis() - t0);
 
-            eyes.setUniformSlot(1, dt);
+            eyes.setUniformSlot(1, new QScalar(dt));
             eyes.setTexture(MASCOT_TEXTURE);
             eyes.setMatrix(m0);
             eyes.drawMesh(MASCOT_MESH);
@@ -228,9 +237,9 @@ public final class Mascot {
                     QVector3.One().multiply3(0.25f));
             eyes.setTexture(MASCOT_TEXTURE);
             eyes.setLights(
-                    new QLight[] {
+                    new QLights(
                             new QLight(new QVector3(7.0f, 3.0f, 4.0f), 3.4f)
-                    });
+                    ));
             eyes.setMatrix(m0);
             eyes.drawMesh(MASCOT_MESH);
 

@@ -14,7 +14,6 @@ public final class QWindow {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
     private static final int   NUM_BUFFERS = 2;
-    private static final Color CLEAR_COLOR = Color.black;
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
@@ -28,6 +27,8 @@ public final class QWindow {
     /////////////////////////////////////////////////////////////////
     // PUBLIC MEMBERS
     public QColor clearColor;
+    public long   drawNanos;
+    public long   showNanos;
 
     /////////////////////////////////////////////////////////////////
     // PRIVATE CLASSES
@@ -120,13 +121,11 @@ public final class QWindow {
         if (renderBuffer == null) {
             return;
         }
-        
-        windowGraphics.setColor(CLEAR_COLOR);
-        windowGraphics.fillRect(
-            0, 
-            0, 
-            windowWidth, 
-            windowHeight
+
+        long drawStart = System.nanoTime( );
+        windowGraphics.setRenderingHint(
+            RenderingHints.KEY_INTERPOLATION,
+            RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR
         );
         windowGraphics.drawImage(
             renderBuffer.getBufferedImage(),
@@ -137,7 +136,10 @@ public final class QWindow {
             null
         );
 
+        long showStart = System.nanoTime( );
         window.getBufferStrategy().show();
+        drawNanos += showStart - drawStart;
+        showNanos += System.nanoTime( ) - showStart;
     }
 
     public boolean isKeyDown(int keyCode) {

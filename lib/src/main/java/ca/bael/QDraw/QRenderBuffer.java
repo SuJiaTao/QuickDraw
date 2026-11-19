@@ -33,7 +33,7 @@ public final class QRenderBuffer extends QSampleable {
 
         this.width    = width;
         this.height   = height;
-        buffer        = new BufferedImage(width, height, COLOR_PACKING);
+        buffer        = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         depthBuffer   = new float[width * height];
         colorBuffer   = ((DataBufferInt)(buffer.getRaster().getDataBuffer())).getData();
     

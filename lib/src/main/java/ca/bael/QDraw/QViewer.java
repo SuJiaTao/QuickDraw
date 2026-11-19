@@ -4,6 +4,7 @@
 
 package ca.bael.QDraw;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import ca.bael.QDraw.QException.PointOfError;
@@ -115,11 +116,17 @@ public final class QViewer extends QEncoding {
             };
         }
 
+        private OutputSlot uvSlot;
+
+        public void beginDraw(VertexShaderContext context) {
+            uvSlot = context.outputSlot(DEFAULT_SHADER_UV_SLOT);
+        }
+
         public QVector3 vertexShader(
             VertexShaderContext context
         ) {
             QMatrix4x4 mtr = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class);
-            context.forward(DEFAULT_SHADER_UV_SLOT);
+            context.forward(uvSlot);
 
             return mtr.transformPoint(context.attribVec3(DEFAULT_SHADER_POSITION_SLOT, context.position( )));
         }
@@ -128,8 +135,8 @@ public final class QViewer extends QEncoding {
             FragmentShaderContext context
         ) {
             return context.color( ).set(context.texture(DEFAULT_SHADER_TEXTURE_SLOT).sample(
-                context.input(DEFAULT_SHADER_UV_SLOT, 0),
-                context.input(DEFAULT_SHADER_UV_SLOT, 1),
+                context.input(uvSlot, 0),
+                context.input(uvSlot, 1),
                 sampleType
             ));
         }
@@ -164,10 +171,12 @@ public final class QViewer extends QEncoding {
         }
 
         private QMatrix4x4 normalMtr;
+        private OutputSlot normalSlot;
         private final QVector3 normal = new QVector3( );
 
         public void beginDraw(VertexShaderContext context) {
             normalMtr = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class).normalMatrix( );
+            normalSlot = context.outputSlot(DEFAULT_SHADER_NORMAL_SLOT);
         }
 
         public QVector3 vertexShader(
@@ -175,7 +184,7 @@ public final class QViewer extends QEncoding {
         ) {
             QMatrix4x4 mtr = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class);
             context.output(
-                DEFAULT_SHADER_NORMAL_SLOT,
+                normalSlot,
                 normalMtr.transformDir(context.attribVec3(DEFAULT_SHADER_NORMAL_SLOT, normal)).normalize( )
             );
 
@@ -185,7 +194,7 @@ public final class QViewer extends QEncoding {
         public QColor fragmentShader(
             FragmentShaderContext context
         ) {
-            QVector3 normal = context.inputVec3(DEFAULT_SHADER_NORMAL_SLOT);
+            QVector3 normal = context.inputVec3(normalSlot);
 
             return context.color( ).set(
                 (int)((1.0f + normal.getX( )) * 127.0f),
@@ -225,8 +234,8 @@ public final class QViewer extends QEncoding {
                 new ShaderRequirement(
                     DEFAULT_SHADER_LIGHTS_SLOT, 
                     RequirementType.Uniform, 
-                    "worldspace light position array",
-                    QLight[].class
+                    "view-space light position array",
+                    QLights.class
                 ),
                 new ShaderRequirement(
                     DEFAULT_SHADER_MATERIAL_SLOT, 
@@ -256,10 +265,16 @@ public final class QViewer extends QEncoding {
         }
 
         private QMatrix4x4 normalMtr;
+        private OutputSlot posSlot;
+        private OutputSlot uvSlot;
+        private OutputSlot normalSlot;
         private final QVector3 normal = new QVector3( );
 
         public void beginDraw(VertexShaderContext context) {
             normalMtr = context.uniform(DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class).normalMatrix( );
+            posSlot    = context.outputSlot(DEFAULT_SHADER_POSITION_SLOT);
+            uvSlot     = context.outputSlot(DEFAULT_SHADER_UV_SLOT);
+            normalSlot = context.outputSlot(DEFAULT_SHADER_NORMAL_SLOT);
         }
 
         public QVector3 vertexShader(
@@ -269,9 +284,9 @@ public final class QViewer extends QEncoding {
             QVector3   pos    = mtr.transformPoint(context.attribVec3(DEFAULT_SHADER_POSITION_SLOT, context.position( )));
             normalMtr.transformDir(context.attribVec3(DEFAULT_SHADER_NORMAL_SLOT, normal)).normalize( );
 
-            context.output(DEFAULT_SHADER_POSITION_SLOT, pos);
-            context.forward(DEFAULT_SHADER_UV_SLOT);
-            context.output(DEFAULT_SHADER_NORMAL_SLOT, normal);
+            context.output(posSlot, pos);
+            context.forward(uvSlot);
+            context.output(normalSlot, normal);
 
             return pos;
         }
@@ -281,49 +296,42 @@ public final class QViewer extends QEncoding {
         ) {
             QSampleable tex = context.texture(DEFAULT_SHADER_TEXTURE_SLOT);
             QMaterial   mat = context.uniform(DEFAULT_SHADER_MATERIAL_SLOT, QMaterial.class);
-            QLight[] lights = context.uniform(DEFAULT_SHADER_LIGHTS_SLOT, QLight[].class);
+            QLights  lights = context.uniform(DEFAULT_SHADER_LIGHTS_SLOT, QLights.class);
 
-            float[] uv     = context.input(DEFAULT_SHADER_UV_SLOT, new float[2]);
-            float[] normal = context.inputVec3(DEFAULT_SHADER_NORMAL_SLOT).fastNormalize( ).getComponents( );
+            float[] uv     = context.input(uvSlot, new float[2]);
+            float[] normal = context.inputVec3(normalSlot).normalize( ).getComponents( );
             QColor texSampleColor = context.color( ).set(
                 tex == null ? 0xFFFFFFFF : tex.sample(uv[0], uv[1], sampleType)
             );
-            QColor ambientColor = mat == null? QColor.Black() : mat.ambient;
-            QColor diffuseColor = mat == null? QColor.White() : mat.diffuse;
-            QColor specularColor = mat == null? QColor.White() : mat.specular; 
-            float shininess = mat == null? 0 : mat.shininess;
 
             float diffuseIntensity = 0f;
             float specularIntensity = 0f;
 
-            final QVector3 POS_VEC = context.inputVec3(DEFAULT_SHADER_POSITION_SLOT);
+            final QVector3 POS_VEC = context.inputVec3(posSlot);
 
-            QVector3 viewDir = POS_VEC.copy().multiply3(-1).fastNormalize();
-            QVector3 dirFaceToLight, halfVec;
-            
-            for (QLight light : lights) {
-                dirFaceToLight = QVector3.sub(
-                    light.position,
-                    POS_VEC
-                );
+            QVector3 viewDir = POS_VEC.copy().multiply3(-1).normalize();
+            QVector3 toLight = new QVector3( );
 
-                float distToLight = dirFaceToLight.fastMagnitude( );
-                dirFaceToLight.multiply3(1.0f / distToLight);
+            for (int i = 0; i < lights.count( ); i++) {
+                QLight light = lights.get(i);
+                float attenuation = light.illuminate(POS_VEC, toLight);
+                float lambert = QVector3.dot(toLight.getComponents(), normal);
+                if (lambert <= 0.0f) {
+                    continue;
+                }
 
-                diffuseIntensity += Math.max(0f, QVector3.dot(dirFaceToLight.getComponents(), normal));
-                // do we clamp intensity?
-                // reflect = dirFaceToLight.sub(new QVector3(normal).multiply3(2f * QVector3.dot(normal, dirFaceToLight.getComponents()))); 
-                halfVec = dirFaceToLight.add(viewDir).fastNormalize();
-                specularIntensity += Math.pow(Math.max(0f, QVector3.dot(halfVec.getComponents(), normal)), shininess);
+                diffuseIntensity += lambert * attenuation;
+                float specDot = QVector3.dot(toLight.add(viewDir).normalize().getComponents(), normal);
+                specularIntensity += attenuation * (float)Math.pow(Math.max(0f, specDot), mat.shininess);
             }
 
-            texSampleColor.set( (int)(texSampleColor.getR()* Math.min(1f, ambientColor.getR() / 255f + diffuseIntensity * diffuseColor.getR() / 255f) + specularColor.getR() / 255f * specularIntensity), 
-                                (int)(texSampleColor.getG()* Math.min(1f, ambientColor.getG() / 255f + diffuseIntensity * diffuseColor.getG() / 255f) + specularColor.getG() / 255f * specularIntensity), 
-                                (int)(texSampleColor.getB()* Math.min(1f, ambientColor.getB() / 255f + diffuseIntensity * diffuseColor.getB() / 255f) + specularColor.getB() / 255f * specularIntensity));
-            
-            // return new QColor(Math.round(pos[0]*255), Math.round(pos[1]*255), Math.round(pos[2]*255));
-            return texSampleColor;
+            texSampleColor.set(
+                (int)(texSampleColor.getR() * Math.min(1f, mat.ambient.getR() / 255f + diffuseIntensity * mat.diffuse.getR() / 255f) + mat.specular.getR() * specularIntensity),
+                (int)(texSampleColor.getG() * Math.min(1f, mat.ambient.getG() / 255f + diffuseIntensity * mat.diffuse.getG() / 255f) + mat.specular.getG() * specularIntensity),
+                (int)(texSampleColor.getB() * Math.min(1f, mat.ambient.getB() / 255f + diffuseIntensity * mat.diffuse.getB() / 255f) + mat.specular.getB() * specularIntensity)
+            );
 
+            return texSampleColor;
         }
     };
 
@@ -340,7 +348,7 @@ public final class QViewer extends QEncoding {
     private QColor fillColor = DEFAULT_FILL_COLOR;
     private SampleType sampleType = DEFAULT_SAMPLE_TYPE;
 
-    private Object[] slotUniforms = new Object[SHADER_UNIFORM_SLOTS];
+    private QUniform<?>[] slotUniforms = new QUniform<?>[SHADER_UNIFORM_SLOTS];
     private QSampleable[] slotTextures = new QSampleable[SHADER_TEXTURE_SLOTS];
     private QAttribIndexer[] slotAttribs = new QAttribIndexer[SHADER_VERTEX_ATTRIB_SLOTS];
     private final QShader.VertexShaderContext vctx = new QShader.VertexShaderContext();
@@ -352,6 +360,7 @@ public final class QViewer extends QEncoding {
     private final Triangle workTri = new Triangle(0);
     private final VertexCache vertexCache = new VertexCache();
     private QShader drawShader;
+    private final ArrayList<DrawState> queuedDraws = new ArrayList<>();
 
     ////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
@@ -384,7 +393,7 @@ public final class QViewer extends QEncoding {
 
     public void setUniformSlot(
             int slot,
-            Object uniform) {
+            QUniform<?> uniform) {
         slotUniforms[slot] = uniform;
     }
 
@@ -392,8 +401,8 @@ public final class QViewer extends QEncoding {
         setUniformSlot(DEFAULT_SHADER_MATRIX_SLOT, matrix);
     }
 
-    public void setLights(QLight[] lightArray) {
-        setUniformSlot(DEFAULT_SHADER_LIGHTS_SLOT, lightArray);
+    public void setLights(QLights lights) {
+        setUniformSlot(DEFAULT_SHADER_LIGHTS_SLOT, lights);
     }
 
     public void clearUniformSlots() {
@@ -431,12 +440,27 @@ public final class QViewer extends QEncoding {
     }
 
     public void clearFrame() {
+        flush();
         renderTarget.clearColorBuffer();
         renderTarget.clearDepthBuffer();
     }
 
     public void draw() {
-        internalDraw();
+        internalEnsureShaderRequirements(internalGetRelevantShader().requirements());
+        queuedDraws.add(new DrawState(true));
+    }
+
+    public void flush() {
+        DrawState live = new DrawState(false);
+        try {
+            for (DrawState queued : queuedDraws) {
+                queued.apply();
+                internalDraw();
+            }
+        } finally {
+            queuedDraws.clear();
+            live.apply();
+        }
     }
 
     public void drawMesh(
@@ -454,6 +478,62 @@ public final class QViewer extends QEncoding {
 
     ////////////////////////////////////////////////////////////////
     // PRIVATE CLASSES
+    private final class DrawState {
+        ////////////////////////////////////////////////////////////////
+        // PRIVATE MEMBERS
+        private final float            nearClip;
+        private final float            viewLeft;
+        private final float            viewRight;
+        private final float            viewBottom;
+        private final float            viewTop;
+        private final QShader          customShader;
+        private final RenderMode       renderMode;
+        private final QColor           fillColor;
+        private final SampleType       sampleType;
+        private final QUniform<?>[]    uniforms;
+        private final QSampleable[]    textures;
+        private final QAttribIndexer[] attribs;
+
+        ////////////////////////////////////////////////////////////////
+        // PUBLIC METHODS
+        public void apply() {
+            QViewer.this.nearClip     = nearClip;
+            QViewer.this.viewLeft     = viewLeft;
+            QViewer.this.viewRight    = viewRight;
+            QViewer.this.viewBottom   = viewBottom;
+            QViewer.this.viewTop      = viewTop;
+            QViewer.this.customShader = customShader;
+            QViewer.this.renderMode   = renderMode;
+            QViewer.this.fillColor    = fillColor;
+            QViewer.this.sampleType   = sampleType;
+            System.arraycopy(uniforms, 0, slotUniforms, 0, uniforms.length);
+            System.arraycopy(textures, 0, slotTextures, 0, textures.length);
+            System.arraycopy(attribs, 0, slotAttribs, 0, attribs.length);
+        }
+
+        ////////////////////////////////////////////////////////////////
+        // CONSTRUCTORS
+        public DrawState(boolean snapshot) {
+            nearClip     = QViewer.this.nearClip;
+            viewLeft     = QViewer.this.viewLeft;
+            viewRight    = QViewer.this.viewRight;
+            viewBottom   = QViewer.this.viewBottom;
+            viewTop      = QViewer.this.viewTop;
+            customShader = QViewer.this.customShader;
+            renderMode   = QViewer.this.renderMode;
+            fillColor    = snapshot ? QViewer.this.fillColor.snapshot() : QViewer.this.fillColor;
+            sampleType   = QViewer.this.sampleType;
+            uniforms     = slotUniforms.clone();
+            textures     = slotTextures.clone();
+            attribs      = slotAttribs.clone();
+            for (int i = 0; snapshot && i < uniforms.length; i++) {
+                if (uniforms[i] != null) {
+                    uniforms[i] = uniforms[i].snapshot();
+                }
+            }
+        }
+    }
+
     private static class Vertex {
         ////////////////////////////////////////////////////////////////
         // PUBLIC MEMBERS
@@ -1205,8 +1285,8 @@ public final class QViewer extends QEncoding {
     private void internalMapVertToScreenSpace(Triangle srcTri, int vertNum) {
         // NOTE:
         // - this transformation will map (left, right) -> (0, targetWidth) and
-        // (bottom, top) -> (0, targetheight). this is essentially a worldspace
-        // to screenspace transformation
+        // (bottom, top) -> (0, targetheight). this is essentially a projected
+        // view-space to screenspace transformation
         // - in order to do this, the space is translated such that the bottom left
         // corner is (0, 0), and then it is scaled to fit the screenspace
 

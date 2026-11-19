@@ -6,7 +6,7 @@ package ca.bael.QDraw;
 
 import ca.bael.QDraw.QException.PointOfError;
 
-public final class QColor extends QEncoding {
+public final class QColor extends QEncoding implements QUniform<QColor> {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
     public static QColor Black() { return new QColor(0x00, 0x00, 0x00); }
@@ -94,6 +94,10 @@ public final class QColor extends QEncoding {
     // PUBLIC METHODS
     public int toInt( ) {
         return colorData;
+    }
+
+    public QColor snapshot( ) {
+        return new QColor(colorData);
     }
 
     public int getChannel(Channel c) {

@@ -113,17 +113,18 @@ public final class Sceneview {
                 transformedLights[i].position = 
                     QMatrix4x4.multiply(viewMatrix, lights[i].position);
             }
+            QLights viewLights = new QLights(transformedLights);
 
             viewer.setUniformSlot(
-                QViewer.DEFAULT_SHADER_LIGHTS_SLOT, 
-                transformedLights
+                QViewer.DEFAULT_SHADER_LIGHTS_SLOT,
+                viewLights
             );
 
             viewer.setRenderMode(rMode);
             viewer.setCustomShader(new FuzzShader( ));
             viewer.setUniformSlot(
-                QViewer.DEFAULT_SHADER_LIGHTS_SLOT, 
-                transformedLights
+                QViewer.DEFAULT_SHADER_LIGHTS_SLOT,
+                viewLights
             );
 
             viewer.setTexture(tex0);
@@ -139,8 +140,8 @@ public final class Sceneview {
 
             viewer.setRenderMode(RenderMode.Material);
             viewer.setUniformSlot(
-                QViewer.DEFAULT_SHADER_LIGHTS_SLOT, 
-                transformedLights
+                QViewer.DEFAULT_SHADER_LIGHTS_SLOT,
+                viewLights
             );
             // add material
             viewer.setUniformSlot(
@@ -151,7 +152,8 @@ public final class Sceneview {
             viewer.setTexture(tex1);
             viewer.setMatrix(QMatrix4x4.multiply(modelMatrix1, viewMatrix));
             viewer.drawMesh(mesh1);
-            
+            viewer.flush( );
+
             window.updateFrame( );
         }
     }

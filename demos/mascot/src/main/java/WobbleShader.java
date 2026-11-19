@@ -31,7 +31,7 @@ public final class WobbleShader extends QShader {
                     SHADER_TIME_SLOT, 
                     RequirementType.Uniform, 
                     "time",
-                    Float.class
+                    QScalar.class
             ),
             new ShaderRequirement(
                     QViewer.DEFAULT_SHADER_TEXTURE_SLOT, 
@@ -54,7 +54,7 @@ public final class WobbleShader extends QShader {
         QVector3   vertexPos = vctx.attribVec3(QViewer.DEFAULT_SHADER_POSITION_SLOT);
         QMatrix4x4 transform =
             new QMatrix4x4(vctx.uniform(QViewer.DEFAULT_SHADER_MATRIX_SLOT, QMatrix4x4.class));
-        Float      dt        = vctx.uniform(SHADER_TIME_SLOT, Float.class) * 0.35f;
+        float      dt        = vctx.uniform(SHADER_TIME_SLOT, QScalar.class).floatValue( ) * 0.35f;
 
         // FORWARD UV DATA
         vctx.forward(QViewer.DEFAULT_SHADER_UV_SLOT);
