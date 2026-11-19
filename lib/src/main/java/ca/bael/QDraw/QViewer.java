@@ -67,10 +67,17 @@ public final class QViewer {
     public static final BlendMode DEFAULT_BLEND_MODE = BlendMode.Alpha;
     private static final int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
     private static final String[] WORKER_NAMES = {
-        "Kitty",  "Sharky", "Ouppy",  "Froggy", "Solo",   "Bango",  "Tango",
-        "Kiki",   "Bouba",  "Lala",   "Tiki",   "Yana",   "Yote",   "Boyfriend",
-        "Zeta",   "Yanis",  "Pipi",   "Taha",   "Poke",   "Mini",   "Zala",
-        "Potke",  "Lambda", "Saura",  "Boppe",  "Omua",   "Fauna",  "Talle"
+        "Kitty",     "Sharky",    "Ouppy",     "Froggy",    "Solo",
+        "Bango",     "Tango",     "Kiki",      "Bouba",     "Lala",
+        "Tiki",      "Yana",      "Yote",      "Boyfriend", "Zeta",
+        "Yanis",     "Pipi",      "Taha",      "Poke",      "Mini",
+        "Zala",      "Potke",     "Lambda",    "Saura",     "Boppe",
+        "Omua",      "Fauna",     "Talle",     "Coco",      "Bobo",
+        "Zaffa",     "Ibrahim",   "Connaught", "Persus",    "Foxtrot",
+        "Jojo",      "Sparky",    "Bingo",     "Zotch",     "Blip",
+        "Fafa",      "Nolla",     "Dati",      "Dropsitz",  "Gonitz",
+        "Kango",     "Teapot",    "Bolo",      "Emerie",    "Vergumtrix",
+        "Zelle",     "Fargo",     "Nonzy",     "Obo",       "Lucy"
     };
     private static final String[] WORKER_THREAD_NAMES = internalPickWorkerNames();
     private static final AtomicInteger WORKER_COUNT = new AtomicInteger();
