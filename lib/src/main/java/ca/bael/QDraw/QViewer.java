@@ -225,7 +225,7 @@ public final class QViewer extends QEncoding {
                 new ShaderRequirement(
                     DEFAULT_SHADER_LIGHTS_SLOT, 
                     RequirementType.Uniform, 
-                    "worldspace light position array",
+                    "view-space light position array",
                     QLight[].class
                 ),
                 new ShaderRequirement(
@@ -284,46 +284,38 @@ public final class QViewer extends QEncoding {
             QLight[] lights = context.uniform(DEFAULT_SHADER_LIGHTS_SLOT, QLight[].class);
 
             float[] uv     = context.input(DEFAULT_SHADER_UV_SLOT, new float[2]);
-            float[] normal = context.inputVec3(DEFAULT_SHADER_NORMAL_SLOT).fastNormalize( ).getComponents( );
+            float[] normal = context.inputVec3(DEFAULT_SHADER_NORMAL_SLOT).normalize( ).getComponents( );
             QColor texSampleColor = context.color( ).set(
                 tex == null ? 0xFFFFFFFF : tex.sample(uv[0], uv[1], sampleType)
             );
-            QColor ambientColor = mat == null? QColor.Black() : mat.ambient;
-            QColor diffuseColor = mat == null? QColor.White() : mat.diffuse;
-            QColor specularColor = mat == null? QColor.White() : mat.specular; 
-            float shininess = mat == null? 0 : mat.shininess;
 
             float diffuseIntensity = 0f;
             float specularIntensity = 0f;
 
             final QVector3 POS_VEC = context.inputVec3(DEFAULT_SHADER_POSITION_SLOT);
 
-            QVector3 viewDir = POS_VEC.copy().multiply3(-1).fastNormalize();
-            QVector3 dirFaceToLight, halfVec;
-            
+            QVector3 viewDir = POS_VEC.copy().multiply3(-1).normalize();
+            QVector3 toLight = new QVector3( );
+
             for (QLight light : lights) {
-                dirFaceToLight = QVector3.sub(
-                    light.position,
-                    POS_VEC
-                );
+                float attenuation = light.illuminate(POS_VEC, toLight);
+                float lambert = QVector3.dot(toLight.getComponents(), normal);
+                if (lambert <= 0.0f) {
+                    continue;
+                }
 
-                float distToLight = dirFaceToLight.fastMagnitude( );
-                dirFaceToLight.multiply3(1.0f / distToLight);
-
-                diffuseIntensity += Math.max(0f, QVector3.dot(dirFaceToLight.getComponents(), normal));
-                // do we clamp intensity?
-                // reflect = dirFaceToLight.sub(new QVector3(normal).multiply3(2f * QVector3.dot(normal, dirFaceToLight.getComponents()))); 
-                halfVec = dirFaceToLight.add(viewDir).fastNormalize();
-                specularIntensity += Math.pow(Math.max(0f, QVector3.dot(halfVec.getComponents(), normal)), shininess);
+                diffuseIntensity += lambert * attenuation;
+                float specDot = QVector3.dot(toLight.add(viewDir).normalize().getComponents(), normal);
+                specularIntensity += attenuation * (float)Math.pow(Math.max(0f, specDot), mat.shininess);
             }
 
-            texSampleColor.set( (int)(texSampleColor.getR()* Math.min(1f, ambientColor.getR() / 255f + diffuseIntensity * diffuseColor.getR() / 255f) + specularColor.getR() / 255f * specularIntensity), 
-                                (int)(texSampleColor.getG()* Math.min(1f, ambientColor.getG() / 255f + diffuseIntensity * diffuseColor.getG() / 255f) + specularColor.getG() / 255f * specularIntensity), 
-                                (int)(texSampleColor.getB()* Math.min(1f, ambientColor.getB() / 255f + diffuseIntensity * diffuseColor.getB() / 255f) + specularColor.getB() / 255f * specularIntensity));
-            
-            // return new QColor(Math.round(pos[0]*255), Math.round(pos[1]*255), Math.round(pos[2]*255));
-            return texSampleColor;
+            texSampleColor.set(
+                (int)(texSampleColor.getR() * Math.min(1f, mat.ambient.getR() / 255f + diffuseIntensity * mat.diffuse.getR() / 255f) + mat.specular.getR() * specularIntensity),
+                (int)(texSampleColor.getG() * Math.min(1f, mat.ambient.getG() / 255f + diffuseIntensity * mat.diffuse.getG() / 255f) + mat.specular.getG() * specularIntensity),
+                (int)(texSampleColor.getB() * Math.min(1f, mat.ambient.getB() / 255f + diffuseIntensity * mat.diffuse.getB() / 255f) + mat.specular.getB() * specularIntensity)
+            );
 
+            return texSampleColor;
         }
     };
 
@@ -1205,8 +1197,8 @@ public final class QViewer extends QEncoding {
     private void internalMapVertToScreenSpace(Triangle srcTri, int vertNum) {
         // NOTE:
         // - this transformation will map (left, right) -> (0, targetWidth) and
-        // (bottom, top) -> (0, targetheight). this is essentially a worldspace
-        // to screenspace transformation
+        // (bottom, top) -> (0, targetheight). this is essentially a projected
+        // view-space to screenspace transformation
         // - in order to do this, the space is translated such that the bottom left
         // corner is (0, 0), and then it is scaled to fit the screenspace
 

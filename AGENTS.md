@@ -80,7 +80,9 @@ Defined in [`settings.gradle`](settings.gradle):
   - Reusable `position()`/`color()` objects hold the previous call's values: always `set` them before reading, and never retain them after returning.
   - Optional `beginDraw(VertexShaderContext context)` runs once per draw after uniforms/textures are bound and before any vertex is processed; use it to precompute per-draw values (e.g. a normal matrix). Only `uniform`/`texture` are meaningful there. Values stored in shader fields make that shader instance unsafe to share across concurrently drawing viewers.
   - Also provides fast XORSHIFT deterministic PRNG (`seededRandom`, `seededRandomVector`).
-- **[`QLight.java`](lib/src/main/java/ca/bael/QDraw/QLight.java)** & **[`QMaterial.java`](lib/src/main/java/ca/bael/QDraw/QMaterial.java)**: Data structures for point/directional lights and Blinn-Phong material properties (`ambient`, `diffuse`, `specular`, `shininess`).
+- **[`QLight.java`](lib/src/main/java/ca/bael/QDraw/QLight.java)**: Point light (`position`, `strength`). `illuminate(point, outDir)` writes the normalized direction from `point` to the light into `outDir` and returns the attenuated strength (`strength / distance`). Positions are in **view space** (same space as transformed vertices; camera at the origin looking down -Z).
+- **[`QMaterial.java`](lib/src/main/java/ca/bael/QDraw/QMaterial.java)**: Blinn-Phong material properties (`ambient`, `diffuse`, `specular`, `shininess`).
+  - The `Material` render mode adds specular on top of the lit texture color and only for surfaces facing the light (N·L > 0).
 - **[`QViewer.java`](lib/src/main/java/ca/bael/QDraw/QViewer.java)**: The software rendering pipeline.
   - Built-in render modes (`RenderMode`): `SolidFill`, `Textured`, `Normal`, `Material` (Blinn-Phong), and `CustomShader`.
   - Default slots:
