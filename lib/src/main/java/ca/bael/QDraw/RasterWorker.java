@@ -19,10 +19,10 @@ final class RasterWorker {
     ////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
     private final QRenderBuffer renderTarget;
-    private final TriangleQueue triQueue;
     private final RasterSetup raster = new RasterSetup();
     private final QShader.FragmentShaderContext fctx = new QShader.FragmentShaderContext();
     private QShader shader;
+    private TriangleQueue triQueue;
     private int stripStart;
     private int stripEnd;
 
@@ -50,6 +50,7 @@ final class RasterWorker {
             return;
         }
         shader          = draw.shader;
+        triQueue        = draw.out;
         fctx.uniforms   = draw.state.slotUniforms;
         fctx.textures   = draw.state.slotTextures;
         fctx.sampleType = draw.state.sampleType;
@@ -241,8 +242,7 @@ final class RasterWorker {
 
     ////////////////////////////////////////////////////////////////
     // CONSTRUCTORS
-    public RasterWorker(QRenderBuffer renderTarget, TriangleQueue triQueue) {
+    public RasterWorker(QRenderBuffer renderTarget) {
         this.renderTarget = renderTarget;
-        this.triQueue     = triQueue;
     }
 }

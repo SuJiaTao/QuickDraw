@@ -11,6 +11,7 @@ final class DrawState {
     public final QShader              shader;
     public final QShader.OutputLayout layout;
     public QDrawData                  data;
+    public TriangleQueue              out;
     public int                        triStart;
     public int                        triEnd;
     public float                      minY = Float.POSITIVE_INFINITY;

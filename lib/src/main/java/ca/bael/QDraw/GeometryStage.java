@@ -79,6 +79,7 @@ final class GeometryStage {
         draw.data = draw.shader.beginDraw(vctx);
         vctx.drawData = draw.data;
 
+        draw.out = triQueue;
         draw.triStart = triQueue.triEnd;
 
         for (int triNum = 0; triNum < triCount; triNum++) {

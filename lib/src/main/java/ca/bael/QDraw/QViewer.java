@@ -206,7 +206,7 @@ public final class QViewer {
     private void init(QRenderBuffer target) {
         geometry = new GeometryStage(target, triQueue);
         for (int i = 0; i < RASTER_THREADS; i++) {
-            workers.add(new RasterWorker(target, triQueue));
+            workers.add(new RasterWorker(target));
         }
     }
 
