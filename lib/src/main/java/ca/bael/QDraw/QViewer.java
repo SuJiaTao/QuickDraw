@@ -345,6 +345,9 @@ public final class QViewer extends QEncoding {
     private final float[] edge01 = new float[VCTR_NUM_CMPS];
     private final float[] edge02 = new float[VCTR_NUM_CMPS];
     private final float[] rayToCenter = new float[VCTR_NUM_CMPS];
+    private final Triangle workTri = new Triangle(0);
+    private final VertexCache vertexCache = new VertexCache();
+    private QShader drawShader;
 
     ////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
@@ -631,6 +634,67 @@ public final class QViewer extends QEncoding {
         }
     }
 
+    private static final class VertexCache {
+        ////////////////////////////////////////////////////////////////
+        // PRIVATE MEMBERS
+        private int[]   indicies;
+        private int[]   stamp   = new int[0];
+        private float[] posn    = new float[0];
+        private float[] outputs = new float[0];
+        private int     drawId  = 0;
+        private int     total;
+
+        ////////////////////////////////////////////////////////////////
+        // PUBLIC METHODS
+        public void prepare(QAttribIndexer[] slots, int outputTotal) {
+            drawId++;
+            total = outputTotal;
+            indicies = null;
+            int size = 0;
+            for (QAttribIndexer indexer : slots) {
+                if (indexer == null) {
+                    continue;
+                }
+                if (indicies == null) {
+                    indicies = indexer.getIndicies();
+                    size = indexer.getAttribCount();
+                } else if (indexer.getIndicies() != indicies) {
+                    indicies = null;
+                    return;
+                }
+            }
+            if (stamp.length < size) {
+                stamp = new int[size];
+                posn = new float[size * VCTR_NUM_CMPS];
+            }
+            if (outputs.length < size * total) {
+                outputs = new float[size * total];
+            }
+        }
+
+        public int indexOf(int triNum, int triVertNum) {
+            return indicies == null ? -1 : indicies[triNum * VERTS_PER_TRI + triVertNum];
+        }
+
+        public boolean load(int idx, Vertex vert) {
+            if (idx < 0 || stamp[idx] != drawId) {
+                return false;
+            }
+            System.arraycopy(posn, idx * VCTR_NUM_CMPS, vert.posn, 0, VCTR_NUM_CMPS);
+            System.arraycopy(outputs, idx * total, vert.shaderOutputs, 0, total);
+            return true;
+        }
+
+        public void store(int idx, Vertex vert) {
+            if (idx < 0) {
+                return;
+            }
+            stamp[idx] = drawId;
+            System.arraycopy(vert.posn, 0, posn, idx * VCTR_NUM_CMPS, VCTR_NUM_CMPS);
+            System.arraycopy(vert.shaderOutputs, 0, outputs, idx * total, total);
+        }
+    }
+
     ////////////////////////////////////////////////////////////////
     // PRIVATE METHODS
     private void init(QRenderBuffer target) {
@@ -745,8 +809,8 @@ public final class QViewer extends QEncoding {
                     "No vertex attribute slots set!");
         }
 
-        QShader shader = internalGetRelevantShader();
-        ShaderRequirement[] requirements = shader.requirements();
+        drawShader = internalGetRelevantShader();
+        ShaderRequirement[] requirements = drawShader.requirements();
         internalEnsureShaderRequirements(requirements);
         QShader.OutputLayout outputLayout = new QShader.OutputLayout(requirements);
 
@@ -766,11 +830,19 @@ public final class QViewer extends QEncoding {
         fctx.layout = outputLayout;
         fctx.inputs = new float[outputLayout.total];
 
-        shader.beginDraw(vctx);
+        for (Vertex vert : workTri.verts) {
+            vert.posn = new float[VCTR_NUM_CMPS];
+            vert.shaderOutputs = new float[outputLayout.total];
+        }
+
+        vertexCache.prepare(slotAttribs, outputLayout.total);
+
+        drawShader.beginDraw(vctx);
 
         for (int triNum = 0; triNum < triCount; triNum++) {
             // GENERATE TRIANGLE
-            Triangle tri = new Triangle(triNum);
+            Triangle tri = workTri;
+            tri.triNum = triNum;
             internalProcessVertex(tri, 0);
             internalProcessVertex(tri, 1);
             internalProcessVertex(tri, 2);
@@ -806,7 +878,14 @@ public final class QViewer extends QEncoding {
     }
 
     private void internalProcessVertex(Triangle tri, int triVertNum) {
-        vctx.outputs = new float[vctx.layout.total];
+        Vertex vert = tri.verts[triVertNum];
+        int    idx  = vertexCache.indexOf(tri.triNum, triVertNum);
+        if (vertexCache.load(idx, vert)) {
+            return;
+        }
+
+        Arrays.fill(vert.shaderOutputs, 0.0f);
+        vctx.outputs = vert.shaderOutputs;
 
         // POPULATE VERTEX SHADER INPUTS
         for (int slot = 0; slot < slotAttribs.length; slot++) {
@@ -825,10 +904,8 @@ public final class QViewer extends QEncoding {
         }
 
         // CALL SHADER
-        QShader shader = internalGetRelevantShader();
-        QVector3 vertShaderOut = shader.vertexShader(vctx);
-        tri.verts[triVertNum].posn = vertShaderOut.getComponents();
-        tri.verts[triVertNum].shaderOutputs = vctx.outputs;
+        QVector3.copy(vert.posn, drawShader.vertexShader(vctx).getComponents());
+        vertexCache.store(idx, vert);
     }
 
     private boolean internalCheckBackfacing(Triangle tri) {
@@ -1319,8 +1396,7 @@ public final class QViewer extends QEncoding {
         float invW = 1.0f / invDepth;
         internalInterpolateFragmentInputs(w0 * invW, w1 * invW, w2 * invW, fctx.inputs);
 
-        QShader shader = internalGetRelevantShader();
-        QColor fragColor = shader.fragmentShader(fctx);
+        QColor fragColor = drawShader.fragmentShader(fctx);
 
         // DISCARD IF FRAGMENT IS TRANSPARENT
         if ((fragColor.getA()) == 0) {

@@ -60,8 +60,8 @@ Defined in [`settings.gradle`](settings.gradle):
 
 ### Geometry & Attributes
 - **[`QAttribBuffer.java`](lib/src/main/java/ca/bael/QDraw/QAttribBuffer.java)**: Contiguous `float[]` buffer storing `attribCount` attributes of `compsPerAttrib` floats each.
-- **[`QAttribIndexer.java`](lib/src/main/java/ca/bael/QDraw/QAttribIndexer.java)**: Holds `int[]` triangle vertex indices (length must be a multiple of 3) referencing a `QAttribBuffer`.
-- **[`QMesh.java`](lib/src/main/java/ca/bael/QDraw/QMesh.java)**: Manages position (3 floats), UV (2 floats), and normal (3 floats) `QAttribBuffer`/`QAttribIndexer` pairs.
+- **[`QAttribIndexer.java`](lib/src/main/java/ca/bael/QDraw/QAttribIndexer.java)**: Holds `int[]` triangle vertex indices (length must be a multiple of 3) referencing a `QAttribBuffer`. `new QAttribIndexer(other)` shares `other`'s index array.
+- **[`QMesh.java`](lib/src/main/java/ca/bael/QDraw/QMesh.java)**: Manages position (3 floats), UV (2 floats), and normal (3 floats) `QAttribBuffer`/`QAttribIndexer` pairs. At load, each unique (position, uv, normal) tuple becomes one vertex and all three indexers share a single index array.
   - Can be constructed from raw arrays or a Wavefront `.obj` file path (`new QMesh(String objFilePath)`).
   - The `.obj` parser requires `v`, `vt`, `vn`, and face definitions formatted as `f p/uv/n ...` (1-indexed, must include normals). Faces with more than 3 vertices are triangulated via triangle-fan tessellation.
 
@@ -88,7 +88,7 @@ Defined in [`settings.gradle`](settings.gradle):
     - Textures (`0..15`): `0` = primary `QSampleable`.
   - **Pipeline stages in `internalDraw()`**:
     1. Validates vertex attribute indexers have matching triangle counts and checks `QShader.requirements()`.
-    2. Executes `vertexShader` for each of the 3 triangle vertices.
+    2. Executes `vertexShader` for each of the 3 triangle vertices. When all bound indexers share one index array (as `QMesh` produces), results are cached per index for the duration of the draw, so vertex shaders must be deterministic in their attributes and uniforms.
     3. Computes face normal (`QVector3.cross`) and culls backfacing triangles (`QVector3.dot(normal, rayToCenter) > 0`).
     4. Clips triangles against `nearClip` (`Z > nearClip` is behind the camera; visible geometry has negative Z). Clips 1-vertex-behind into 2 triangles (quad) and 2-vertices-behind into 1 triangle, linearly interpolating shader outputs and preserving clockwise winding order.
     5. Projects vertices (`posn[Z] = 1.0f / posn[Z]`, `posn[X,Y] *= -posn[Z]`) and maps `viewBounds` to screen coordinates.

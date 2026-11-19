@@ -60,6 +60,10 @@ public final class QAttribIndexer {
         return attribBuffer.getComponentsPerAttrib( );
     }
 
+    public int getAttribCount( ) {
+        return attribBuffer.getAttribCount( );
+    }
+
     public void index(
         int           triNum,
         int           vertNum,
@@ -71,6 +75,10 @@ public final class QAttribIndexer {
 
     /////////////////////////////////////////////////////////////////
     // CONSTRUCTORS
+    public QAttribIndexer(QAttribIndexer shareIndicies) {
+        attribIndexBuffer = shareIndicies.attribIndexBuffer;
+    }
+
     public QAttribIndexer(int[] inIndicies, int numIndicies) {
         if ((numIndicies % INDICIES_PER_TRI) != 0) {
             throw new QException(

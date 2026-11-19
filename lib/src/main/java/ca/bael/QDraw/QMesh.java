@@ -298,16 +298,50 @@ public final class QMesh extends QEncoding {
         }
 
         int totalVertCount = numTriangles * VERTS_PER_TRI;
-        
-        posIndexer = new QAttribIndexer(tempPosIndicies.toArray(), totalVertCount);
+        int[] posIndicies    = tempPosIndicies.toArray();
+        int[] uvIndicies     = tempUVIndicies.toArray();
+        int[] normalIndicies = tempNormalIndicies.toArray();
+
+        Map<List<Integer>, Integer> uniqueVerts = new HashMap<>();
+        int[]   vertIndicies      = new int[totalVertCount];
+        IntList uniquePosIndicies    = new IntList(numTriangles);
+        IntList uniqueUVIndicies     = new IntList(numTriangles);
+        IntList uniqueNormalIndicies = new IntList(numTriangles);
+        for (int i = 0; i < totalVertCount; i++) {
+            List<Integer> key = Arrays.asList(posIndicies[i], uvIndicies[i], normalIndicies[i]);
+            Integer vert = uniqueVerts.get(key);
+            if (vert == null) {
+                vert = uniqueVerts.size( );
+                uniqueVerts.put(key, vert);
+                uniquePosIndicies.add(posIndicies[i]);
+                uniqueUVIndicies.add(uvIndicies[i]);
+                uniqueNormalIndicies.add(normalIndicies[i]);
+            }
+            vertIndicies[i] = vert;
+        }
+
+        posBuffer    = gatherAttribs(posBuffer, uniquePosIndicies.toArray( ));
+        uvBuffer     = gatherAttribs(uvBuffer, uniqueUVIndicies.toArray( ));
+        normalBuffer = gatherAttribs(normalBuffer, uniqueNormalIndicies.toArray( ));
+
+        posIndexer = new QAttribIndexer(vertIndicies, totalVertCount);
         posIndexer.setAttribBuffer(posBuffer);
 
-        uvIndexer = new QAttribIndexer(tempUVIndicies.toArray(), totalVertCount);
+        uvIndexer = new QAttribIndexer(posIndexer);
         uvIndexer.setAttribBuffer(uvBuffer);
 
-        normalIndexer = new QAttribIndexer(tempNormalIndicies.toArray(), totalVertCount);
+        normalIndexer = new QAttribIndexer(posIndexer);
         normalIndexer.setAttribBuffer(normalBuffer);
 
+    }
+
+    private static QAttribBuffer gatherAttribs(QAttribBuffer src, int[] srcIndicies) {
+        int     comps = src.getComponentsPerAttrib( );
+        float[] out   = new float[srcIndicies.length * comps];
+        for (int i = 0; i < srcIndicies.length; i++) {
+            src.getAttrib(i * comps, out, srcIndicies[i]);
+        }
+        return new QAttribBuffer(out, comps, srcIndicies.length);
     }
 
     /////////////////////////////////////////////////////////////////
