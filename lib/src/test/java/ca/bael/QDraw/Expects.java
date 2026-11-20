@@ -182,6 +182,11 @@ public final class Expects {
         assertEquals(QMatrix4x4.rotationMatrix(30.0f, 0.0f, 0.0f), QQuaternion.fromAxisAngle(axisX, 30.0f).toMatrix());
         assertEquals(QMatrix4x4.rotationMatrix(0.0f, 0.0f, -90.0f), QQuaternion.fromAxisAngle(axisZ, -90.0f).toMatrix());
         assertEquals(new QVector3(0.0f, 1.0f, 0.0f), QQuaternion.fromAxisAngle(axisZ, -90.0f).rotate(new QVector3(1.0f, 0.0f, 0.0f)));
+        QQuaternion q90 = QQuaternion.fromAxisAngle(axisZ, 90.0f);
+        QQuaternion neg = new QQuaternion(-q90.getW(), -q90.getX(), -q90.getY(), -q90.getZ());
+        assertEquals(QQuaternion.fromAxisAngle(axisZ, 45.0f).toMatrix(), QQuaternion.slerp(QQuaternion.Identity(), q90, 0.5f).toMatrix());
+        assertEquals(QQuaternion.fromAxisAngle(axisZ, 45.0f).toMatrix(), QQuaternion.nlerp(QQuaternion.Identity(), q90, 0.5f).toMatrix());
+        assertEquals(q90.toMatrix(), QQuaternion.slerp(q90, neg, 0.5f).toMatrix());
     }
 
     @Test

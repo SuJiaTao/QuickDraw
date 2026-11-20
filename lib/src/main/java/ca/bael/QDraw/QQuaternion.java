@@ -6,6 +6,10 @@ package ca.bael.QDraw;
 
 public final class QQuaternion {
     /////////////////////////////////////////////////////////////////
+    // CONSTANTS
+    private static final float SLERP_LINEAR_THRESHOLD = 0.9995f;
+
+    /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
     private float w;
     private float x;
@@ -35,6 +39,35 @@ public final class QQuaternion {
             a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
             a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
             a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w
+        );
+    }
+
+    public static QQuaternion nlerp(QQuaternion a, QQuaternion b, float t) {
+        float s = internalDot(a, b) < 0.0f ? -1.0f : 1.0f;
+        return new QQuaternion(
+            a.w + (s * b.w - a.w) * t,
+            a.x + (s * b.x - a.x) * t,
+            a.y + (s * b.y - a.y) * t,
+            a.z + (s * b.z - a.z) * t
+        ).normalize( );
+    }
+
+    public static QQuaternion slerp(QQuaternion a, QQuaternion b, float t) {
+        float d = internalDot(a, b);
+        float s = d < 0.0f ? -1.0f : 1.0f;
+        d *= s;
+        if (d > SLERP_LINEAR_THRESHOLD) {
+            return nlerp(a, b, t);
+        }
+        float theta  = (float)Math.acos(d);
+        float invSin = 1.0f / (float)Math.sin(theta);
+        float wa     = (float)Math.sin((1.0f - t) * theta) * invSin;
+        float wb     = s * (float)Math.sin(t * theta) * invSin;
+        return new QQuaternion(
+            wa * a.w + wb * b.w,
+            wa * a.x + wb * b.x,
+            wa * a.y + wb * b.y,
+            wa * a.z + wb * b.z
         );
     }
 
@@ -108,6 +141,12 @@ public final class QQuaternion {
             2.0f * (xz - wy),        2.0f * (yz + wx),        1.0f - 2.0f * (xx + yy), 0.0f,
             0.0f,                    0.0f,                    0.0f,                    1.0f
         });
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // PRIVATE METHODS
+    private static float internalDot(QQuaternion a, QQuaternion b) {
+        return a.w * b.w + a.x * b.x + a.y * b.y + a.z * b.z;
     }
 
     /////////////////////////////////////////////////////////////////
