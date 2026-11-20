@@ -163,12 +163,17 @@ public final class QMesh {
     public QAttribBuffer getNormalBuffer( ) { return normalBuffer; }
 
     public static QMesh screenQuad( ) {
-        float l = QViewer.DEFAULT_PROJECTION.left( );
-        float r = QViewer.DEFAULT_PROJECTION.right( );
-        float b = QViewer.DEFAULT_PROJECTION.bottom( );
-        float t = QViewer.DEFAULT_PROJECTION.top( );
+        return screenQuad(QViewer.DEFAULT_PROJECTION);
+    }
+
+    public static QMesh screenQuad(QProjection projection) {
+        float d = Math.max(1.0f, 2.0f * projection.near( ));
+        float l = projection.left( ) * d;
+        float r = projection.right( ) * d;
+        float b = projection.bottom( ) * d;
+        float t = projection.top( ) * d;
         return new QMesh(
-            new float[] { l, b, -1.0f,  r, b, -1.0f,  r, t, -1.0f,  l, t, -1.0f },
+            new float[] { l, b, -d,  r, b, -d,  r, t, -d,  l, t, -d },
             new float[] { 0.0f, 0.0f,  1.0f, 0.0f,  1.0f, 1.0f,  0.0f, 1.0f },
             new float[] { 0.0f, 0.0f, 1.0f },
             new int[][] { { 0, 0, 0,  1, 1, 0,  2, 2, 0,  3, 3, 0 } }

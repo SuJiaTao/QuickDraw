@@ -154,6 +154,7 @@ public abstract class QShader {
         float[]       inputs;
         QSampleable.SampleType sampleType;
         QColor        fillColor;
+        QProjection   projection;
         QDrawData     drawData;
         int           gbufferWritten;
         final QColor  color = new QColor( );
@@ -244,6 +245,18 @@ public abstract class QShader {
 
         public float invDepth( ) {
             return invDepth;
+        }
+
+        public QVector3 viewPosition(float invDepth, QVector3 out) {
+            return projection.toView(screenX + 0.5f, screenY + 0.5f, invDepth, target.getWidth( ), target.getHeight( ), out);
+        }
+
+        public QVector3 viewPosition(QVector3 out) {
+            return viewPosition(invDepth, out);
+        }
+
+        public QVector3 viewDirection(QVector3 out) {
+            return projection.viewDirection(screenX + 0.5f, screenY + 0.5f, target.getWidth( ), target.getHeight( ), out);
         }
 
         public QVector3 faceNormal( ) {

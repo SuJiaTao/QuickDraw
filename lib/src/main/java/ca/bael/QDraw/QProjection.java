@@ -58,6 +58,17 @@ public final class QProjection implements QUniform<QProjection> {
         return this;
     }
 
+    public QVector3 toView(float screenX, float screenY, float invDepth, int width, int height, QVector3 out) {
+        float x = left + screenX / width * (right - left);
+        float y = bottom + screenY / height * (top - bottom);
+        out.set(-x / invDepth, -y / invDepth, 1.0f / invDepth);
+        return out;
+    }
+
+    public QVector3 viewDirection(float screenX, float screenY, int width, int height, QVector3 out) {
+        return toView(screenX, screenY, -1.0f, width, height, out).normalize( );
+    }
+
     /////////////////////////////////////////////////////////////////
     // PACKAGE METHODS
     void toScreen(float[] viewPos, int width, int height, float[] out, int outOffset) {

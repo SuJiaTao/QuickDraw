@@ -59,6 +59,7 @@ final class RasterWorker {
         fctx.textures   = draw.state.slotTextures;
         fctx.sampleType = draw.state.sampleType;
         fctx.fillColor  = draw.state.fillColor;
+        fctx.projection = draw.state.projection;
         fctx.target     = renderTarget;
         fctx.layout     = draw.layout;
         fctx.drawData   = draw.data;

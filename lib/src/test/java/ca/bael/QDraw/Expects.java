@@ -206,6 +206,9 @@ public final class Expects {
         float[] out = new float[3];
         proj.toScreen(new float[] { 0.0f, 0.0f, -1.0f }, 200, 100, out, 0);
         assertArrayEquals(new float[] { 100.0f, 50.0f, -1.0f }, out, 1e-4f);
+        proj.toScreen(new float[] { 0.5f, -0.25f, -2.0f }, 200, 100, out, 0);
+        assertEquals(new QVector3(0.5f, -0.25f, -2.0f), proj.toView(out[0], out[1], out[2], 200, 100, new QVector3()));
+        assertEquals(new QVector3(0.0f, 0.0f, -1.0f), proj.viewDirection(100.0f, 50.0f, 200, 100, new QVector3()));
         assertThrows(QException.class, () -> QProjection.perspective(90.0f, 1.0f, -0.1f));
     }
 
