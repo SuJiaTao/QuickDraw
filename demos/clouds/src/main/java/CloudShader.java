@@ -19,8 +19,10 @@ public final class CloudShader extends QShader {
     public static final int   DEPTH_TEXTURE_SLOT   = 0;
     public static final float CLOUD_BASE           = 40.0f;
     public static final float CLOUD_TOP            = 70.0f;
-    public static final float MAX_DISTANCE         = 400.0f;
-    public static final int   STEPS                = 12;
+    public static final float MAX_DISTANCE         = 1000.0f;
+    public static final int   MAX_STEPS            = 16;
+    public static final float MIN_STEP             = 2.0f;
+    public static final float STEP_GROWTH          = 0.15f;
     public static final int   LIGHT_STEPS          = 4;
     public static final float LIGHT_STEP           = 4.0f;
     public static final float SHAPE_SCALE          = 0.005f;
@@ -43,6 +45,7 @@ public final class CloudShader extends QShader {
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
     private final CloudVolume volume;
+    private final int         depthScale;
 
     /////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
@@ -74,7 +77,7 @@ public final class CloudShader extends QShader {
         float t1     = (CLOUD_TOP - data.camY( )) * invDy;
         float tEnter = Math.max(0.0f, Math.min(t0, t1));
         float tExit  = Math.min(MAX_DISTANCE, Math.max(t0, t1));
-        float invDepth = context.gbufferDepth(DEPTH_TEXTURE_SLOT);
+        float invDepth = context.gbufferDepth(DEPTH_TEXTURE_SLOT, context.screenX( ) * depthScale + depthScale / 2, context.screenY( ) * depthScale + depthScale / 2);
         if (invDepth != 0.0f) {
             tExit = Math.min(tExit, context.viewPosition(invDepth, context.scratchVec3(1)).magnitude( ));
         }
@@ -82,14 +85,15 @@ public final class CloudShader extends QShader {
             return context.color( ).set(0x00000000);
         }
 
-        float step  = (tExit - tEnter) / STEPS;
+        float step  = Math.max(MIN_STEP, tEnter * STEP_GROWTH);
         float t     = tEnter + step * context.random( );
         float phase = internalPhase(dx * SUN_DIRECTION.getX( ) + dy * SUN_DIRECTION.getY( ) + dz * SUN_DIRECTION.getZ( ));
         float trans = 1.0f;
         float r     = 0.0f;
         float g     = 0.0f;
         float b     = 0.0f;
-        for (int i = 0; i < STEPS && trans > MIN_TRANSMITTANCE; i++, t += step) {
+        for (int i = 0; i < MAX_STEPS && t < tExit && trans > MIN_TRANSMITTANCE; i++, t += step) {
+            step = Math.min(Math.max(MIN_STEP, t * STEP_GROWTH), tExit - t);
             float px = data.camX( ) + dx * t;
             float py = data.camY( ) + dy * t;
             float pz = data.camZ( ) + dz * t;
@@ -145,7 +149,8 @@ public final class CloudShader extends QShader {
 
     /////////////////////////////////////////////////////////////////
     // CONSTRUCTORS
-    public CloudShader(CloudVolume volume) {
+    public CloudShader(CloudVolume volume, int depthScale) {
         this.volume = volume;
+        this.depthScale = depthScale;
     }
 }

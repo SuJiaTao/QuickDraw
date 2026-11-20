@@ -4,6 +4,7 @@
 
 package ca.bael.QDraw;
 
+import ca.bael.QDraw.QSampleable.FilterType;
 import ca.bael.QDraw.QSampleable.SampleType;
 import ca.bael.QDraw.QViewer.BlendMode;
 import ca.bael.QDraw.QViewer.CullMode;
@@ -14,6 +15,7 @@ final class ViewerState {
     public QProjection projection = QViewer.DEFAULT_PROJECTION;
     public QColor     fillColor  = QViewer.DEFAULT_FILL_COLOR.snapshot();
     public SampleType sampleType = QViewer.DEFAULT_SAMPLE_TYPE;
+    public FilterType filterType = QViewer.DEFAULT_FILTER_TYPE;
     public boolean    depthTest  = QViewer.DEFAULT_DEPTH_TEST;
     public boolean    depthWrite = QViewer.DEFAULT_DEPTH_WRITE;
     public boolean    colorWrite = QViewer.DEFAULT_COLOR_WRITE;
@@ -32,6 +34,7 @@ final class ViewerState {
         copy.projection = projection;
         copy.fillColor  = fillColor.snapshot();
         copy.sampleType = sampleType;
+        copy.filterType = filterType;
         copy.depthTest  = depthTest;
         copy.depthWrite = depthWrite;
         copy.colorWrite = colorWrite;

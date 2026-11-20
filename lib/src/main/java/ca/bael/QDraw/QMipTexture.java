@@ -53,7 +53,7 @@ public final class QMipTexture extends QSampleable {
         if (t == 0) {
             return c0;
         }
-        return lerpARGB(c0, levels[l0 + 1].sample(u, v, sampleType, FilterType.Bilinear), t);
+        return lerpARGBAlpha(c0, levels[l0 + 1].sample(u, v, sampleType, FilterType.Bilinear), t);
     }
 
     /////////////////////////////////////////////////////////////////

@@ -221,6 +221,10 @@ public final class Expects {
         assertEquals(0xFF808080, mips.getLevel(1).getColor(0, 0));
         assertEquals(0xFF808080, mips.sampleLod(0.5f, 0.5f, 1.0f, QSampleable.SampleType.Clamp, QSampleable.FilterType.Bilinear));
         assertEquals(0xFF808080, mips.sampleLod(0.5f, 0.5f, 0.6f, QSampleable.SampleType.Clamp, QSampleable.FilterType.Nearest));
+        QTexture edge = new QTexture(2, 1);
+        edge.setColor(0, 0, 0xFFFFFFFF);
+        edge.setColor(1, 0, 0x00000000);
+        assertEquals(0x7FFFFFFF, edge.sample(0.5f, 0.5f, QSampleable.SampleType.Clamp, QSampleable.FilterType.Bilinear));
     }
 
     @Test

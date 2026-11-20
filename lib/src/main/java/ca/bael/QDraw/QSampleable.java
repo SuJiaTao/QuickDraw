@@ -110,9 +110,9 @@ public abstract class QSampleable {
         int   y1 = wrapCoord(y0 + 1, getHeight( ), sampleType);
         x0 = wrapCoord(x0, getWidth( ), sampleType);
         y0 = wrapCoord(y0, getHeight( ), sampleType);
-        return lerpARGB(
-            lerpARGB(getColor(x0, y0), getColor(x1, y0), tx),
-            lerpARGB(getColor(x0, y1), getColor(x1, y1), tx),
+        return lerpARGBAlpha(
+            lerpARGBAlpha(getColor(x0, y0), getColor(x1, y0), tx),
+            lerpARGBAlpha(getColor(x0, y1), getColor(x1, y1), tx),
             ty
         );
     }
@@ -123,6 +123,24 @@ public abstract class QSampleable {
         int rb = ((a & 0x00FF00FF) * (256 - t) + (b & 0x00FF00FF) * t) >>> 8 & 0x00FF00FF;
         int ag = (((a >>> 8) & 0x00FF00FF) * (256 - t) + ((b >>> 8) & 0x00FF00FF) * t) & 0xFF00FF00;
         return rb | ag;
+    }
+
+    static int lerpARGBAlpha(int a, int b, int t) {
+        int aa = a >>> 24;
+        int ab = b >>> 24;
+        if (aa == ab) {
+            return lerpARGB(a, b, t);
+        }
+        int wa = aa * (256 - t);
+        int wb = ab * t;
+        int w  = wa + wb;
+        if (w == 0) {
+            return 0;
+        }
+        int r  = (((a >>> 16) & 0xFF) * wa + ((b >>> 16) & 0xFF) * wb) / w;
+        int g  = (((a >>>  8) & 0xFF) * wa + ((b >>>  8) & 0xFF) * wb) / w;
+        int bl = (( a         & 0xFF) * wa + ( b         & 0xFF) * wb) / w;
+        return ((w >>> 8) << 24) | (r << 16) | (g << 8) | bl;
     }
 
     /////////////////////////////////////////////////////////////////

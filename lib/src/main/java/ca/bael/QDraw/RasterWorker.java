@@ -4,11 +4,11 @@
 
 package ca.bael.QDraw;
 
-import static ca.bael.QDraw.QVector3.VCTR_INDEX_X;
-import static ca.bael.QDraw.QVector3.VCTR_INDEX_Y;
-
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static ca.bael.QDraw.QVector3.VCTR_INDEX_X;
+import static ca.bael.QDraw.QVector3.VCTR_INDEX_Y;
 
 final class RasterWorker {
     ////////////////////////////////////////////////////////////////
@@ -58,6 +58,7 @@ final class RasterWorker {
         fctx.uniforms   = draw.state.slotUniforms;
         fctx.textures   = draw.state.slotTextures;
         fctx.sampleType = draw.state.sampleType;
+        fctx.filterType = draw.state.filterType;
         fctx.fillColor  = draw.state.fillColor;
         fctx.projection = draw.state.projection;
         fctx.target     = renderTarget;

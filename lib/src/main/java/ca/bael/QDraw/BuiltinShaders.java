@@ -112,7 +112,8 @@ final class BuiltinShaders {
                 return context.color( ).set(context.texture(DEFAULT_SHADER_TEXTURE_SLOT).sample(
                     context.input(uvSlot, 0),
                     context.input(uvSlot, 1),
-                    context.sampleType
+                    context.sampleType,
+                    context.filterType
                 ));
             }
         };
@@ -277,7 +278,7 @@ final class BuiltinShaders {
                 float[] uv     = context.input(data.uvSlot( ), new float[2]);
                 float[] normal = context.inputVec3(data.normalSlot( )).normalize( ).getComponents( );
                 QColor texSampleColor = context.color( ).set(
-                    tex == null ? 0xFFFFFFFF : tex.sample(uv[0], uv[1], context.sampleType)
+                    tex == null ? 0xFFFFFFFF : tex.sample(uv[0], uv[1], context.sampleType, context.filterType)
                 );
 
                 float diffuseIntensity = 0f;

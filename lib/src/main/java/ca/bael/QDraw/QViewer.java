@@ -18,6 +18,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import ca.bael.QDraw.QException.PointOfError;
+import ca.bael.QDraw.QSampleable.FilterType;
 import ca.bael.QDraw.QSampleable.SampleType;
 import ca.bael.QDraw.QShader.ShaderRequirement;
 
@@ -82,6 +83,7 @@ public final class QViewer {
         return thread;
     });
     public static final SampleType DEFAULT_SAMPLE_TYPE = SampleType.Repeat;
+    public static final FilterType DEFAULT_FILTER_TYPE = FilterType.Nearest;
     public static final int DEFAULT_SHADER_POSITION_SLOT = 0;
     public static final int DEFAULT_SHADER_UV_SLOT = 1;
     public static final int DEFAULT_SHADER_NORMAL_SLOT = 2;
@@ -141,6 +143,10 @@ public final class QViewer {
 
     public void setSampleType(SampleType _type) {
         state.sampleType = _type;
+    }
+
+    public void setFilterType(FilterType _type) {
+        state.filterType = _type;
     }
 
     public void setFillColor(QColor _color) {

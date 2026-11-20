@@ -3,6 +3,8 @@
 // Clouds.java
 
 import ca.bael.QDraw.*;
+import ca.bael.QDraw.QSampleable.FilterType;
+import ca.bael.QDraw.QSampleable.SampleType;
 import ca.bael.QDraw.QViewer.CullMode;
 import ca.bael.QDraw.QViewer.RenderMode;
 import ca.bael.QDraw.awt.QWindow;
@@ -14,6 +16,7 @@ public final class Clouds {
     public static final int         WINDOW_HEIGHT  = 960;
     public static final int         FB_WIDTH       = WINDOW_WIDTH >> 1;
     public static final int         FB_HEIGHT      = WINDOW_HEIGHT >> 1;
+    public static final int         CLOUD_SCALE    = 2;
     public static final float       FB_ASPECT      = (float)FB_WIDTH / (float)FB_HEIGHT;
     public static final float       LIGHT_STRENGTH = 8.0f;
     public static final int         CLOUD_SIZE     = 64;
@@ -32,11 +35,18 @@ public final class Clouds {
         QWindow       window      = new QWindow("Clouds", WINDOW_WIDTH, WINDOW_HEIGHT);
         QRenderBuffer frameBuffer = new QRenderBuffer(FB_WIDTH, FB_HEIGHT);
         QRenderBuffer sceneDepth  = new QRenderBuffer(FB_WIDTH, FB_HEIGHT);
+        QRenderBuffer cloudBuffer = new QRenderBuffer(FB_WIDTH / CLOUD_SCALE, FB_HEIGHT / CLOUD_SCALE);
         QViewer       viewer      = new QViewer(frameBuffer);
+        QViewer       cloudViewer = new QViewer(cloudBuffer);
         SkyShader     skyShader   = new SkyShader( );
-        CloudShader   cloudShader = new CloudShader(CloudNoise.bakeShape(CLOUD_SIZE, CLOUD_SEED));
+        CloudShader   cloudShader = new CloudShader(CloudNoise.bakeShape(CLOUD_SIZE, CLOUD_SEED), CLOUD_SCALE);
         FlyCamera     camera      = new FlyCamera(QVector3.Zero( ), QQuaternion.fromAxisAngle(QVector3.Y( ), 180.0f));
         viewer.setProjection(PROJECTION);
+        cloudViewer.setProjection(PROJECTION);
+        cloudViewer.setRenderMode(RenderMode.CustomShader);
+        cloudViewer.setCustomShader(cloudShader);
+        cloudViewer.setDepthTest(false);
+        cloudViewer.setDepthWrite(false);
 
         QTimer sceneTimer = new QTimer( );
         QTimer cloudTimer = new QTimer( );
@@ -71,15 +81,22 @@ public final class Clouds {
             sceneTimer.stop( );
 
             frameBuffer.copyDepthTo(sceneDepth);
-            viewer.setRenderMode(RenderMode.CustomShader);
-            viewer.setCustomShader(cloudShader);
+            cloudViewer.clearFrame( );
+            cloudViewer.setTextureSlot(CloudShader.DEPTH_TEXTURE_SLOT, sceneDepth);
+            cloudViewer.setUniformSlot(CloudShader.CAMERA_TO_WORLD_SLOT, view.inverse( ));
+            cloudViewer.setUniformSlot(CloudShader.TIME_SLOT, new QScalar((now - startTime) * 1e-9));
+            cloudViewer.drawMesh(SCREEN_QUAD);
+            cloudTimer.start( );
+            cloudViewer.flush( );
+
+            viewer.setRenderMode(RenderMode.Textured);
+            viewer.setSampleType(SampleType.Clamp);
+            viewer.setFilterType(FilterType.Bilinear);
             viewer.setDepthTest(false);
             viewer.setDepthWrite(false);
-            viewer.setTextureSlot(CloudShader.DEPTH_TEXTURE_SLOT, sceneDepth);
-            viewer.setUniformSlot(CloudShader.CAMERA_TO_WORLD_SLOT, view.inverse( ));
-            viewer.setUniformSlot(CloudShader.TIME_SLOT, new QScalar((now - startTime) * 1e-9));
+            viewer.setMatrix(QMatrix4x4.Identity( ));
+            viewer.setTexture(cloudBuffer);
             viewer.drawMesh(SCREEN_QUAD);
-            cloudTimer.start( );
             viewer.flush( );
             cloudTimer.stop( );
 

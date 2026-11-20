@@ -170,6 +170,7 @@ public abstract class QShader {
         OutputLayout  layout;
         float[]       inputs;
         QSampleable.SampleType sampleType;
+        QSampleable.FilterType filterType;
         QColor        fillColor;
         QProjection   projection;
         QDrawData     drawData;
