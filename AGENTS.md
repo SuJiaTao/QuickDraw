@@ -58,7 +58,7 @@ Roles:
 - The camera looks down −Z; visible geometry has `z < -near`. Lights and shading positions are in view space.
 - Screen and texture coordinates have `(0, 0)` at the bottom-left. Image memory is still stored top row first.
 - Depth stores `1/z` (negative; `0` means cleared/background); smaller is closer.
-- Colors are packed, non-premultiplied `0xAARRGGBB`. Static color math saturates and returns opaque colors.
+- Colors are packed, non-premultiplied `0xAARRGGBB`. Static color math saturates and returns opaque colors, except `QColor.blend` (`BlendMode.Alpha`), which composites straight-alpha "over" and keeps a translucent destination translucent.
 - Angles are in degrees. For matrices, `a.multiply(b)` means "apply `a`, then `b`". `QQuaternion` angles use the same sign as `QMatrix4x4.rotationMatrix` (pinned by `QuaternionTest`).
 
 ### Multi-pass

@@ -65,13 +65,24 @@ public final class QColor implements QUniform<QColor> {
         int tFac = channel(top, COL_LSHIFT_OFST_A);
         if (tFac == 0xFF) return top;
         if (tFac == 0x00) return bottom;
+        int bAlpha = channel(bottom, COL_LSHIFT_OFST_A);
+        if (bAlpha == 0x00) return top;
 
         int bFac = 0xFF - tFac;
-        return opaque(
-            div255(channel(top, COL_LSHIFT_OFST_R) * tFac + channel(bottom, COL_LSHIFT_OFST_R) * bFac),
-            div255(channel(top, COL_LSHIFT_OFST_G) * tFac + channel(bottom, COL_LSHIFT_OFST_G) * bFac),
-            div255(channel(top, COL_LSHIFT_OFST_B) * tFac + channel(bottom, COL_LSHIFT_OFST_B) * bFac)
-        );
+        if (bAlpha == 0xFF) {
+            return opaque(
+                div255(channel(top, COL_LSHIFT_OFST_R) * tFac + channel(bottom, COL_LSHIFT_OFST_R) * bFac),
+                div255(channel(top, COL_LSHIFT_OFST_G) * tFac + channel(bottom, COL_LSHIFT_OFST_G) * bFac),
+                div255(channel(top, COL_LSHIFT_OFST_B) * tFac + channel(bottom, COL_LSHIFT_OFST_B) * bFac)
+            );
+        }
+        int wt  = tFac * 0xFF;
+        int wb  = bAlpha * bFac;
+        int sum = wt + wb;
+        return (div255(sum) << COL_LSHIFT_OFST_A) |
+               (((channel(top, COL_LSHIFT_OFST_R) * wt + channel(bottom, COL_LSHIFT_OFST_R) * wb) / sum) << COL_LSHIFT_OFST_R) |
+               (((channel(top, COL_LSHIFT_OFST_G) * wt + channel(bottom, COL_LSHIFT_OFST_G) * wb) / sum) << COL_LSHIFT_OFST_G) |
+               (((channel(top, COL_LSHIFT_OFST_B) * wt + channel(bottom, COL_LSHIFT_OFST_B) * wb) / sum) << COL_LSHIFT_OFST_B);
     }
 
     public static int add(int c1, int c2) {

@@ -30,6 +30,9 @@ public final class Expects {
         assertEquals(0x34, new QColor(0x12, 0x34, 0x56, 0x78).getG());
         assertEquals(0x56, new QColor(0x12, 0x34, 0x56, 0x78).getB());
         assertEquals(0x78, new QColor(0x12, 0x34, 0x56, 0x78).getA());
+        assertEquals(0xFF808080, QColor.blend(0xFF000000, 0x80FFFFFF));
+        assertEquals(0x80FFFFFF, QColor.blend(0x00000000, 0x80FFFFFF));
+        assertEquals(0xBFAA0054, QColor.blend(0x800000FF, 0x80FF0000));
     }
 
     @Test 

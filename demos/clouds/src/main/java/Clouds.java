@@ -6,6 +6,7 @@ import ca.bael.QDraw.*;
 import ca.bael.QDraw.QSampleable.FilterType;
 import ca.bael.QDraw.QSampleable.SampleType;
 import ca.bael.QDraw.QViewer.CullMode;
+import ca.bael.QDraw.QViewer.BlendMode;
 import ca.bael.QDraw.QViewer.RenderMode;
 import ca.bael.QDraw.awt.QWindow;
 
@@ -47,6 +48,7 @@ public final class Clouds {
         cloudViewer.setCustomShader(cloudShader);
         cloudViewer.setDepthTest(false);
         cloudViewer.setDepthWrite(false);
+        cloudViewer.setBlendMode(BlendMode.Replace);
 
         QTimer sceneTimer = new QTimer( );
         QTimer cloudTimer = new QTimer( );
@@ -91,7 +93,7 @@ public final class Clouds {
 
             viewer.setRenderMode(RenderMode.Textured);
             viewer.setSampleType(SampleType.Clamp);
-            viewer.setFilterType(FilterType.Bilinear);
+            viewer.setFilterType(FilterType.Nearest);
             viewer.setDepthTest(false);
             viewer.setDepthWrite(false);
             viewer.setMatrix(QMatrix4x4.Identity( ));
