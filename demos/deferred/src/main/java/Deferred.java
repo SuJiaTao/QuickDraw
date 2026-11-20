@@ -15,6 +15,7 @@ import ca.bael.QDraw.QProjection;
 import ca.bael.QDraw.QRenderBuffer;
 import ca.bael.QDraw.QRenderBuffer.GBufferFormat;
 import ca.bael.QDraw.QScalar;
+import ca.bael.QDraw.QShader;
 import ca.bael.QDraw.QTexture;
 import ca.bael.QDraw.QVector3;
 import ca.bael.QDraw.QViewer;
@@ -42,6 +43,10 @@ public final class Deferred {
     public static final float LIGHT_HEIGHT     = 3.0f;
     public static final float LIGHT_BOB        = 2.0f;
     public static final float MARKER_SCALE     = 0.3f;
+    public static final float MAX_SPIN_RATE    = 180.0f;
+    public static final float JUMP_HEIGHT      = 0.5f * MASCOT_HEIGHT;
+    public static final float JUMP_RATE_MIN    = 2.0f;
+    public static final float JUMP_RATE_MAX    = 6.0f;
     public static final long  LIGHT_SEED       = 0x5EED;
 
     public static final QMesh      MASCOT_MESH    = new QMesh(Deferred.class.getResource("/Mascot_Smooth.obj").getPath());
@@ -89,8 +94,8 @@ public final class Deferred {
                 .translate(0.0f, 0.0f, -CAMERA_DISTANCE);
     }
 
-    private static QMatrix4x4 modelView(QMatrix4x4 view, QVector3 position, float scale) {
-        return QMatrix4x4.multiply(QMatrix4x4.TRS(position, QVector3.Zero(), QVector3.One().multiply3(scale)), view);
+    private static QMatrix4x4 modelView(QMatrix4x4 view, QVector3 position, float yawDegrees, float scale) {
+        return QMatrix4x4.multiply(QMatrix4x4.TRS(position, new QVector3(0.0f, yawDegrees, 0.0f), QVector3.One().multiply3(scale)), view);
     }
 
     public static void main(String[] args) {
@@ -114,7 +119,7 @@ public final class Deferred {
         float halfX = 0.5f * LATTICE_X * LATTICE_SPACING;
         float halfZ = 0.5f * LATTICE_Z * LATTICE_SPACING;
         lightPass.setCustomShader(new LightingShader(
-            new QVector3(-halfX, -0.5f * MASCOT_HEIGHT, -halfZ), new QVector3(halfX, 0.5f * MASCOT_HEIGHT, halfZ)));
+            new QVector3(-halfX, -0.5f * MASCOT_HEIGHT, -halfZ), new QVector3(halfX, 0.5f * MASCOT_HEIGHT + JUMP_HEIGHT, halfZ)));
 
         int     view       = LightingShader.VIEW_LIT;
         boolean prevUp     = false;
@@ -146,10 +151,14 @@ public final class Deferred {
             for (int x = 0; x < LATTICE_X; x++) {
                 for (int y = 0; y < LATTICE_Y; y++) {
                     for (int z = 0; z < LATTICE_Z; z++) {
+                        int   i        = (x * LATTICE_Y + y) * LATTICE_Z + z;
+                        float spin     = (2.0f * QShader.seededRandom(4 * i + 1) - 1.0f) * MAX_SPIN_RATE * time;
+                        float jumpRate = JUMP_RATE_MIN + (JUMP_RATE_MAX - JUMP_RATE_MIN) * QShader.seededRandom(4 * i + 2);
+                        float hop      = JUMP_HEIGHT * Math.abs((float)Math.sin(jumpRate * time + 2.0f * (float)Math.PI * QShader.seededRandom(4 * i + 3)));
                         geomPass.setMatrix(modelView(viewMtr, new QVector3(
                             (x - 0.5f * (LATTICE_X - 1)) * LATTICE_SPACING,
-                            (y - 0.5f * (LATTICE_Y - 1)) * LATTICE_SPACING,
-                            (z - 0.5f * (LATTICE_Z - 1)) * LATTICE_SPACING), MASCOT_SCALE));
+                            (y - 0.5f * (LATTICE_Y - 1)) * LATTICE_SPACING + hop,
+                            (z - 0.5f * (LATTICE_Z - 1)) * LATTICE_SPACING), spin, MASCOT_SCALE));
                         geomPass.setUniformSlot(GBufferShader.ID_UNIFORM_SLOT, MASCOT_ID);
                         geomPass.drawMesh(MASCOT_MESH);
                     }
@@ -159,7 +168,7 @@ public final class Deferred {
             QLight[] lights = new QLight[LIGHT_COUNT];
             for (int i = 0; i < LIGHT_COUNT; i++) {
                 QVector3 world = lightWorldPosition(i, time);
-                geomPass.setMatrix(modelView(viewMtr, world, MARKER_SCALE));
+                geomPass.setMatrix(modelView(viewMtr, world, 0.0f, MARKER_SCALE));
                 geomPass.setUniformSlot(GBufferShader.ID_UNIFORM_SLOT, MARKER_ID);
                 geomPass.drawMesh(SPHERE_MESH);
                 lights[i] = new QLight(viewMtr.transformPoint(world), LIGHT_STRENGTH);
