@@ -103,6 +103,68 @@ public final class QColor implements QUniform<QColor> {
     }
 
     /////////////////////////////////////////////////////////////////
+    // PUBLIC STATIC METHODS (float3)
+    public static int pack(QVector3 rgb) {
+        return pack(rgb, 1.0f);
+    }
+
+    public static int pack(QVector3 rgb, float alpha) {
+        return (clampChannel(Math.round(alpha * 255.0f)) << COL_LSHIFT_OFST_A) |
+               (clampChannel(Math.round(rgb.getX( ) * 255.0f)) << COL_LSHIFT_OFST_R) |
+               (clampChannel(Math.round(rgb.getY( ) * 255.0f)) << COL_LSHIFT_OFST_G) |
+               (clampChannel(Math.round(rgb.getZ( ) * 255.0f)) << COL_LSHIFT_OFST_B);
+    }
+
+    public static QVector3 unpack(int argb, QVector3 out) {
+        out.set(
+            channel(argb, COL_LSHIFT_OFST_R) / 255.0f,
+            channel(argb, COL_LSHIFT_OFST_G) / 255.0f,
+            channel(argb, COL_LSHIFT_OFST_B) / 255.0f
+        );
+        return out;
+    }
+
+    public static QVector3 rgbToHsv(QVector3 rgb, QVector3 out) {
+        float r   = rgb.getX( );
+        float g   = rgb.getY( );
+        float b   = rgb.getZ( );
+        float max = Math.max(r, Math.max(g, b));
+        float d   = max - Math.min(r, Math.min(g, b));
+        float h;
+        if (d == 0.0f) {
+            h = 0.0f;
+        } else if (max == r) {
+            h = (g - b) / d + (g < b ? 6.0f : 0.0f);
+        } else if (max == g) {
+            h = (b - r) / d + 2.0f;
+        } else {
+            h = (r - g) / d + 4.0f;
+        }
+        out.set(h * 60.0f, max == 0.0f ? 0.0f : d / max, max);
+        return out;
+    }
+
+    public static QVector3 hsvToRgb(QVector3 hsv, QVector3 out) {
+        float h = (hsv.getX( ) % 360.0f + 360.0f) % 360.0f / 60.0f;
+        float s = hsv.getY( );
+        float v = hsv.getZ( );
+        int   i = (int)h;
+        float f = h - i;
+        float p = v * (1.0f - s);
+        float q = v * (1.0f - s * f);
+        float t = v * (1.0f - s * (1.0f - f));
+        switch (i) {
+            case 0:  out.set(v, t, p); break;
+            case 1:  out.set(q, v, p); break;
+            case 2:  out.set(p, v, t); break;
+            case 3:  out.set(p, q, v); break;
+            case 4:  out.set(t, p, v); break;
+            default: out.set(v, p, q); break;
+        }
+        return out;
+    }
+
+    /////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
     public int toInt( ) {
         return colorData;
@@ -199,6 +261,16 @@ public final class QColor implements QUniform<QColor> {
 
     public QColor set(QColor toCopy) {
         this.colorData = toCopy.colorData;
+        return this;
+    }
+
+    public QColor set(QVector3 rgb) {
+        colorData = pack(rgb);
+        return this;
+    }
+
+    public QColor set(QVector3 rgb, float alpha) {
+        colorData = pack(rgb, alpha);
         return this;
     }
 
