@@ -20,9 +20,9 @@ public final class CloudShader extends QShader {
     public static final float CLOUD_BASE           = 40.0f;
     public static final float CLOUD_TOP            = 70.0f;
     public static final float MAX_DISTANCE         = 1000.0f;
-    public static final int   MAX_STEPS            = 16;
+    public static final int   MAX_STEPS            = 20;
     public static final float MIN_STEP             = 2.0f;
-    public static final float STEP_GROWTH          = 0.15f;
+    public static final float STEP_GROWTH          = 0.05f;
     public static final int   LIGHT_STEPS          = 4;
     public static final float LIGHT_STEP           = 4.0f;
     public static final float SHAPE_SCALE          = 0.005f;
