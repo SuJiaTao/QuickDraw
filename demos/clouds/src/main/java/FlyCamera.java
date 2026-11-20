@@ -12,7 +12,7 @@ import ca.bael.QDraw.awt.QWindow;
 public final class FlyCamera {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
-    public static final float MOVE_SPEED = 5.0f;
+    public static final float MOVE_SPEED = 20.0f;
     public static final float TURN_RATE  = 90.0f;
 
     /////////////////////////////////////////////////////////////////

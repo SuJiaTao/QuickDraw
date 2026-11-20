@@ -16,7 +16,7 @@ public final class SkyShader extends QShader {
     public static final int DIRECTION_OUTPUT = 0;
     private static final float    GROUND_FADE = 8.0f;
     private static final QVector3 ZENITH      = new QVector3(0.18f, 0.36f, 0.75f);
-    private static final QVector3 HORIZON     = new QVector3(0.70f, 0.82f, 0.95f);
+    private static final QVector3 HORIZON     = QColor.unpack(0xDFD9E2, new QVector3( )); //new QVector3(0.70f, 0.82f, 0.95f);
     private static final QVector3 GROUND      = QColor.unpack(0x313E50, new QVector3( ));
     private static final float UP_FUZZ = 0.02f;
     private static final float GROUND_COLOR_FUZZ = 0.05f;
