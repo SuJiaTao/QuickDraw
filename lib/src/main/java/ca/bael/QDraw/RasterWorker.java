@@ -1,5 +1,5 @@
 // Bailey JT Brown
-// 2023-2024
+// 2023-2026
 // RasterWorker.java
 
 package ca.bael.QDraw;
@@ -13,22 +13,26 @@ import java.util.concurrent.atomic.AtomicInteger;
 final class RasterWorker {
     ////////////////////////////////////////////////////////////////
     // CONSTANTS
-    private static final float DEPTH_TEST_EPSILON = 0.002f;
-    private static final int   STRIP_HEIGHT       = 8;
+    private static final int STRIP_HEIGHT = 8;
 
     ////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
-    private final QRenderBuffer renderTarget;
+    private QRenderBuffer renderTarget;
     private final RasterSetup raster = new RasterSetup();
     private final QShader.FragmentShaderContext fctx = new QShader.FragmentShaderContext();
     private QShader shader;
     private TriangleQueue triQueue;
     private int stripStart;
     private int stripEnd;
+    private boolean depthTest;
+    private boolean depthWrite;
+    private boolean colorWrite;
+    private QViewer.BlendMode blendMode;
 
     ////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
-    public void rasterize(List<DrawState> queuedDraws, AtomicInteger nextStrip, boolean clearPending) {
+    public void rasterize(List<DrawState> queuedDraws, AtomicInteger nextStrip, boolean clearPending, QRenderBuffer target) {
+        renderTarget = target;
         int height     = renderTarget.getHeight();
         int stripCount = (height + STRIP_HEIGHT - 1) / STRIP_HEIGHT;
         for (int strip = nextStrip.getAndIncrement(); strip < stripCount; strip = nextStrip.getAndIncrement()) {
@@ -55,9 +59,14 @@ final class RasterWorker {
         fctx.textures   = draw.state.slotTextures;
         fctx.sampleType = draw.state.sampleType;
         fctx.fillColor  = draw.state.fillColor;
+        fctx.projection = draw.state.projection;
         fctx.target     = renderTarget;
         fctx.layout     = draw.layout;
         fctx.drawData   = draw.data;
+        depthTest       = draw.state.depthTest;
+        depthWrite      = draw.state.depthWrite;
+        colorWrite      = draw.state.colorWrite;
+        blendMode       = draw.state.blendMode;
         if (fctx.inputs == null || fctx.inputs.length != draw.layout.total) {
             fctx.inputs = new float[draw.layout.total];
         }
@@ -215,8 +224,8 @@ final class RasterWorker {
         // NOTE:
         // since all depths are negative and inverted, the further value
         // will be a smaller negative and hence greater. therefore the failing
-        // depth test will be greater than the previous depth
-        if (invDepth > depthData[pixel] - DEPTH_TEST_EPSILON) {
+        // depth test will be greater than or equal to the previous depth
+        if (depthTest && invDepth >= depthData[pixel]) {
             return;
         }
 
@@ -240,8 +249,17 @@ final class RasterWorker {
         internalWriteGBuffer(pixel);
 
         // BLEND FRAGMENT TO BELOW COLOR AND WRITE TO RENDERTARGET
-        depthData[pixel] = invDepth;
-        colorData[pixel] = QColor.blend(colorData[pixel], fragColor.toInt());
+        if (depthWrite) {
+            depthData[pixel] = invDepth;
+        }
+        if (colorWrite) {
+            int src = fragColor.toInt();
+            colorData[pixel] = switch (blendMode) {
+                case Alpha    -> QColor.blend(colorData[pixel], src);
+                case Additive -> QColor.add(colorData[pixel], QColor.multiply(src, fragColor.getA() / 255.0f));
+                case Replace  -> src;
+            };
+        }
     }
 
     private void internalWriteGBuffer(int pixel) {
@@ -253,11 +271,5 @@ final class RasterWorker {
                 renderTarget.getGBufferLongData(slot)[pixel] = fctx.gbufferLongs[slot];
             }
         }
-    }
-
-    ////////////////////////////////////////////////////////////////
-    // CONSTRUCTORS
-    public RasterWorker(QRenderBuffer renderTarget) {
-        this.renderTarget = renderTarget;
     }
 }

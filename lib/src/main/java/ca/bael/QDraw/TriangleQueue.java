@@ -1,5 +1,5 @@
 // Bailey JT Brown
-// 2023-2024
+// 2023-2026
 // TriangleQueue.java
 
 package ca.bael.QDraw;

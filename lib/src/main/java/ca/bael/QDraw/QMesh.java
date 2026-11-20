@@ -1,5 +1,5 @@
 // Bailey JT Brown
-// 2023-2024
+// 2023-2026
 // QMesh.java
 
 package ca.bael.QDraw;
@@ -10,6 +10,7 @@ import ca.bael.QDraw.QException.PointOfError;
 
 // TODO: re-write to use AttriBuffer/Indexer to internally store data
 
+@QReadDuringFlush
 public final class QMesh {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
@@ -153,23 +154,27 @@ public final class QMesh {
     private QAttribBuffer  posBuffer;
     private QAttribBuffer  uvBuffer;
     private QAttribBuffer  normalBuffer;
-    private QAttribIndexer posIndexer;
-    private QAttribIndexer uvIndexer;
-    private QAttribIndexer normalIndexer;
+    private QIndexBuffer   indexBuffer;
 
     /////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
-    public QAttribIndexer getPosIndexer( ) { return posIndexer; }
-    public QAttribIndexer getUVIndexer( ) { return uvIndexer; }
-    public QAttribIndexer getNormalIndexer( ) { return normalIndexer; }
+    public QIndexBuffer  getIndexBuffer( ) { return indexBuffer; }
+    public QAttribBuffer getPosBuffer( ) { return posBuffer; }
+    public QAttribBuffer getUVBuffer( ) { return uvBuffer; }
+    public QAttribBuffer getNormalBuffer( ) { return normalBuffer; }
 
     public static QMesh screenQuad( ) {
-        float l = QViewer.DEFAULT_VIEWBOUND_LEFT;
-        float r = QViewer.DEFAULT_VIEWBOUND_RIGHT;
-        float b = QViewer.DEFAULT_VIEWBOUND_BOTTOM;
-        float t = QViewer.DEFAULT_VIEWBOUND_TOP;
+        return screenQuad(QViewer.DEFAULT_PROJECTION);
+    }
+
+    public static QMesh screenQuad(QProjection projection) {
+        float d = Math.max(1.0f, 2.0f * projection.near( ));
+        float l = projection.left( ) * d;
+        float r = projection.right( ) * d;
+        float b = projection.bottom( ) * d;
+        float t = projection.top( ) * d;
         return new QMesh(
-            new float[] { l, b, -1.0f,  r, b, -1.0f,  r, t, -1.0f,  l, t, -1.0f },
+            new float[] { l, b, -d,  r, b, -d,  r, t, -d,  l, t, -d },
             new float[] { 0.0f, 0.0f,  1.0f, 0.0f,  1.0f, 1.0f,  0.0f, 1.0f },
             new float[] { 0.0f, 0.0f, 1.0f },
             new int[][] { { 0, 0, 0,  1, 1, 0,  2, 2, 0,  3, 3, 0 } }
@@ -337,15 +342,7 @@ public final class QMesh {
         uvBuffer     = gatherAttribs(uvBuffer, uniqueUVIndicies.toArray( ));
         normalBuffer = gatherAttribs(normalBuffer, uniqueNormalIndicies.toArray( ));
 
-        posIndexer = new QAttribIndexer(vertIndicies, totalVertCount);
-        posIndexer.setAttribBuffer(posBuffer);
-
-        uvIndexer = new QAttribIndexer(posIndexer);
-        uvIndexer.setAttribBuffer(uvBuffer);
-
-        normalIndexer = new QAttribIndexer(posIndexer);
-        normalIndexer.setAttribBuffer(normalBuffer);
-
+        indexBuffer = QIndexBuffer.wrap(vertIndicies);
     }
 
     private static QAttribBuffer gatherAttribs(QAttribBuffer src, int[] srcIndicies) {
@@ -382,13 +379,23 @@ public final class QMesh {
             initMesh(inPosns, inUVs, inNormals, inFaceIndicies);
     }
 
+    public QMesh(
+        QIndexBuffer  inIndexBuffer,
+        QAttribBuffer inPosBuffer,
+        QAttribBuffer inUVBuffer,
+        QAttribBuffer inNormalBuffer
+        ) {
+        indexBuffer  = inIndexBuffer;
+        posBuffer    = inPosBuffer;
+        uvBuffer     = inUVBuffer;
+        normalBuffer = inNormalBuffer;
+    }
+
     public QMesh(QMesh toCopy) {
-        posBuffer     = toCopy.posBuffer;
-        uvBuffer      = toCopy.uvBuffer;
-        normalBuffer  = toCopy.normalBuffer;
-        posIndexer    = toCopy.posIndexer;
-        uvIndexer     = toCopy.uvIndexer;
-        normalIndexer = toCopy.normalIndexer;
+        posBuffer     = new QAttribBuffer(toCopy.posBuffer);
+        uvBuffer      = new QAttribBuffer(toCopy.uvBuffer);
+        normalBuffer  = new QAttribBuffer(toCopy.normalBuffer);
+        indexBuffer   = QIndexBuffer.wrap(toCopy.indexBuffer.getIndicies( ).clone( ));
     }
 
     public QMesh(String objFilePath) {

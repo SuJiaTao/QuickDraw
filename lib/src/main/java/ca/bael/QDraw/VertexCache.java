@@ -1,5 +1,5 @@
 // Bailey JT Brown
-// 2023-2024
+// 2023-2026
 // VertexCache.java
 
 package ca.bael.QDraw;
@@ -19,35 +19,22 @@ final class VertexCache {
 
     ////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
-    public void prepare(QAttribIndexer[] slots, int outputTotal) {
+    public void prepare(int[] indicies, int vertCount, int outputTotal) {
         drawId++;
         total = outputTotal;
-        indicies = null;
-        int size = 0;
-        for (QAttribIndexer indexer : slots) {
-            if (indexer == null) {
-                continue;
-            }
-            if (indicies == null) {
-                indicies = indexer.getIndicies();
-                size = indexer.getAttribCount();
-            } else if (indexer.getIndicies() != indicies) {
-                indicies = null;
-                return;
-            }
+        this.indicies = indicies;
+        if (stamp.length < vertCount) {
+            stamp = new int[vertCount];
+            emitted = new int[vertCount];
+            posn = new float[vertCount * VCTR_NUM_CMPS];
         }
-        if (stamp.length < size) {
-            stamp = new int[size];
-            emitted = new int[size];
-            posn = new float[size * VCTR_NUM_CMPS];
-        }
-        if (outputs.length < size * total) {
-            outputs = new float[size * total];
+        if (outputs.length < vertCount * total) {
+            outputs = new float[vertCount * total];
         }
     }
 
     public int indexOf(int triNum, int triVertNum) {
-        return indicies == null ? -1 : indicies[triNum * Triangle.VERTS_PER_TRI + triVertNum];
+        return indicies[triNum * Triangle.VERTS_PER_TRI + triVertNum];
     }
 
     public boolean load(int idx, Vertex vert) {

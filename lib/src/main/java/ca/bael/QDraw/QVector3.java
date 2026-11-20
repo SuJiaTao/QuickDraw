@@ -1,5 +1,5 @@
 // Bailey JT Brown
-// 2023-2024
+// 2023-2026
 // QVector3.java
 
 package ca.bael.QDraw;

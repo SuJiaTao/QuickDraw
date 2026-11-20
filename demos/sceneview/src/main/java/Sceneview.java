@@ -1,8 +1,11 @@
 // Bailey JT Brown
-// 2024
+// 2024-2026
 // Sceneview.java
 
+import java.awt.event.KeyEvent;
+
 import ca.bael.QDraw.*;
+import ca.bael.QDraw.awt.QWindow;
 import ca.bael.QDraw.QViewer.RenderMode;
 
 public final class Sceneview {
@@ -10,7 +13,8 @@ public final class Sceneview {
     public static final int WINDOW_HEIGHT = 1000;
     public static final int RESOLUTION_X  = WINDOW_WIDTH / 2;
     public static final int RESOLUTION_Y  = WINDOW_HEIGHT / 2;
-    public static final float ASPECT      = (float)RESOLUTION_X / (float)RESOLUTION_Y; 
+    public static final float ASPECT      = (float)RESOLUTION_X / (float)RESOLUTION_Y;
+    public static final float TICK_SECS   = 0.03072f;
     public static void main(String[] args) {
         QVector3 viewPos    = new QVector3( );
         QVector3 viewVel    = new QVector3( );
@@ -19,18 +23,19 @@ public final class Sceneview {
         
         QRenderBuffer frameBuffer = new QRenderBuffer(RESOLUTION_X, RESOLUTION_Y);
         QWindow window = new QWindow("Scene View", WINDOW_WIDTH, WINDOW_HEIGHT);
-        window.setRenderBuffer(frameBuffer);
 
         QViewer viewer = new QViewer(frameBuffer);
-        viewer.setNearClip(-0.05f);
-        viewer.setViewBounds(-ASPECT, ASPECT, -1.0f, 1.0f);
+        viewer.setProjection(QProjection.perspective(90.0f, frameBuffer, 0.05f));
+        FuzzShader fuzzShader = new FuzzShader( );
 
         QMesh    mesh0 = new QMesh(Sceneview.class.getResource("/Mascot_Smooth.obj").getPath());
         QMesh    mesh1 = new QMesh(Sceneview.class.getResource("/Cube.obj").getPath());
         QTexture tex0  = new QTexture(Sceneview.class.getResource("/MascotFuzzy256.png").getPath());
         QTexture tex1  = new QTexture(Sceneview.class.getResource("/Texture_Medium.jpg").getPath());
 
-        float lastTime = (float)(System.nanoTime( ) >> 10);
+        long lastTime = System.nanoTime( );
+        long fpsStart = lastTime;
+        int  fpsFrames = 0;
 
         QLight[] lights = new QLight[] {
             new QLight(new QVector3(5.0f, 1.0f, 3.0f), 5.0f),
@@ -41,30 +46,26 @@ public final class Sceneview {
 
         while (true) {
 
-            float currentTime = (float)(System.nanoTime( ) >> 10);
-            float dt = (currentTime - lastTime) / 6000;
-
-            float sleepMSecs = 5;
-            if (dt < sleepMSecs) continue;
-
+            long currentTime = System.nanoTime( );
+            float ticks = (currentTime - lastTime) * 1e-9f / TICK_SECS;
             lastTime = currentTime;
 
             // UPDATE RENDER MODE BASED ON INPUTS
-            if (window.isCharDownIgnoreCase('U')) {
+            if (window.isKeyDown(KeyEvent.VK_U)) {
                 rMode = RenderMode.CustomShader;
             }
-            if (window.isCharDownIgnoreCase('I')) {
+            if (window.isKeyDown(KeyEvent.VK_I)) {
                 rMode = RenderMode.Material;
             }
-            if (window.isCharDownIgnoreCase('O')) {
+            if (window.isKeyDown(KeyEvent.VK_O)) {
                 rMode = RenderMode.Normal;
             }
-            if (window.isCharDownIgnoreCase('P')) {
+            if (window.isKeyDown(KeyEvent.VK_P)) {
                 rMode = RenderMode.Textured;
             }
 
             // UPDATE VIEW
-            QVector3 moveInput = (window.getInputWASDVector( ).multiply3(0.02f));
+            QVector3 moveInput = (window.getInputWASDVector( ).multiply3(0.02f * ticks));
             viewVel.add(new QVector3(-moveInput.getX( ), 0.0f, moveInput.getY( )));
             final float maxViewVel = 1.0f;
             if (viewVel.magnitude( ) > maxViewVel) {
@@ -77,19 +78,19 @@ public final class Sceneview {
             viewVelCorrectionMatrix.rotate(viewLook.getX( ), 0.0f, 0.0f);
             viewVelCorrectionMatrix.rotate(0.0f, viewLook.getY( ), 0.0f);
             viewVelLookCorrected = QMatrix4x4.multiply(viewVelCorrectionMatrix, viewVel);
-            viewPos.add(viewVelLookCorrected);
-            
-            viewVel.multiply3(0.8f);
+            viewPos.add(viewVelLookCorrected.multiply3(ticks));
 
-            QVector3 lookInput = window.getInputArrowKeysVector( ).multiply3(0.8f);
+            viewVel.multiply3((float)Math.pow(0.8f, ticks));
+
+            QVector3 lookInput = window.getInputArrowKeysVector( ).multiply3(0.8f * ticks);
             viewLookVel.add(new QVector3(-lookInput.getY( ), lookInput.getX()));
             final float maxLookVel = 4.5f;
             if (viewLookVel.magnitude( ) > maxLookVel) {
                 viewLookVel.normalize( );
                 viewLookVel.multiply3(maxLookVel);
             }
-            viewLook.add(viewLookVel);
-            viewLookVel.multiply3(0.85f);
+            viewLook.add(new QVector3(viewLookVel).multiply3(ticks));
+            viewLookVel.multiply3((float)Math.pow(0.85f, ticks));
 
             // SETUP VIEWMATRIX
             QMatrix4x4 viewMatrix = QMatrix4x4.Identity( );
@@ -121,7 +122,7 @@ public final class Sceneview {
             );
 
             viewer.setRenderMode(rMode);
-            viewer.setCustomShader(new FuzzShader( ));
+            viewer.setCustomShader(fuzzShader);
             viewer.setUniformSlot(
                 QViewer.DEFAULT_SHADER_LIGHTS_SLOT,
                 viewLights
@@ -154,7 +155,22 @@ public final class Sceneview {
             viewer.drawMesh(mesh1);
             viewer.flush( );
 
-            window.updateFrame( );
+            window.present(frameBuffer.getColorImage( ));
+
+            fpsFrames++;
+            long now = System.nanoTime( );
+            if (now - fpsStart >= 1_000_000_000L) {
+                System.out.printf("%d fps (%.2f ms/frame, %.2f geom, %.2f raster, %.2f draw, %.2f show)%n",
+                    fpsFrames, (now - fpsStart) / 1e6 / fpsFrames,
+                    viewer.geometryTimer.millisPer(fpsFrames), viewer.rasterTimer.millisPer(fpsFrames),
+                    window.drawTimer.millisPer(fpsFrames), window.showTimer.millisPer(fpsFrames));
+                viewer.geometryTimer.reset( );
+                viewer.rasterTimer.reset( );
+                window.drawTimer.reset( );
+                window.showTimer.reset( );
+                fpsFrames = 0;
+                fpsStart  = now;
+            }
         }
     }
 }

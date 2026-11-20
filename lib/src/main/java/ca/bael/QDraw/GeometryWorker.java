@@ -1,5 +1,5 @@
 // Bailey JT Brown
-// 2023-2024
+// 2023-2026
 // GeometryWorker.java
 
 package ca.bael.QDraw;
@@ -21,7 +21,7 @@ final class GeometryWorker {
 
     ////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
-    private final QRenderBuffer renderTarget;
+    private QRenderBuffer renderTarget;
     private final TriangleQueue triQueue = new TriangleQueue();
     private final QShader.VertexShaderContext vctx = new QShader.VertexShaderContext();
     private final float[] edge01 = new float[VCTR_NUM_CMPS];
@@ -32,7 +32,8 @@ final class GeometryWorker {
 
     ////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
-    public void process(List<DrawState> queuedDraws, AtomicInteger nextDraw) {
+    public void process(List<DrawState> queuedDraws, AtomicInteger nextDraw, QRenderBuffer target) {
+        renderTarget = target;
         triQueue.reset();
         for (int i = nextDraw.getAndIncrement(); i < queuedDraws.size(); i = nextDraw.getAndIncrement()) {
             internalProcessDraw(queuedDraws.get(i));
@@ -47,27 +48,26 @@ final class GeometryWorker {
                     PointOfError.BadState,
                     "Render target unassigned");
         }
-        QAttribIndexer[] slotAttribs = draw.state.slotAttribs;
+        QAttribBuffer[] slotAttribs = draw.state.slotAttribs;
+        int[] indicies = draw.state.indexBuffer.getIndicies();
+        int triCount = draw.state.indexBuffer.getTriCount();
 
-        // ENSURE ALL INDEXERS HAVE THE SAME TRI COUNT
-        int triCount = -1;
-        for (int slot = 0; slot < slotAttribs.length; slot++) {
-            if (slotAttribs[slot] == null)
-                continue;
-            if (triCount == -1) {
-                triCount = slotAttribs[slot].getTriCount();
-                continue;
-            }
-            if (slotAttribs[slot].getTriCount() != triCount) {
+        int vertCount = 0;
+        for (int index : indicies) {
+            if (index < 0) {
                 throw new QException(
-                        PointOfError.BadState,
-                        "Not all vertex attribute slots are the same length.");
+                        PointOfError.InvalidData,
+                        "Negative vertex index: " + index);
             }
+            vertCount = Math.max(vertCount, index + 1);
         }
-        if (triCount == -1) {
-            throw new QException(
-                    PointOfError.BadState,
-                    "No vertex attribute slots set!");
+        for (QAttribBuffer attribs : slotAttribs) {
+            if (attribs != null && attribs.getAttribCount() < vertCount) {
+                throw new QException(
+                        PointOfError.InvalidData,
+                        "Vertex index " + (vertCount - 1) +
+                        " exceeds attribute buffer of size " + attribs.getAttribCount());
+            }
         }
 
         vctx.uniforms = draw.state.slotUniforms;
@@ -86,7 +86,7 @@ final class GeometryWorker {
             vert.shaderOutputs = new float[draw.layout.total];
         }
 
-        vertexCache.prepare(slotAttribs, draw.layout.total);
+        vertexCache.prepare(indicies, vertCount, draw.layout.total);
 
         draw.data = draw.shader.beginDraw(vctx);
         vctx.drawData = draw.data;
@@ -109,15 +109,15 @@ final class GeometryWorker {
             QVector3.sub(edge02, tri.getPosn(0));
             QVector3.cross(tri.normal, edge01, edge02);
 
-            // CULL IF BACKFACING
-            if (internalCheckBackfacing(tri)) {
+            // CULL BY FACING
+            if (internalCheckCulled(tri, draw.state.cullMode)) {
                 continue;
             }
 
             QVector3.scale(tri.normal, 1.0f / QVector3.magnitude(tri.normal));
 
             // CLIP AND RENDER
-            float nearClip = draw.state.nearClip;
+            float nearClip = -draw.state.projection.near();
             if (tri.getPosnZ(0) <= nearClip &&
                 tri.getPosnZ(1) <= nearClip &&
                 tri.getPosnZ(2) <= nearClip) {
@@ -141,9 +141,9 @@ final class GeometryWorker {
     }
 
     private void internalEmitTri(Triangle tri, boolean shared, DrawState draw) {
-        ViewerState view = draw.state;
-        if (internalCheckOutside(tri, VCTR_INDEX_X, view.viewLeft, view.viewRight) ||
-            internalCheckOutside(tri, VCTR_INDEX_Y, view.viewBottom, view.viewTop)) {
+        QProjection proj = draw.state.projection;
+        if (internalCheckOutside(tri, VCTR_INDEX_X, proj.left(), proj.right()) ||
+            internalCheckOutside(tri, VCTR_INDEX_Y, proj.bottom(), proj.top())) {
             return;
         }
 
@@ -170,12 +170,7 @@ final class GeometryWorker {
         offset = triQueue.allocVerts(VCTR_NUM_CMPS + total);
 
         float[] out  = triQueue.verts;
-        float   invZ = 1.0f / vert.posn[VCTR_INDEX_Z];
-        out[offset + VCTR_INDEX_X] = (vert.posn[VCTR_INDEX_X] * -invZ - view.viewLeft) *
-                (renderTarget.getWidth() / (view.viewRight - view.viewLeft));
-        out[offset + VCTR_INDEX_Y] = (vert.posn[VCTR_INDEX_Y] * -invZ - view.viewBottom) *
-                (renderTarget.getHeight() / (view.viewTop - view.viewBottom));
-        out[offset + VCTR_INDEX_Z] = invZ;
+        view.projection.toScreen(vert.posn, renderTarget.getWidth(), renderTarget.getHeight(), out, offset);
         System.arraycopy(vert.shaderOutputs, 0, out, offset + VCTR_NUM_CMPS, total);
 
         vertexCache.setEmitted(idx, offset);
@@ -193,20 +188,16 @@ final class GeometryWorker {
         vctx.outputs = vert.shaderOutputs;
 
         // POPULATE VERTEX SHADER INPUTS
-        QAttribIndexer[] slotAttribs = draw.state.slotAttribs;
+        QAttribBuffer[] slotAttribs = draw.state.slotAttribs;
         for (int slot = 0; slot < slotAttribs.length; slot++) {
             // skip if slot is unused
-            QAttribIndexer indexer = slotAttribs[slot];
-            if (indexer == null) {
+            QAttribBuffer attribs = slotAttribs[slot];
+            if (attribs == null) {
                 continue;
             }
 
-            // populate attribute slot using indexer
-            indexer.index(
-                    tri.triNum,
-                    triVertNum,
-                    0,
-                    vctx.attributes[slot]);
+            // populate attribute slot using vertex index
+            attribs.getAttrib(0, vctx.attributes[slot], idx);
         }
 
         // CALL SHADER
@@ -215,14 +206,18 @@ final class GeometryWorker {
         vertexCache.store(idx, vert);
     }
 
-    private boolean internalCheckBackfacing(Triangle tri) {
+    private boolean internalCheckCulled(Triangle tri, QViewer.CullMode cullMode) {
+        if (cullMode == QViewer.CullMode.None) {
+            return false;
+        }
         // NOTE:
         // if the dot product between the normal is > 0 for the ray
         // from the camera to the center of the tri, then it's backfacing
         QVector3.copy(rayToCenter, tri.getPosn(0));
         QVector3.add(rayToCenter, tri.getPosn(1));
         QVector3.add(rayToCenter, tri.getPosn(2));
-        return (QVector3.dot(tri.normal, rayToCenter) > BACKFACE_CULL_MIN_DOT);
+        float facing = QVector3.dot(tri.normal, rayToCenter);
+        return cullMode == QViewer.CullMode.Back ? facing > BACKFACE_CULL_MIN_DOT : facing < -BACKFACE_CULL_MIN_DOT;
     }
 
     private static boolean internalCheckOutside(Triangle tri, int axis, float lo, float hi) {
@@ -230,11 +225,5 @@ final class GeometryWorker {
         float b = tri.getPosn(1)[axis] * -(1.0f / tri.getPosnZ(1));
         float c = tri.getPosn(2)[axis] * -(1.0f / tri.getPosnZ(2));
         return (a < lo && b < lo && c < lo) || (a > hi && b > hi && c > hi);
-    }
-
-    ////////////////////////////////////////////////////////////////
-    // CONSTRUCTORS
-    public GeometryWorker(QRenderBuffer renderTarget) {
-        this.renderTarget = renderTarget;
     }
 }

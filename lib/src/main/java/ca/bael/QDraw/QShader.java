@@ -1,5 +1,5 @@
 // Bailey JT Brown
-// 2024
+// 2024-2026
 // QShader.java
 
 package ca.bael.QDraw;
@@ -9,6 +9,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import ca.bael.QDraw.QException.PointOfError;
 import ca.bael.QDraw.QShader.ShaderRequirement.RequirementType;
 
+/** {@code beginDraw}, {@code vertexShader} and {@code fragmentShader} are called concurrently from several threads on one instance: do not write fields; keep per-draw values in the {@link QDrawData} returned by {@code beginDraw}. */
+@QReadDuringFlush
 public abstract class QShader {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
@@ -63,10 +65,12 @@ public abstract class QShader {
             return out;
         }
 
+        /** Reused between calls: set before reading, do not retain after returning. */
         public QVector3 position( ) {
             return position;
         }
 
+        /** Reused between calls: set before reading, do not retain after returning. */
         public QVector3 scratchVec3(int index) {
             return scratch[index];
         }
@@ -154,6 +158,7 @@ public abstract class QShader {
         float[]       inputs;
         QSampleable.SampleType sampleType;
         QColor        fillColor;
+        QProjection   projection;
         QDrawData     drawData;
         int           gbufferWritten;
         final QColor  color = new QColor( );
@@ -169,10 +174,12 @@ public abstract class QShader {
 
         /////////////////////////////////////////////////////////////////
         // PUBLIC METHODS
+        /** Reused between calls: set before reading, do not retain after returning. */
         public QColor color( ) {
             return color;
         }
 
+        /** Reused between calls: set before reading, do not retain after returning. */
         public QVector3 scratchVec3(int index) {
             return scratch[index];
         }
@@ -246,6 +253,18 @@ public abstract class QShader {
             return invDepth;
         }
 
+        public QVector3 viewPosition(float invDepth, QVector3 out) {
+            return projection.toView(screenX + 0.5f, screenY + 0.5f, invDepth, target.getWidth( ), target.getHeight( ), out);
+        }
+
+        public QVector3 viewPosition(QVector3 out) {
+            return viewPosition(invDepth, out);
+        }
+
+        public QVector3 viewDirection(QVector3 out) {
+            return projection.viewDirection(screenX + 0.5f, screenY + 0.5f, target.getWidth( ), target.getHeight( ), out);
+        }
+
         public QVector3 faceNormal( ) {
             return new QVector3(normal);
         }
@@ -262,13 +281,23 @@ public abstract class QShader {
             return gbufferSource(textureSlot).getDepth(screenX, screenY);
         }
 
+        public QVector3 gbufferVec3(int textureSlot, int gslot, int x, int y, QVector3 out) {
+            QRenderBuffer source = renderBufferAt(textureSlot);
+            return source.getGBufferVec3(gslot, clampIndex(x, source.getWidth( )), clampIndex(y, source.getHeight( )), out);
+        }
+
+        public long gbufferLong(int textureSlot, int gslot, int x, int y) {
+            QRenderBuffer source = renderBufferAt(textureSlot);
+            return source.getGBufferLong(gslot, clampIndex(x, source.getWidth( )), clampIndex(y, source.getHeight( )));
+        }
+
+        public float gbufferDepth(int textureSlot, int x, int y) {
+            QRenderBuffer source = renderBufferAt(textureSlot);
+            return source.getDepth(clampIndex(x, source.getWidth( )), clampIndex(y, source.getHeight( )));
+        }
+
         private QRenderBuffer gbufferSource(int textureSlot) {
-            if (!(textures[textureSlot] instanceof QRenderBuffer source)) {
-                throw new QException(
-                    PointOfError.InvalidParameter,
-                    "Texture slot " + textureSlot + " does not hold a QRenderBuffer"
-                );
-            }
+            QRenderBuffer source = renderBufferAt(textureSlot);
             if (source.getWidth( ) != target.getWidth( ) || source.getHeight( ) != target.getHeight( )) {
                 throw new QException(
                     PointOfError.InvalidData,
@@ -276,6 +305,20 @@ public abstract class QShader {
                 );
             }
             return source;
+        }
+
+        private QRenderBuffer renderBufferAt(int textureSlot) {
+            if (!(textures[textureSlot] instanceof QRenderBuffer source)) {
+                throw new QException(
+                    PointOfError.InvalidParameter,
+                    "Texture slot " + textureSlot + " does not hold a QRenderBuffer"
+                );
+            }
+            return source;
+        }
+
+        private static int clampIndex(int v, int size) {
+            return Math.max(0, Math.min(v, size - 1));
         }
 
         public void outputGBuffer(int slot, QVector3 v) {

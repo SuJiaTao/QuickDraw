@@ -1,5 +1,5 @@
 // Bailey JT Brown
-// 2023-2024
+// 2023-2026
 // QViwer.java
 
 package ca.bael.QDraw;
@@ -32,15 +32,21 @@ public final class QViewer {
         CustomShader
     };
 
+    public enum CullMode {
+        Back,
+        Front,
+        None
+    };
+
+    public enum BlendMode {
+        Alpha,
+        Additive,
+        Replace
+    };
+
     ////////////////////////////////////////////////////////////////
     // CONSTANTS
-    public static final float MIN_NEAR_CLIP = -0.005f;
-    public static final float DEFAULT_NEAR_CLIP = MIN_NEAR_CLIP;
-
-    public static final float DEFAULT_VIEWBOUND_LEFT = -1.0f;
-    public static final float DEFAULT_VIEWBOUND_RIGHT = 1.0f;
-    public static final float DEFAULT_VIEWBOUND_BOTTOM = -1.0f;
-    public static final float DEFAULT_VIEWBOUND_TOP = 1.0f;
+    public static final QProjection DEFAULT_PROJECTION = QProjection.frustum(-1.0f, 1.0f, -1.0f, 1.0f, 0.005f);
 
     public static final int SHADER_UNIFORM_SLOTS = 16;
     public static final int SHADER_TEXTURE_SLOTS = 16;
@@ -48,12 +54,24 @@ public final class QViewer {
 
     public static final RenderMode DEFAULT_RENDER_MODE = RenderMode.Textured;
     public static final QColor DEFAULT_FILL_COLOR = QColor.White();
+    public static final boolean DEFAULT_DEPTH_TEST = true;
+    public static final boolean DEFAULT_DEPTH_WRITE = true;
+    public static final boolean DEFAULT_COLOR_WRITE = true;
+    public static final CullMode DEFAULT_CULL_MODE = CullMode.Back;
+    public static final BlendMode DEFAULT_BLEND_MODE = BlendMode.Alpha;
     private static final int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
     private static final String[] WORKER_NAMES = {
-        "Kitty",  "Sharky", "Ouppy",  "Froggy", "Solo",   "Bango",  "Tango",
-        "Kiki",   "Bouba",  "Lala",   "Tiki",   "Yana",   "Yote",   "Boyfriend",
-        "Zeta",   "Yanis",  "Pipi",   "Taha",   "Poke",   "Mini",   "Zala",
-        "Potke",  "Lambda", "Saura",  "Boppe",  "Omua",   "Fauna",  "Talle"
+        "Kitty",     "Sharky",    "Ouppy",     "Froggy",    "Solo",
+        "Bango",     "Tango",     "Kiki",      "Bouba",     "Lala",
+        "Tiki",      "Yana",      "Yote",      "Boyfriend", "Zeta",
+        "Yanis",     "Pipi",      "Taha",      "Poke",      "Mini",
+        "Zala",      "Potke",     "Lambda",    "Saura",     "Boppe",
+        "Omua",      "Fauna",     "Talle",     "Coco",      "Bobo",
+        "Zaffa",     "Ibrahim",   "Connaught", "Perseus",   "Foxtrot",
+        "Jojo",      "Sparky",    "Bingo",     "Zotch",     "Blip",
+        "Fafa",      "Nolla",     "Dati",      "Dropsitz",  "Gonitz",
+        "Kango",     "Teapot",    "Bolo",      "Emerie",    "Vergumtrix",
+        "Zelle",     "Fargo",     "Nonzy",     "Obo",       "Lucy"
     };
     private static final String[] WORKER_THREAD_NAMES = internalPickWorkerNames();
     private static final AtomicInteger WORKER_COUNT = new AtomicInteger();
@@ -94,15 +112,27 @@ public final class QViewer {
 
     ////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
-    public void setNearClip(float val) {
-        state.nearClip = Math.min(MIN_NEAR_CLIP, val);
+    public void setProjection(QProjection projection) {
+        if (projection == null) {
+            throw new QException(
+                    PointOfError.NullParameter,
+                    "Projection is null");
+        }
+        state.projection = projection;
     }
 
-    public void setViewBounds(float left, float right, float bottom, float top) {
-        state.viewLeft = left;
-        state.viewRight = right;
-        state.viewBottom = bottom;
-        state.viewTop = top;
+    public QProjection getProjection( ) {
+        return state.projection;
+    }
+
+    public void setRenderTarget(QRenderBuffer target) {
+        if (target == null) {
+            throw new QException(
+                    PointOfError.NullParameter,
+                    "Render target is null");
+        }
+        flush();
+        renderTarget = target;
     }
 
     public void setRenderMode(RenderMode mode) {
@@ -119,6 +149,26 @@ public final class QViewer {
 
     public void setCustomShader(QShader _shader) {
         customShader = _shader;
+    }
+
+    public void setDepthTest(boolean enabled) {
+        state.depthTest = enabled;
+    }
+
+    public void setDepthWrite(boolean enabled) {
+        state.depthWrite = enabled;
+    }
+
+    public void setColorWrite(boolean enabled) {
+        state.colorWrite = enabled;
+    }
+
+    public void setCullMode(CullMode mode) {
+        state.cullMode = mode;
+    }
+
+    public void setBlendMode(BlendMode mode) {
+        state.blendMode = mode;
     }
 
     public void setUniformSlot(
@@ -159,14 +209,19 @@ public final class QViewer {
 
     public void setVertexAttribSlot(
             int slot,
-            QAttribIndexer indexer) {
-        state.slotAttribs[slot] = indexer;
+            QAttribBuffer attribs) {
+        state.slotAttribs[slot] = attribs;
+    }
+
+    public void setIndexBuffer(QIndexBuffer indexBuffer) {
+        state.indexBuffer = indexBuffer;
     }
 
     public void clearVertexAttribSlots() {
         for (int i = 0; i < state.slotAttribs.length; i++) {
             state.slotAttribs[i] = null;
         }
+        state.indexBuffer = null;
     }
 
     public void clearFrame() {
@@ -175,6 +230,11 @@ public final class QViewer {
     }
 
     public void draw() {
+        if (state.indexBuffer == null) {
+            throw new QException(
+                    PointOfError.BadState,
+                    "No index buffer set");
+        }
         QShader shader = internalGetRelevantShader();
         ShaderRequirement[] requirements = shader.requirements();
         internalEnsureShaderRequirements(requirements);
@@ -201,9 +261,10 @@ public final class QViewer {
 
     public void drawMesh(
             QMesh mesh) {
-        setVertexAttribSlot(DEFAULT_SHADER_POSITION_SLOT, mesh.getPosIndexer());
-        setVertexAttribSlot(DEFAULT_SHADER_UV_SLOT, mesh.getUVIndexer());
-        setVertexAttribSlot(DEFAULT_SHADER_NORMAL_SLOT, mesh.getNormalIndexer());
+        setIndexBuffer(mesh.getIndexBuffer());
+        setVertexAttribSlot(DEFAULT_SHADER_POSITION_SLOT, mesh.getPosBuffer());
+        setVertexAttribSlot(DEFAULT_SHADER_UV_SLOT, mesh.getUVBuffer());
+        setVertexAttribSlot(DEFAULT_SHADER_NORMAL_SLOT, mesh.getNormalBuffer());
 
         draw();
 
@@ -229,10 +290,10 @@ public final class QViewer {
     }
 
     private void init(QRenderBuffer target) {
-        renderTarget = target;
+        setRenderTarget(target);
         for (int i = 0; i < WORKER_THREADS; i++) {
-            geometryWorkers.add(new GeometryWorker(target));
-            rasterWorkers.add(new RasterWorker(target));
+            geometryWorkers.add(new GeometryWorker());
+            rasterWorkers.add(new RasterWorker());
         }
     }
 
@@ -261,7 +322,8 @@ public final class QViewer {
                                         typeSpecification +
                                         ". Purpose: " + require.purpose);
                     }
-                    if (state.slotUniforms[require.slot].getClass() != require.uniformClass) {
+                    if (require.uniformClass == null ||
+                        !require.uniformClass.isInstance(state.slotUniforms[require.slot])) {
                         throw new QException(
                                 PointOfError.InvalidData,
                                 "Shader requires uniform slot " + require.slot +
@@ -333,7 +395,7 @@ public final class QViewer {
         List<Callable<Void>> tasks = new ArrayList<>(taskCount);
         for (GeometryWorker worker : geometryWorkers.subList(0, taskCount)) {
             tasks.add(() -> {
-                worker.process(queuedDraws, nextDraw);
+                worker.process(queuedDraws, nextDraw, renderTarget);
                 return null;
             });
         }
@@ -345,7 +407,7 @@ public final class QViewer {
         List<Callable<Void>> tasks = new ArrayList<>(rasterWorkers.size());
         for (RasterWorker worker : rasterWorkers) {
             tasks.add(() -> {
-                worker.rasterize(queuedDraws, nextStrip, clearPending);
+                worker.rasterize(queuedDraws, nextStrip, clearPending, renderTarget);
                 return null;
             });
         }
@@ -375,19 +437,6 @@ public final class QViewer {
     // CONSTRUCTORS
     public QViewer(QRenderBuffer renderTarget) {
         init(renderTarget);
-    }
-
-    public QViewer(QRenderBuffer renderTarget, float aspect) {
-        init(renderTarget);
-        setViewBounds(-aspect, aspect, -1.0f, 1.0f);
-    }
-
-    public QViewer(
-            QRenderBuffer renderTarget,
-            float viewLeft, float viewRight,
-            float viewBottom, float viewTop) {
-        init(renderTarget);
-        setViewBounds(viewLeft, viewRight, viewBottom, viewTop);
     }
 
 }

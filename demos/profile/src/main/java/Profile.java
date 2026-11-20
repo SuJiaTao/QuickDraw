@@ -1,14 +1,16 @@
 // Bailey JT Brown
-// 2024
+// 2023-2026
 // Profile.java
 
 import ca.bael.QDraw.QMatrix4x4;
 import ca.bael.QDraw.QMesh;
+import ca.bael.QDraw.QProjection;
 import ca.bael.QDraw.QRenderBuffer;
 import ca.bael.QDraw.QTexture;
+import ca.bael.QDraw.QTimer;
 import ca.bael.QDraw.QVector3;
 import ca.bael.QDraw.QViewer;
-import ca.bael.QDraw.QWindow;
+import ca.bael.QDraw.awt.QWindow;
 import ca.bael.QDraw.QViewer.RenderMode;
 
 public final class Profile {
@@ -31,8 +33,8 @@ public final class Profile {
         QTexture      tTex  = new QTexture(texPath);
         QMesh         mesh  = new QMesh(meshPath);
 
-        TimerInstance rbTimer  = new TimerInstance();
-        TimerInstance texTimer = new TimerInstance();
+        QTimer rbTimer  = new QTimer();
+        QTimer texTimer = new QTimer();
 
         QMatrix4x4 tMatrix;
 
@@ -62,25 +64,25 @@ public final class Profile {
                     viewer.clearFrame( );
                     viewer.setTextureSlot(0, tTex);
 
-                    texTimer.beginTime();
+                    texTimer.start();
                     viewer.setMatrix(tMatrix);
                     viewer.drawMesh(mesh);
                     viewer.flush( );
-                    texTimer.endTime();
+                    texTimer.stop();
 
-                    window.updateFrame( );
+                    window.present(frameBuffer.getColorImage( ));
 
                     // PROFILE RB
                     viewer.clearFrame( );
                     viewer.setTextureSlot(0, rbTex);
 
-                    rbTimer.beginTime();
+                    rbTimer.start();
                     viewer.setMatrix(tMatrix);
                     viewer.drawMesh(mesh);
                     viewer.flush( );
-                    rbTimer.endTime();
+                    rbTimer.stop();
 
-                    window.updateFrame( );
+                    window.present(frameBuffer.getColorImage( ));
 
                 } else {
 
@@ -88,44 +90,43 @@ public final class Profile {
                     viewer.clearFrame( );
                     viewer.setTextureSlot(0, rbTex);
 
-                    rbTimer.beginTime();
+                    rbTimer.start();
                     viewer.setMatrix(tMatrix);
                     viewer.drawMesh(mesh);
                     viewer.flush( );
-                    rbTimer.endTime();
+                    rbTimer.stop();
 
-                    window.updateFrame( );
+                    window.present(frameBuffer.getColorImage( ));
 
                     // PROFILE TEX
                     viewer.clearFrame( );
                     viewer.setTextureSlot(0, tTex);
 
-                    texTimer.beginTime();
+                    texTimer.start();
                     viewer.setMatrix(tMatrix);
                     viewer.drawMesh(mesh);
                     viewer.flush( );
-                    texTimer.endTime();
+                    texTimer.stop();
 
-                    window.updateFrame( );
+                    window.present(frameBuffer.getColorImage( ));
 
                 }
 
                 time += 6.0f;
             }
 
-            System.out.println("\tTEXAVG: " + texTimer.avgTime());
-            System.out.println("\tRBAVG:  " + rbTimer.avgTime());
-            System.out.println("\tRATIO:  " + 
-                (float)texTimer.avgTime() / (float)rbTimer.avgTime());
+            System.out.printf("\tTEXAVG: %.3f ms%n", texTimer.millisPer((int)SAMPLE_FRAME_COUNT));
+            System.out.printf("\tRBAVG:  %.3f ms%n", rbTimer.millisPer((int)SAMPLE_FRAME_COUNT));
+            System.out.printf("\tRATIO:  %.3f%n",
+                texTimer.millisPer((int)SAMPLE_FRAME_COUNT) / rbTimer.millisPer((int)SAMPLE_FRAME_COUNT));
         }
     }
 
     public static void main(String[] args) {
         window      = new QWindow("Profiling Tests", WINDOW_WIDTH, WINDOW_HEIGHT);
         frameBuffer = new QRenderBuffer(FB_WIDTH, FB_HEIGHT);
-        window.setRenderBuffer(frameBuffer);
         viewer      = new QViewer(frameBuffer);
-        viewer.setViewBounds(-FB_ASPECT, FB_ASPECT, -1.0f, 1.0f);
+        viewer.setProjection(QProjection.perspective(90.0f, frameBuffer, 0.005f));
         viewer.setRenderMode(RenderMode.Textured);
 
         String meshPath = Profile.class.getResource("/Mascot.obj").getPath();

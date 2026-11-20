@@ -1,5 +1,5 @@
 // Bailey JT Brown
-// 2024
+// 2024-2026
 // QTexture.java
 
 package ca.bael.QDraw;
@@ -125,6 +125,16 @@ public class QTexture extends QSampleable {
         colorBuffer[translateIndex(x, y)] = color;
     }
 
+    @Override
+    public void copyTo(QSampleable target) {
+        if (getClass() == QTexture.class && target.getClass() == QTexture.class &&
+            target.getWidth() == width && target.getHeight() == height) {
+            System.arraycopy(colorBuffer, 0, ((QTexture)target).colorBuffer, 0, colorBuffer.length);
+            return;
+        }
+        super.copyTo(target);
+    }
+
     public QTexture fromRenderBuffer(QRenderBuffer rb) {
         QTexture tex = new QTexture(rb.getWidth(), rb.getHeight());
         rb.copyTo(tex);
@@ -155,7 +165,8 @@ public class QTexture extends QSampleable {
             );
         }
 
-        BufferedImage tempImage = toRenderBuffer().getBufferedImage();
+        BufferedImage tempImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        tempImage.setRGB(0, 0, width, height, toRenderBuffer().getColorData(), 0, width);
 
         try {
             boolean result = ImageIO.write(tempImage, "png", outFile);

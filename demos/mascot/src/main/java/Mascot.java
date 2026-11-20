@@ -1,9 +1,10 @@
 // Bailey JT Brown
-// 2024
+// 2024-2026
 // Mascot.java
 
 import ca.bael.QDraw.*;
 import ca.bael.QDraw.QViewer.RenderMode;
+import ca.bael.QDraw.awt.QWindow;
 
 public final class Mascot {
     public static final int WINDOW_WIDTH = 1200;
@@ -33,7 +34,7 @@ public final class Mascot {
         flushTimer.start();
         eyes.flush();
         flushTimer.stop();
-        window.updateFrame();
+        window.present(frameBuffer.getColorImage());
         fpsFrames++;
         long now = System.nanoTime();
         if (now - fpsWindowStart >= 1_000_000_000L) {
@@ -53,16 +54,7 @@ public final class Mascot {
     }
 
     public static final QTexture flipBRInplace(QTexture tex) {
-        for (int i = 0; i < tex.getWidth(); i++) {
-            for (int j = 0; j < tex.getHeight(); j++) {
-                QColor color = new QColor(tex.getColor(i, j));
-                int r = color.getR();
-                int b = color.getB();
-                color.setR(b);
-                color.setB(r);
-                tex.setColor(i, j, color.toInt());
-            }
-        }
+        tex.mapColor(c -> (c & 0xFF00FF00) | ((c >>> 16) & 0xFF) | ((c & 0xFF) << 16));
         return tex;
     }
 
@@ -254,10 +246,8 @@ public final class Mascot {
 
         window = new QWindow("Visual Test", WINDOW_WIDTH, WINDOW_HEIGHT);
         frameBuffer = new QRenderBuffer(FB_WIDTH, FB_HEIGHT);
-        window.setRenderBuffer(frameBuffer);
         eyes = new QViewer(frameBuffer);
-        eyes.setViewBounds(-FB_ASPECT, FB_ASPECT, -1.0f, 1.0f);
-        eyes.setNearClip(-0.4f);
+        eyes.setProjection(QProjection.perspective(90.0f, frameBuffer, 0.4f));
 
         while (true) {
             RegularMascot();
