@@ -7,6 +7,7 @@ import ca.bael.QDraw.QMesh;
 import ca.bael.QDraw.QProjection;
 import ca.bael.QDraw.QRenderBuffer;
 import ca.bael.QDraw.QTexture;
+import ca.bael.QDraw.QTimer;
 import ca.bael.QDraw.QVector3;
 import ca.bael.QDraw.QViewer;
 import ca.bael.QDraw.awt.QWindow;
@@ -32,8 +33,8 @@ public final class Profile {
         QTexture      tTex  = new QTexture(texPath);
         QMesh         mesh  = new QMesh(meshPath);
 
-        TimerInstance rbTimer  = new TimerInstance();
-        TimerInstance texTimer = new TimerInstance();
+        QTimer rbTimer  = new QTimer();
+        QTimer texTimer = new QTimer();
 
         QMatrix4x4 tMatrix;
 
@@ -63,11 +64,11 @@ public final class Profile {
                     viewer.clearFrame( );
                     viewer.setTextureSlot(0, tTex);
 
-                    texTimer.beginTime();
+                    texTimer.start();
                     viewer.setMatrix(tMatrix);
                     viewer.drawMesh(mesh);
                     viewer.flush( );
-                    texTimer.endTime();
+                    texTimer.stop();
 
                     window.present(frameBuffer.getColorImage( ));
 
@@ -75,11 +76,11 @@ public final class Profile {
                     viewer.clearFrame( );
                     viewer.setTextureSlot(0, rbTex);
 
-                    rbTimer.beginTime();
+                    rbTimer.start();
                     viewer.setMatrix(tMatrix);
                     viewer.drawMesh(mesh);
                     viewer.flush( );
-                    rbTimer.endTime();
+                    rbTimer.stop();
 
                     window.present(frameBuffer.getColorImage( ));
 
@@ -89,11 +90,11 @@ public final class Profile {
                     viewer.clearFrame( );
                     viewer.setTextureSlot(0, rbTex);
 
-                    rbTimer.beginTime();
+                    rbTimer.start();
                     viewer.setMatrix(tMatrix);
                     viewer.drawMesh(mesh);
                     viewer.flush( );
-                    rbTimer.endTime();
+                    rbTimer.stop();
 
                     window.present(frameBuffer.getColorImage( ));
 
@@ -101,11 +102,11 @@ public final class Profile {
                     viewer.clearFrame( );
                     viewer.setTextureSlot(0, tTex);
 
-                    texTimer.beginTime();
+                    texTimer.start();
                     viewer.setMatrix(tMatrix);
                     viewer.drawMesh(mesh);
                     viewer.flush( );
-                    texTimer.endTime();
+                    texTimer.stop();
 
                     window.present(frameBuffer.getColorImage( ));
 
@@ -114,10 +115,10 @@ public final class Profile {
                 time += 6.0f;
             }
 
-            System.out.println("\tTEXAVG: " + texTimer.avgTime());
-            System.out.println("\tRBAVG:  " + rbTimer.avgTime());
-            System.out.println("\tRATIO:  " + 
-                (float)texTimer.avgTime() / (float)rbTimer.avgTime());
+            System.out.printf("\tTEXAVG: %.3f ms%n", texTimer.millisPer((int)SAMPLE_FRAME_COUNT));
+            System.out.printf("\tRBAVG:  %.3f ms%n", rbTimer.millisPer((int)SAMPLE_FRAME_COUNT));
+            System.out.printf("\tRATIO:  %.3f%n",
+                texTimer.millisPer((int)SAMPLE_FRAME_COUNT) / rbTimer.millisPer((int)SAMPLE_FRAME_COUNT));
         }
     }
 

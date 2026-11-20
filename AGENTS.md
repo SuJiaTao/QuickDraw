@@ -43,7 +43,7 @@ Defined in [`settings.gradle`](settings.gradle):
 - **`demos/make-fuzz-texture/`** (`application` plugin, mainClass = `MakeFuzzTexture`):
   - Loads `/Mascot256_AltEyes.png`, applies `QSampleable.ColorMapSpacialFunction`, and saves to `demos/make-fuzz-texture/out/Mascot256_AltEyes.png`.
 - **`demos/profile/`** (`application` plugin, mainClass = `Profile`):
-  - Profiles rendering frame times (`TimerInstance`) alternating between chunked `QTexture` and linear `QRenderBuffer` across 4 texture resolutions.
+  - Profiles rendering frame times (`QTimer`) alternating between chunked `QTexture` and linear `QRenderBuffer` across 4 texture resolutions.
 
 ---
 

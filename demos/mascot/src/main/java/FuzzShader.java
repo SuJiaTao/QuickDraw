@@ -80,8 +80,8 @@ public class FuzzShader extends QShader {
         // TRANSFORM VERTEX AND NORMALS
         QMatrix4x4 normalMtr = vctx.drawData(FuzzData.class).normalMtr( );
         QMatrix4x4 transform = vctx.uniform(SHADER_MATRIX_SLOT, QMatrix4x4.class);
-        QVector3   vertexPos = transform.transformPoint(vctx.attribVec3(SHADER_POSITION_SLOT));
-        QVector3   normal    = normalMtr.transformDir(vctx.attribVec3(SHADER_NORMAL_SLOT)).normalize( );
+        QVector3   vertexPos = transform.transformPoint(vctx.attribVec3(SHADER_POSITION_SLOT, vctx.position( )));
+        QVector3   normal    = normalMtr.transformDir(vctx.attribVec3(SHADER_NORMAL_SLOT, vctx.scratchVec3(0))).normalize( );
 
         vctx.output(SHADER_POSITION_SLOT, vertexPos);
         vctx.forward(SHADER_UV_SLOT);
@@ -94,37 +94,38 @@ public class FuzzShader extends QShader {
         FragmentShaderContext fctx
     ) {
         // RETRIEVE FRAG INFO
-        QVector3    pos    = fctx.inputVec3(SHADER_POSITION_SLOT);
-        float[]     uv     = fctx.input(SHADER_UV_SLOT, new float[2]);
-        QVector3    normal = fctx.inputVec3(SHADER_NORMAL_SLOT);
+        QVector3    pos    = fctx.inputVec3(SHADER_POSITION_SLOT, fctx.scratchVec3(0));
+        QVector3    normal = fctx.inputVec3(SHADER_NORMAL_SLOT, fctx.scratchVec3(1));
         QSampleable tex    = fctx.texture(SHADER_TEXTURE_SLOT);
         
         // WIGGLE UVS
         final float randDir       = seededRandom(fctx);
         final float wigglemag     = 0.004f;
         final float halfwigglemag = wigglemag * 0.5f;
-        uv[0] += (randDir * wigglemag) - halfwigglemag;
-        uv[1] += (randDir * wigglemag) - halfwigglemag;
+        float u = fctx.input(SHADER_UV_SLOT, 0) + (randDir * wigglemag) - halfwigglemag;
+        float v = fctx.input(SHADER_UV_SLOT, 1) + (randDir * wigglemag) - halfwigglemag;
 
         // SAMPLE TEXTURE
-        QColor texCol = new QColor(tex.sample(uv[0], uv[1], QSampleable.SampleType.Repeat));
+        QColor texCol = fctx.color( ).set(tex.sample(u, v, QSampleable.SampleType.Repeat));
 
         // GENERATE RANDOM NORMAL OFFSET BASED ON COLOR
-        QVector3 randOffset = seededRandomVector(texCol.toInt( )).multiply3(0.3f);
+        int seed = texCol.toInt( );
+        normal.set(
+            normal.getX( ) + 0.3f * seededRandom((seed << 2) + 1),
+            normal.getY( ) + 0.3f * seededRandom((seed << 2) + 2),
+            normal.getZ( ) + 0.3f * seededRandom((seed << 2) + 3)
+        );
         
         // APPLY SIMPLE PHONG SHADING
         float ambient      = 0.4f;
         float diffuseAccum = 0.0f;
         QLights  lights  = fctx.uniform(SHADER_LIGHTS_SLOT, QLights.class);
-        QVector3 toLight = new QVector3( );
+        QVector3 toLight = fctx.scratchVec3(2);
         for (int i = 0; i < lights.count( ); i++) {
             QLight light = lights.get(i);
             float attenuation = light.illuminate(pos, toLight);
 
-            float diffuse = Math.max(0.0f, QVector3.dot(
-                normal.copy( ).add(randOffset),
-                toLight
-            ));
+            float diffuse = Math.max(0.0f, QVector3.dot(normal, toLight));
 
             float phong = (float)Math.pow(diffuse, 10.0f);
 

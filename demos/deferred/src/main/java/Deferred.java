@@ -46,7 +46,8 @@ public final class Deferred {
 
     public static final QMesh      MASCOT_MESH    = new QMesh(Deferred.class.getResource("/Mascot_Smooth.obj").getPath());
     public static final QMesh      SPHERE_MESH    = new QMesh(Deferred.class.getResource("/UVSphere_Low.obj").getPath());
-    public static final QMesh      SCREEN_QUAD    = QMesh.screenQuad();
+    public static final QProjection PROJECTION    = QProjection.perspective(90.0f, FB_ASPECT, 0.005f);
+    public static final QMesh      SCREEN_QUAD    = QMesh.screenQuad(PROJECTION);
     public static final QTexture   MASCOT_TEXTURE = new QTexture(Deferred.class.getResource("/MascotFuzzy256.png").getPath());
     public static final QMaterial  LIT_MATERIAL   = new QMaterial(new QColor(0x28, 0x28, 0x28), QColor.White(), QColor.White(), 32.0f);
     public static final QScalar    MASCOT_ID      = new QScalar(GBufferShader.ID_MASCOT);
@@ -88,13 +89,6 @@ public final class Deferred {
                 .translate(0.0f, 0.0f, -CAMERA_DISTANCE);
     }
 
-    private static QMatrix4x4 inverseViewMatrix(float yaw) {
-        return QMatrix4x4.Identity()
-                .translate(0.0f, 0.0f, CAMERA_DISTANCE)
-                .rotate(-CAMERA_PITCH, 0.0f, 0.0f)
-                .rotate(0.0f, -yaw, 0.0f);
-    }
-
     private static QMatrix4x4 modelView(QMatrix4x4 view, QVector3 position, float scale) {
         return QMatrix4x4.multiply(QMatrix4x4.TRS(position, QVector3.Zero(), QVector3.One().multiply3(scale)), view);
     }
@@ -108,17 +102,18 @@ public final class Deferred {
         gbuffer.attachGBuffer(GBufferShader.ID_GBUFFER, GBufferFormat.Long);
 
         QViewer geomPass = new QViewer(gbuffer);
-        geomPass.setProjection(QProjection.perspective(90.0f, gbuffer, 0.005f));
+        geomPass.setProjection(PROJECTION);
         geomPass.setRenderMode(RenderMode.CustomShader);
         geomPass.setCustomShader(new GBufferShader());
 
         QViewer lightPass = new QViewer(frameBuffer);
+        lightPass.setProjection(PROJECTION);
         lightPass.setRenderMode(RenderMode.CustomShader);
         lightPass.setDepthTest(false);
         lightPass.setDepthWrite(false);
         float halfX = 0.5f * LATTICE_X * LATTICE_SPACING;
         float halfZ = 0.5f * LATTICE_Z * LATTICE_SPACING;
-        lightPass.setCustomShader(new LightingShader(FB_WIDTH, FB_HEIGHT, -FB_ASPECT, FB_ASPECT, -1.0f, 1.0f,
+        lightPass.setCustomShader(new LightingShader(
             new QVector3(-halfX, -0.5f * MASCOT_HEIGHT, -halfZ), new QVector3(halfX, 0.5f * MASCOT_HEIGHT, halfZ)));
 
         int     view       = LightingShader.VIEW_LIT;
@@ -177,7 +172,7 @@ public final class Deferred {
             lightPass.setLights(new QLights(lights));
             lightPass.setUniformSlot(QViewer.DEFAULT_SHADER_MATERIAL_SLOT, LIT_MATERIAL);
             lightPass.setUniformSlot(LightingShader.VIEW_MODE_UNIFORM_SLOT, new QScalar(view));
-            lightPass.setUniformSlot(LightingShader.INV_VIEW_UNIFORM_SLOT, inverseViewMatrix(yaw));
+            lightPass.setUniformSlot(LightingShader.INV_VIEW_UNIFORM_SLOT, viewMtr.inverse());
             lightPass.drawMesh(SCREEN_QUAD);
             lightPass.flush();
             window.present(frameBuffer.getColorImage());

@@ -54,16 +54,7 @@ public final class Mascot {
     }
 
     public static final QTexture flipBRInplace(QTexture tex) {
-        for (int i = 0; i < tex.getWidth(); i++) {
-            for (int j = 0; j < tex.getHeight(); j++) {
-                QColor color = new QColor(tex.getColor(i, j));
-                int r = color.getR();
-                int b = color.getB();
-                color.setR(b);
-                color.setB(r);
-                tex.setColor(i, j, color.toInt());
-            }
-        }
+        tex.mapColor(c -> (c & 0xFF00FF00) | ((c >>> 16) & 0xFF) | ((c & 0xFF) << 16));
         return tex;
     }
 
