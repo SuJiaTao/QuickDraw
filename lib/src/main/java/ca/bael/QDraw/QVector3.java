@@ -20,9 +20,9 @@ public final class QVector3 implements QUniform<QVector3> {
 
     private static final float[] COMPONENTS_ZERO = { 0.0f, 0.0f, 0.0f };
     private static final float[] COMPONENTS_ONE  = { 1.0f, 1.0f, 1.0f };
-    private static final float[] COMPONENTS_X    = { 0.0f, 0.0f, 0.0f };
-    private static final float[] COMPONENTS_Y    = { 0.0f, 0.0f, 0.0f };
-    private static final float[] COMPONENTS_Z    = { 0.0f, 0.0f, 0.0f };
+    private static final float[] COMPONENTS_X    = { 1.0f, 0.0f, 0.0f };
+    private static final float[] COMPONENTS_Y    = { 0.0f, 1.0f, 0.0f };
+    private static final float[] COMPONENTS_Z    = { 0.0f, 0.0f, 1.0f };
 
     public static QVector3 Zero( ) {
         return new QVector3(COMPONENTS_ZERO);
@@ -164,6 +164,39 @@ public final class QVector3 implements QUniform<QVector3> {
         return this;
     }
 
+    public static QVector3 multiply(QVector3 v1, QVector3 v2) {
+        QVector3 rvec = v1.copy();
+        rvec.multiply(v2);
+        return rvec;
+    }
+
+    public QVector3 multiply(QVector3 other) {
+        multiply(components, other.components);
+        return this;
+    }
+
+    public static QVector3 fma(QVector3 v, QVector3 dir, float factor) {
+        QVector3 rvec = v.copy();
+        rvec.fma(dir, factor);
+        return rvec;
+    }
+
+    public QVector3 fma(QVector3 dir, float factor) {
+        fma(components, dir.components, factor);
+        return this;
+    }
+
+    public static QVector3 lerp(QVector3 from, QVector3 to, float t) {
+        QVector3 rvec = from.copy();
+        rvec.lerp(to, t);
+        return rvec;
+    }
+
+    public QVector3 lerp(QVector3 to, float t) {
+        lerp(components, to.components, t);
+        return this;
+    }
+
     public void set(QVector3 other) {
         set(other.getComponents());
     }
@@ -222,6 +255,24 @@ public final class QVector3 implements QUniform<QVector3> {
         v[VCTR_INDEX_X] *= fac;
         v[VCTR_INDEX_Y] *= fac;
         v[VCTR_INDEX_Z] *= fac;
+    }
+
+    static void multiply(float[] v1, float[] v2) {
+        v1[VCTR_INDEX_X] *= v2[VCTR_INDEX_X];
+        v1[VCTR_INDEX_Y] *= v2[VCTR_INDEX_Y];
+        v1[VCTR_INDEX_Z] *= v2[VCTR_INDEX_Z];
+    }
+
+    static void fma(float[] v, float[] dir, float fac) {
+        v[VCTR_INDEX_X] += dir[VCTR_INDEX_X] * fac;
+        v[VCTR_INDEX_Y] += dir[VCTR_INDEX_Y] * fac;
+        v[VCTR_INDEX_Z] += dir[VCTR_INDEX_Z] * fac;
+    }
+
+    static void lerp(float[] from, float[] to, float t) {
+        from[VCTR_INDEX_X] += (to[VCTR_INDEX_X] - from[VCTR_INDEX_X]) * t;
+        from[VCTR_INDEX_Y] += (to[VCTR_INDEX_Y] - from[VCTR_INDEX_Y]) * t;
+        from[VCTR_INDEX_Z] += (to[VCTR_INDEX_Z] - from[VCTR_INDEX_Z]) * t;
     }
 
     static float dot(float[] v1, float[] v2) {
