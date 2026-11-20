@@ -65,7 +65,7 @@ When modifying existing classes or adding new ones to `ca.bael.QDraw`, please fo
    - The core library (`:lib`) relies strictly on standard Java SE / AWT / Swing / ImageIO APIs. Do not introduce third-party runtime dependencies without prior discussion.
 
 2. **Naming Conventions**:
-   - Public library classes in `ca.bael.QDraw` are prefixed with `Q` (e.g., `QViewer`, `QShader`, `QMesh`, `QTexture`, `QRenderBuffer`, `QVector3`, `QMatrix4x4`, `QColor`, `QMath`, `QWindow`, `QLight`, `QMaterial`, `QAttribBuffer`, `QIndexBuffer`, `QException`, `QSampleable`).
+   - Public library classes in `ca.bael.QDraw` are prefixed with `Q`.
    - Internal helper methods on `QViewer` are prefixed with `internal` (e.g., `internalDraw`, `internalClipTri`).
    - Constants use `UPPER_SNAKE_CASE`.
 
