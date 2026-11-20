@@ -184,6 +184,20 @@ public final class Expects {
         assertEquals(new QVector3(0.0f, 1.0f, 0.0f), QQuaternion.fromAxisAngle(axisZ, -90.0f).rotate(new QVector3(1.0f, 0.0f, 0.0f)));
     }
 
+    @Test
+    void MipTest() {
+        QTexture tex = new QTexture(2, 1);
+        tex.setColor(0, 0, 0xFF000000);
+        tex.setColor(1, 0, 0xFFFFFFFF);
+        assertEquals(0xFF7F7F7F, tex.sample(0.5f, 0.5f, QSampleable.SampleType.Clamp, QSampleable.FilterType.Bilinear));
+        assertEquals(0xFFFFFFFF, tex.sample(0.75f, 0.5f));
+        QMipTexture mips = new QMipTexture(tex);
+        assertEquals(2, mips.getLevelCount());
+        assertEquals(0xFF808080, mips.getLevel(1).getColor(0, 0));
+        assertEquals(0xFF808080, mips.sampleLod(0.5f, 0.5f, 1.0f, QSampleable.SampleType.Clamp, QSampleable.FilterType.Bilinear));
+        assertEquals(0xFF808080, mips.sampleLod(0.5f, 0.5f, 0.6f, QSampleable.SampleType.Clamp, QSampleable.FilterType.Nearest));
+    }
+
     @Test 
     public void MathTest() {
         QMatrix4x4 mat0 = QMatrix4x4.translationMatrix(1.0f, 2.0f, 3.0f);

@@ -5,7 +5,6 @@
 package ca.bael.QDraw;
 
 import java.awt.image.*;
-import ca.bael.QDraw.QException.PointOfError;
 
 public abstract class QSampleable {
     /////////////////////////////////////////////////////////////////
@@ -19,6 +18,11 @@ public abstract class QSampleable {
         Cutoff,
         Clamp,
         Repeat
+    };
+
+    public enum FilterType {
+        Nearest,
+        Bilinear
     };
 
     /////////////////////////////////////////////////////////////////
@@ -57,43 +61,65 @@ public abstract class QSampleable {
         }
     }
 
-    public int sample(
-        float u,
-        float v,
-        SampleType sampleType
-    ) {
-        // refer to
-        // https://github.com/SuJiaTao/Caesium/blob/master/csm_fragment.h
-        switch (sampleType) {
-            case Cutoff:
-                if (u < 0.0f || u >= 1.0f || v < 0.0f || v >= 1.0f) {
-                    return NO_SAMPLE_COLOR;
-                }
-                break;
+    public final int sample(float u, float v) {
+        return sample(u, v, SampleType.Repeat, FilterType.Nearest);
+    }
 
-            case Clamp:
-                u = Math.min(1.0f, Math.max(u, 0.0f));
-                v = Math.min(1.0f, Math.max(v, 0.0f));
-                break;
+    public final int sample(float u, float v, SampleType sampleType) {
+        return sample(u, v, sampleType, FilterType.Nearest);
+    }
 
-            case Repeat:
-                u = u - (float)Math.floor((float)u);
-                v = v - (float)Math.floor((float)v);
-                break;
-        
-            default:
-                throw new QException(
-                    PointOfError.BadState, 
-                    "Invalid sample type: " + sampleType.toString()
-                );
+    public final int sample(float u, float v, SampleType sampleType, FilterType filterType) {
+        if (sampleType == SampleType.Cutoff && (u < 0.0f || u >= 1.0f || v < 0.0f || v >= 1.0f)) {
+            return NO_SAMPLE_COLOR;
         }
+        return filterType == FilterType.Bilinear
+            ? doSampleBilinear(u, v, sampleType)
+            : doSampleNearest(u, v, sampleType);
+    }
 
-        int texCoordX = (int)((float)getWidth() * u);
-        int texCoordY = (int)((float)getHeight() * v);
-        texCoordX = Math.max(0, Math.min(texCoordX, getWidth() - 1));
-        texCoordY = Math.max(0, Math.min(texCoordY, getHeight() - 1));
-
+    /////////////////////////////////////////////////////////////////
+    // PROTECTED METHODS
+    protected int doSampleNearest(float u, float v, SampleType sampleType) {
+        if (sampleType == SampleType.Repeat) {
+            u = u - (float)Math.floor(u);
+            v = v - (float)Math.floor(v);
+        }
+        int texCoordX = Math.max(0, Math.min((int)(getWidth( ) * u), getWidth( ) - 1));
+        int texCoordY = Math.max(0, Math.min((int)(getHeight( ) * v), getHeight( ) - 1));
         return getColor(texCoordX, texCoordY);
+    }
+
+    protected int doSampleBilinear(float u, float v, SampleType sampleType) {
+        float x  = u * getWidth( ) - 0.5f;
+        float y  = v * getHeight( ) - 0.5f;
+        int   x0 = (int)Math.floor(x);
+        int   y0 = (int)Math.floor(y);
+        int   tx = (int)((x - x0) * 256.0f);
+        int   ty = (int)((y - y0) * 256.0f);
+        int   x1 = wrapCoord(x0 + 1, getWidth( ), sampleType);
+        int   y1 = wrapCoord(y0 + 1, getHeight( ), sampleType);
+        x0 = wrapCoord(x0, getWidth( ), sampleType);
+        y0 = wrapCoord(y0, getHeight( ), sampleType);
+        return lerpARGB(
+            lerpARGB(getColor(x0, y0), getColor(x1, y0), tx),
+            lerpARGB(getColor(x0, y1), getColor(x1, y1), tx),
+            ty
+        );
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // PACKAGE METHODS
+    static int lerpARGB(int a, int b, int t) {
+        int rb = ((a & 0x00FF00FF) * (256 - t) + (b & 0x00FF00FF) * t) >>> 8 & 0x00FF00FF;
+        int ag = (((a >>> 8) & 0x00FF00FF) * (256 - t) + ((b >>> 8) & 0x00FF00FF) * t) & 0xFF00FF00;
+        return rb | ag;
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // PRIVATE METHODS
+    private static int wrapCoord(int c, int size, SampleType sampleType) {
+        return sampleType == SampleType.Repeat ? Math.floorMod(c, size) : Math.max(0, Math.min(c, size - 1));
     }
 
     /////////////////////////////////////////////////////////////////
