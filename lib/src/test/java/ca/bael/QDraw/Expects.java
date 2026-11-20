@@ -276,4 +276,16 @@ public final class Expects {
         mat0.transformDir(temp1);
         assertArrayEquals(new float[] { 1.0f, 2.0f, 3.0f }, temp1);
     }
+
+    @Test
+    void RandomTest() {
+        QShader.VertexShaderContext   vctx = new QShader.VertexShaderContext();
+        QShader.FragmentShaderContext fctx = new QShader.FragmentShaderContext();
+        for (int i = 0; i < 10000; i++) {
+            for (float r : new float[] { QShader.random(), vctx.random(), fctx.random() }) {
+                assertTrue(r >= 0.0f && r < 1.0f, "random out of [0, 1): " + r);
+            }
+        }
+        assertNotEquals(vctx.random(), vctx.random());
+    }
 }

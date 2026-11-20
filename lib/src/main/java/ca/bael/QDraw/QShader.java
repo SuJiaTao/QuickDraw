@@ -4,7 +4,8 @@
 
 package ca.bael.QDraw;
 
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import ca.bael.QDraw.QException.PointOfError;
 import ca.bael.QDraw.QShader.ShaderRequirement.RequirementType;
@@ -16,6 +17,7 @@ public abstract class QShader {
     // CONSTANTS
     public static final int RANDOM_GRANULATIRY        = 0xFFFF;
     public static final float NORMALIZATION_FACTOR    = 1.0f / (float)RANDOM_GRANULATIRY;
+    private static final float RANDOM_FLOAT_SCALE     = 0x1.0p-24f;
     public static final int VERTEX_SHADER_MAX_OUTPUTS = 8;
     public static final int VERTEX_SCRATCH_VEC3S      = 4;
     public static final int FRAGMENT_SCRATCH_VEC3S    = 4;
@@ -44,6 +46,7 @@ public abstract class QShader {
         float[]       outputs;
         int           written;
         QDrawData     drawData;
+        int           rngState = internalNewRngState( );
         final QVector3 position = new QVector3( );
         final QVector3[] scratch = new QVector3[VERTEX_SCRATCH_VEC3S];
 
@@ -55,6 +58,16 @@ public abstract class QShader {
 
         /////////////////////////////////////////////////////////////////
         // PUBLIC METHODS
+        /** Fast, low-quality random in [0, 1). State is private to this context's worker thread. */
+        public float random( ) {
+            int s = rngState;
+            s ^= s << 13;
+            s ^= s >>> 17;
+            s ^= s << 5;
+            rngState = s;
+            return (s >>> 8) * RANDOM_FLOAT_SCALE;
+        }
+
         public QVector3 attribVec3(int slot) {
             return new QVector3(attributes[slot]);
         }
@@ -161,6 +174,7 @@ public abstract class QShader {
         QProjection   projection;
         QDrawData     drawData;
         int           gbufferWritten;
+        int           rngState = internalNewRngState( );
         final QColor  color = new QColor( );
         final float[] gbufferFloats = new float[QRenderBuffer.GBUFFER_SLOTS * 3];
         final long[]  gbufferLongs  = new long[QRenderBuffer.GBUFFER_SLOTS];
@@ -174,6 +188,16 @@ public abstract class QShader {
 
         /////////////////////////////////////////////////////////////////
         // PUBLIC METHODS
+        /** Fast, low-quality random in [0, 1). State is private to this context's worker thread. */
+        public float random( ) {
+            int s = rngState;
+            s ^= s << 13;
+            s ^= s >>> 17;
+            s ^= s << 5;
+            rngState = s;
+            return (s >>> 8) * RANDOM_FLOAT_SCALE;
+        }
+
         /** Reused between calls: set before reading, do not retain after returning. */
         public QColor color( ) {
             return color;
@@ -487,9 +511,15 @@ public abstract class QShader {
 
     /////////////////////////////////////////////////////////////////
     // BUILT IN SHADER FUNCTIONS
-    private static AtomicLong _seedUniquifier = new AtomicLong(0x5EED);
+    private static final AtomicInteger RNG_SEED_SOURCE = new AtomicInteger(0x5EED);
+
+    private static int internalNewRngState( ) {
+        return (RNG_SEED_SOURCE.addAndGet(0x9E3779B9) ^ (int)System.nanoTime( )) | 1;
+    }
+
+    /** Thread-safe; prefer the shader context's {@code random()} inside shaders. */
     public static float random( ) {
-        return seededRandom((int)(_seedUniquifier.incrementAndGet( ) + System.nanoTime( )));
+        return ThreadLocalRandom.current( ).nextFloat( );
     }
 
     public static float seededRandom(float seed) {
@@ -498,7 +528,6 @@ public abstract class QShader {
 
     public static float seededRandom(int iSeed) {
         // simple XORSHIFT
-        iSeed *= iSeed;
         iSeed ^= (iSeed <<  13);
         iSeed ^= (iSeed >>> 17);
         iSeed ^= (iSeed <<  5);
@@ -519,7 +548,12 @@ public abstract class QShader {
     }
 
     public static QVector3 randomVector( ) {
-        return new QVector3(random( ), random( ), random( ));
+        return randomVector(new QVector3());
+    }
+
+    public static QVector3 randomVector(QVector3 out) {
+        out.set(random(), random(), random());
+        return out;
     }
 
     public static QVector3 seededRandomVector(float flt) {
