@@ -222,6 +222,23 @@ public final class Expects {
         assertSame(floats, floats.snapshot());
     }
 
+    @Test
+    void CopyAndReadTest() {
+        assertThrows(QException.class, () -> new QTexture(2, 2).copyTo(new QImage(3, 2)));
+
+        QMesh mesh = QMesh.screenQuad();
+        QMesh copy = new QMesh(mesh);
+        copy.getPosBuffer().set(0, 9.0f, 9.0f, 9.0f);
+        assertNotEquals(9.0f, mesh.getPosBuffer().getBuffer()[0]);
+
+        QRenderBuffer rb = new QRenderBuffer(4, 2);
+        rb.setDepth(3, 1, -0.5f);
+        QShader.FragmentShaderContext fctx = new QShader.FragmentShaderContext();
+        fctx.textures = new QSampleable[] { rb };
+        assertEquals(-0.5f, fctx.gbufferDepth(0, 3, 1));
+        assertEquals(-0.5f, fctx.gbufferDepth(0, 10, 10));
+    }
+
     @Test 
     public void MathTest() {
         QMatrix4x4 mat0 = QMatrix4x4.translationMatrix(1.0f, 2.0f, 3.0f);

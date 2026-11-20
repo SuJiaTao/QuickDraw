@@ -5,6 +5,7 @@
 package ca.bael.QDraw;
 
 import java.awt.image.*;
+import ca.bael.QDraw.QException.PointOfError;
 
 public abstract class QSampleable {
     /////////////////////////////////////////////////////////////////
@@ -54,8 +55,15 @@ public abstract class QSampleable {
     }
 
     public void copyTo(QSampleable target) {
-        for (int copyX = 0; copyX < getWidth(); copyX++) {
-            for (int copyY = 0; copyY < getHeight(); copyY++) {
+        if (target.getWidth( ) != getWidth( ) || target.getHeight( ) != getHeight( )) {
+            throw new QException(
+                PointOfError.InvalidParameter,
+                "copyTo sizes differ: " + getWidth( ) + "x" + getHeight( ) +
+                " vs " + target.getWidth( ) + "x" + target.getHeight( )
+            );
+        }
+        for (int copyY = 0; copyY < getHeight(); copyY++) {
+            for (int copyX = 0; copyX < getWidth(); copyX++) {
                 target.setColor(copyX, copyY, getColor(copyX, copyY));
             }
         }

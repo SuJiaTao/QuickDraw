@@ -391,10 +391,10 @@ public final class QMesh {
     }
 
     public QMesh(QMesh toCopy) {
-        posBuffer     = toCopy.posBuffer;
-        uvBuffer      = toCopy.uvBuffer;
-        normalBuffer  = toCopy.normalBuffer;
-        indexBuffer   = toCopy.indexBuffer;
+        posBuffer     = new QAttribBuffer(toCopy.posBuffer);
+        uvBuffer      = new QAttribBuffer(toCopy.uvBuffer);
+        normalBuffer  = new QAttribBuffer(toCopy.normalBuffer);
+        indexBuffer   = QIndexBuffer.wrap(toCopy.indexBuffer.getIndicies( ).clone( ));
     }
 
     public QMesh(String objFilePath) {

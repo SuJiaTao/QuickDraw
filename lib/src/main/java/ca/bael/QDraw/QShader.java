@@ -275,13 +275,23 @@ public abstract class QShader {
             return gbufferSource(textureSlot).getDepth(screenX, screenY);
         }
 
+        public QVector3 gbufferVec3(int textureSlot, int gslot, int x, int y, QVector3 out) {
+            QRenderBuffer source = renderBufferAt(textureSlot);
+            return source.getGBufferVec3(gslot, clampIndex(x, source.getWidth( )), clampIndex(y, source.getHeight( )), out);
+        }
+
+        public long gbufferLong(int textureSlot, int gslot, int x, int y) {
+            QRenderBuffer source = renderBufferAt(textureSlot);
+            return source.getGBufferLong(gslot, clampIndex(x, source.getWidth( )), clampIndex(y, source.getHeight( )));
+        }
+
+        public float gbufferDepth(int textureSlot, int x, int y) {
+            QRenderBuffer source = renderBufferAt(textureSlot);
+            return source.getDepth(clampIndex(x, source.getWidth( )), clampIndex(y, source.getHeight( )));
+        }
+
         private QRenderBuffer gbufferSource(int textureSlot) {
-            if (!(textures[textureSlot] instanceof QRenderBuffer source)) {
-                throw new QException(
-                    PointOfError.InvalidParameter,
-                    "Texture slot " + textureSlot + " does not hold a QRenderBuffer"
-                );
-            }
+            QRenderBuffer source = renderBufferAt(textureSlot);
             if (source.getWidth( ) != target.getWidth( ) || source.getHeight( ) != target.getHeight( )) {
                 throw new QException(
                     PointOfError.InvalidData,
@@ -289,6 +299,20 @@ public abstract class QShader {
                 );
             }
             return source;
+        }
+
+        private QRenderBuffer renderBufferAt(int textureSlot) {
+            if (!(textures[textureSlot] instanceof QRenderBuffer source)) {
+                throw new QException(
+                    PointOfError.InvalidParameter,
+                    "Texture slot " + textureSlot + " does not hold a QRenderBuffer"
+                );
+            }
+            return source;
+        }
+
+        private static int clampIndex(int v, int size) {
+            return Math.max(0, Math.min(v, size - 1));
         }
 
         public void outputGBuffer(int slot, QVector3 v) {

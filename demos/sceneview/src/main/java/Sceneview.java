@@ -26,6 +26,7 @@ public final class Sceneview {
 
         QViewer viewer = new QViewer(frameBuffer);
         viewer.setProjection(QProjection.perspective(90.0f, frameBuffer, 0.05f));
+        FuzzShader fuzzShader = new FuzzShader( );
 
         QMesh    mesh0 = new QMesh(Sceneview.class.getResource("/Mascot_Smooth.obj").getPath());
         QMesh    mesh1 = new QMesh(Sceneview.class.getResource("/Cube.obj").getPath());
@@ -121,7 +122,7 @@ public final class Sceneview {
             );
 
             viewer.setRenderMode(rMode);
-            viewer.setCustomShader(new FuzzShader( ));
+            viewer.setCustomShader(fuzzShader);
             viewer.setUniformSlot(
                 QViewer.DEFAULT_SHADER_LIGHTS_SLOT,
                 viewLights
