@@ -10,6 +10,7 @@ import static ca.bael.QDraw.QVector3.VCTR_INDEX_Z;
 
 import ca.bael.QDraw.QException.PointOfError;
 
+@QImmutable
 public final class QProjection implements QUniform<QProjection> {
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS

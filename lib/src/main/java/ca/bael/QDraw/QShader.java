@@ -9,6 +9,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import ca.bael.QDraw.QException.PointOfError;
 import ca.bael.QDraw.QShader.ShaderRequirement.RequirementType;
 
+/** {@code beginDraw}, {@code vertexShader} and {@code fragmentShader} are called concurrently from several threads on one instance: do not write fields; keep per-draw values in the {@link QDrawData} returned by {@code beginDraw}. */
+@QReadDuringFlush
 public abstract class QShader {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS
@@ -63,10 +65,12 @@ public abstract class QShader {
             return out;
         }
 
+        /** Reused between calls: set before reading, do not retain after returning. */
         public QVector3 position( ) {
             return position;
         }
 
+        /** Reused between calls: set before reading, do not retain after returning. */
         public QVector3 scratchVec3(int index) {
             return scratch[index];
         }
@@ -170,10 +174,12 @@ public abstract class QShader {
 
         /////////////////////////////////////////////////////////////////
         // PUBLIC METHODS
+        /** Reused between calls: set before reading, do not retain after returning. */
         public QColor color( ) {
             return color;
         }
 
+        /** Reused between calls: set before reading, do not retain after returning. */
         public QVector3 scratchVec3(int index) {
             return scratch[index];
         }

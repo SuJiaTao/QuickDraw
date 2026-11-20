@@ -10,6 +10,7 @@ import ca.bael.QDraw.QException.PointOfError;
 
 // TODO: re-write to use AttriBuffer/Indexer to internally store data
 
+@QReadDuringFlush
 public final class QMesh {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS

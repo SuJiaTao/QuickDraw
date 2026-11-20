@@ -7,6 +7,7 @@ package ca.bael.QDraw;
 import java.awt.image.*;
 import ca.bael.QDraw.QException.PointOfError;
 
+@QReadDuringFlush
 public abstract class QSampleable {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS

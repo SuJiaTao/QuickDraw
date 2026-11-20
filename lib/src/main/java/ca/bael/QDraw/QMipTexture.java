@@ -7,6 +7,7 @@ package ca.bael.QDraw;
 import java.util.ArrayList;
 import ca.bael.QDraw.QException.PointOfError;
 
+@QImmutable
 public final class QMipTexture extends QSampleable {
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS

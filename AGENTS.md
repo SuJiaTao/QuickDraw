@@ -42,7 +42,7 @@ Roles:
 
 ### Deferred execution and capture
 - `draw()` checks shader requirements immediately but renders nothing. Work happens in `flush()`, and shading errors surface there. Flush before reading or presenting a target.
-- A queued draw snapshots viewer state. Uniforms are copied via `snapshot()` (immutable types return themselves) and may be changed right after queuing. Textures, attribute and index buffers, meshes and shader instances are captured by reference: do not modify them until `flush()` returns.
+- A queued draw snapshots viewer state. Uniforms are copied via `snapshot()` (`@QImmutable` types return themselves) and may be changed right after queuing. Types marked `@QReadDuringFlush` (textures, attribute and index buffers, meshes, shaders) are captured by reference: do not modify them until `flush()` returns.
 - `drawMesh()` clears texture, uniform and attribute/index slots after queuing, so re-bind them before every call. Other state (render mode, shader, projection, raster toggles) persists.
 - `clearFrame()` is deferred to the next `flush()`. `setRenderTarget()` flushes first, so earlier draws and a pending clear apply to the old target.
 - `QPresenter.present()` is synchronous: the image may be reused once it returns.

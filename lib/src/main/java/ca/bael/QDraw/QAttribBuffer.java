@@ -6,6 +6,7 @@ package ca.bael.QDraw;
 
 import ca.bael.QDraw.QException.PointOfError;
 
+@QReadDuringFlush
 public final class QAttribBuffer {
     /////////////////////////////////////////////////////////////////
     // CONSTANTS

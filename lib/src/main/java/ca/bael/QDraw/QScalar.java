@@ -4,6 +4,7 @@
 
 package ca.bael.QDraw;
 
+@QImmutable
 public final class QScalar implements QUniform<QScalar> {
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS

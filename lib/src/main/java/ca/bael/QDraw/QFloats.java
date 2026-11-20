@@ -4,6 +4,7 @@
 
 package ca.bael.QDraw;
 
+@QImmutable
 public final class QFloats implements QUniform<QFloats> {
     /////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
