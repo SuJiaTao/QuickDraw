@@ -212,6 +212,16 @@ public final class Expects {
         assertThrows(QException.class, () -> QProjection.perspective(90.0f, 1.0f, -0.1f));
     }
 
+    @Test
+    void FloatsTest() {
+        float[] src = { 1.0f, 2.0f, 3.0f };
+        QFloats floats = new QFloats(src);
+        src[0] = 9.0f;
+        assertEquals(3, floats.count());
+        assertEquals(1.0f, floats.get(0));
+        assertSame(floats, floats.snapshot());
+    }
+
     @Test 
     public void MathTest() {
         QMatrix4x4 mat0 = QMatrix4x4.translationMatrix(1.0f, 2.0f, 3.0f);

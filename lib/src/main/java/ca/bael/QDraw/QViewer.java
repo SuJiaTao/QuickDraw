@@ -322,7 +322,8 @@ public final class QViewer {
                                         typeSpecification +
                                         ". Purpose: " + require.purpose);
                     }
-                    if (state.slotUniforms[require.slot].getClass() != require.uniformClass) {
+                    if (require.uniformClass == null ||
+                        !require.uniformClass.isInstance(state.slotUniforms[require.slot])) {
                         throw new QException(
                                 PointOfError.InvalidData,
                                 "Shader requires uniform slot " + require.slot +
