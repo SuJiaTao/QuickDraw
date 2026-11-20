@@ -38,8 +38,12 @@ public final class Clouds {
         FlyCamera     camera      = new FlyCamera(QVector3.Zero( ), QQuaternion.fromAxisAngle(QVector3.Y( ), 180.0f));
         viewer.setProjection(PROJECTION);
 
-        long startTime = System.nanoTime( );
-        long prevTime  = startTime;
+        QTimer sceneTimer = new QTimer( );
+        QTimer cloudTimer = new QTimer( );
+        long   startTime  = System.nanoTime( );
+        long   prevTime   = startTime;
+        long   fpsStart   = startTime;
+        int    fpsFrames  = 0;
         while (true) {
             long now = System.nanoTime( );
             camera.update(window, (now - prevTime) * 1e-9f);
@@ -62,7 +66,9 @@ public final class Clouds {
             viewer.setLights(new QLights(new QLight[] { new QLight(view.transformPoint(LIGHT_POSITION.copy( )), LIGHT_STRENGTH) }));
             viewer.setUniformSlot(QViewer.DEFAULT_SHADER_MATERIAL_SLOT, CUBE_MATERIAL);
             viewer.drawMesh(CUBE_MESH);
+            sceneTimer.start( );
             viewer.flush( );
+            sceneTimer.stop( );
 
             frameBuffer.copyDepthTo(sceneDepth);
             viewer.setRenderMode(RenderMode.CustomShader);
@@ -73,9 +79,26 @@ public final class Clouds {
             viewer.setUniformSlot(CloudShader.CAMERA_TO_WORLD_SLOT, view.inverse( ));
             viewer.setUniformSlot(CloudShader.TIME_SLOT, new QScalar((now - startTime) * 1e-9));
             viewer.drawMesh(SCREEN_QUAD);
+            cloudTimer.start( );
             viewer.flush( );
+            cloudTimer.stop( );
 
             window.present(frameBuffer.getColorImage( ));
+
+            fpsFrames++;
+            long fpsNow = System.nanoTime( );
+            if (fpsNow - fpsStart >= 1_000_000_000L) {
+                System.out.printf("%d fps (%.2f ms/frame: scene %.2f, clouds %.2f, draw %.2f, show %.2f)%n",
+                    fpsFrames, (fpsNow - fpsStart) / 1e6 / fpsFrames,
+                    sceneTimer.millisPer(fpsFrames), cloudTimer.millisPer(fpsFrames),
+                    window.drawTimer.millisPer(fpsFrames), window.showTimer.millisPer(fpsFrames));
+                sceneTimer.reset( );
+                cloudTimer.reset( );
+                window.drawTimer.reset( );
+                window.showTimer.reset( );
+                fpsFrames = 0;
+                fpsStart  = fpsNow;
+            }
         }
     }
 }
