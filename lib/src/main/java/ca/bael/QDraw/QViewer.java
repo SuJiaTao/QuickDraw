@@ -46,13 +46,7 @@ public final class QViewer {
 
     ////////////////////////////////////////////////////////////////
     // CONSTANTS
-    public static final float MIN_NEAR_CLIP = -0.005f;
-    public static final float DEFAULT_NEAR_CLIP = MIN_NEAR_CLIP;
-
-    public static final float DEFAULT_VIEWBOUND_LEFT = -1.0f;
-    public static final float DEFAULT_VIEWBOUND_RIGHT = 1.0f;
-    public static final float DEFAULT_VIEWBOUND_BOTTOM = -1.0f;
-    public static final float DEFAULT_VIEWBOUND_TOP = 1.0f;
+    public static final QProjection DEFAULT_PROJECTION = QProjection.frustum(-1.0f, 1.0f, -1.0f, 1.0f, 0.005f);
 
     public static final int SHADER_UNIFORM_SLOTS = 16;
     public static final int SHADER_TEXTURE_SLOTS = 16;
@@ -118,20 +112,17 @@ public final class QViewer {
 
     ////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
-    public void setNearClip(float val) {
-        state.nearClip = Math.min(MIN_NEAR_CLIP, val);
+    public void setProjection(QProjection projection) {
+        if (projection == null) {
+            throw new QException(
+                    PointOfError.NullParameter,
+                    "Projection is null");
+        }
+        state.projection = projection;
     }
 
-    public void setViewBounds(float left, float right, float bottom, float top) {
-        state.viewLeft = left;
-        state.viewRight = right;
-        state.viewBottom = bottom;
-        state.viewTop = top;
-    }
-
-    public void setFieldOfView(float fovYDegrees, float aspect) {
-        float top = (float)Math.tan(Math.toRadians(0.5f * fovYDegrees));
-        setViewBounds(-aspect * top, aspect * top, -top, top);
+    public QProjection getProjection( ) {
+        return state.projection;
     }
 
     public void setRenderTarget(QRenderBuffer target) {
@@ -445,19 +436,6 @@ public final class QViewer {
     // CONSTRUCTORS
     public QViewer(QRenderBuffer renderTarget) {
         init(renderTarget);
-    }
-
-    public QViewer(QRenderBuffer renderTarget, float aspect) {
-        init(renderTarget);
-        setViewBounds(-aspect, aspect, -1.0f, 1.0f);
-    }
-
-    public QViewer(
-            QRenderBuffer renderTarget,
-            float viewLeft, float viewRight,
-            float viewBottom, float viewTop) {
-        init(renderTarget);
-        setViewBounds(viewLeft, viewRight, viewBottom, viewTop);
     }
 
 }

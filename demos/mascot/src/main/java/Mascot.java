@@ -256,8 +256,7 @@ public final class Mascot {
         window = new QWindow("Visual Test", WINDOW_WIDTH, WINDOW_HEIGHT);
         frameBuffer = new QRenderBuffer(FB_WIDTH, FB_HEIGHT);
         eyes = new QViewer(frameBuffer);
-        eyes.setViewBounds(-FB_ASPECT, FB_ASPECT, -1.0f, 1.0f);
-        eyes.setNearClip(-0.4f);
+        eyes.setProjection(QProjection.perspective(90.0f, frameBuffer, 0.4f));
 
         while (true) {
             RegularMascot();

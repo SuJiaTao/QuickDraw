@@ -198,6 +198,17 @@ public final class Expects {
         assertEquals(0xFF808080, mips.sampleLod(0.5f, 0.5f, 0.6f, QSampleable.SampleType.Clamp, QSampleable.FilterType.Nearest));
     }
 
+    @Test
+    void ProjectionTest() {
+        QProjection proj = QProjection.perspective(90.0f, 2.0f, 0.1f);
+        assertEquals(2.0f, proj.right(), 1e-5f);
+        assertEquals(-1.0f, proj.bottom(), 1e-5f);
+        float[] out = new float[3];
+        proj.toScreen(new float[] { 0.0f, 0.0f, -1.0f }, 200, 100, out, 0);
+        assertArrayEquals(new float[] { 100.0f, 50.0f, -1.0f }, out, 1e-4f);
+        assertThrows(QException.class, () -> QProjection.perspective(90.0f, 1.0f, -0.1f));
+    }
+
     @Test 
     public void MathTest() {
         QMatrix4x4 mat0 = QMatrix4x4.translationMatrix(1.0f, 2.0f, 3.0f);

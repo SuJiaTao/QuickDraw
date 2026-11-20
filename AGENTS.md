@@ -59,6 +59,7 @@ Defined in [`settings.gradle`](settings.gradle):
   - `inverse()` returns the affine inverse (3x3 inverse plus inverted translation; the projective row is ignored).
   - Trigonometric helpers `cosDeg(degrees)` and `sinDeg(degrees)` take **degrees**, not radians.
 - **[`QQuaternion.java`](lib/src/main/java/ca/bael/QDraw/QQuaternion.java)**: Orientation quaternion. `fromAxisAngle` (degrees, same sign convention as `QMatrix4x4.rotationMatrix`), `rotateLocal`/`rotateGlobal` (body vs world axis, re-normalized), static Hamilton `multiply(a, b)`, `rotate(v)` in place, `toMatrix()`.
+- **[`QProjection.java`](lib/src/main/java/ca/bael/QDraw/QProjection.java)**: Immutable perspective projection (also a `QUniform`). Frustum extents `left/right/bottom/top` are tangents on the `z = -1` plane; `near` is a positive distance. Build with `perspective(fovYDegrees, aspect | QRenderBuffer target, near)` (aspect taken once from the target's size) or `frustum(l, r, b, t, near)` for off-center. Set with `QViewer.setProjection`; default `QViewer.DEFAULT_PROJECTION` is ±1 (90°, square) with near 0.005.
 
 ### Geometry & Attributes
 - **[`QAttribBuffer.java`](lib/src/main/java/ca/bael/QDraw/QAttribBuffer.java)**: Fixed-size, writable `float[]` buffer storing `attribCount` attributes of `compsPerAttrib` floats each. `new QAttribBuffer(comps, count)` is zero-filled, `wrap(data, comps)` does not copy, `set(i, ...)` writes one attribute.
@@ -92,7 +93,7 @@ Defined in [`settings.gradle`](settings.gradle):
 - **[`QLights.java`](lib/src/main/java/ca/bael/QDraw/QLights.java)** / **[`QScalar.java`](lib/src/main/java/ca/bael/QDraw/QScalar.java)**: `QUniform` wrappers for a light array (`count()`, `get(i)`) and an immutable number (`floatValue()`, `intValue()`, `doubleValue()`; constructed from any numeric primitive).
 - **[`QViewer.java`](lib/src/main/java/ca/bael/QDraw/QViewer.java)**: The software rendering pipeline.
   - Built-in render modes (`RenderMode`): `SolidFill`, `Textured`, `Normal`, `Material` (Blinn-Phong), and `CustomShader`.
-  - Per-draw raster state: `setCullMode(CullMode.Back|Front|None)`, `setBlendMode(BlendMode.Alpha|Additive|Replace)` (additive is alpha-weighted), `setColorWrite`, `setDepthTest`, `setDepthWrite`. `setFieldOfView(fovYDegrees, aspect)` sets symmetric view bounds.
+  - Per-draw raster state: `setCullMode(CullMode.Back|Front|None)`, `setBlendMode(BlendMode.Alpha|Additive|Replace)` (additive is alpha-weighted), `setColorWrite`, `setDepthTest`, `setDepthWrite`. `setProjection(QProjection)` sets the camera projection.
   - Default slots:
     - Attributes (`0..7`): `0` = position, `1` = UV, `2` = normal.
     - Uniforms (`0..15`): `0` = transform `QMatrix4x4`, `1` = `QLights`, `2` = `QMaterial`. Only `QUniform` values can be bound.
@@ -102,8 +103,8 @@ Defined in [`settings.gradle`](settings.gradle):
     1. Validates every index is within every bound attribute buffer (`draw()` already checked `QShader.requirements()` and that an index buffer is set).
     2. Executes `vertexShader` for each of the 3 triangle vertices. Results are cached per vertex index for the duration of the draw, so vertex shaders must be deterministic in their attributes and uniforms.
     3. Computes face normal (`QVector3.cross`) and culls backfacing triangles (`QVector3.dot(normal, rayToCenter) > 0`).
-    4. Clips triangles against `nearClip` (`Z > nearClip` is behind the camera; visible geometry has negative Z). Clips 1-vertex-behind into 2 triangles (quad) and 2-vertices-behind into 1 triangle, linearly interpolating shader outputs and preserving clockwise winding order.
-    5. Projects vertices (`posn[Z] = 1.0f / posn[Z]`, `posn[X,Y] *= -posn[Z]`) and maps `viewBounds` to screen coordinates.
+    4. Clips triangles against the projection's near plane (`Z > -near` is behind it; visible geometry has negative Z). Clips 1-vertex-behind into 2 triangles (quad) and 2-vertices-behind into 1 triangle, linearly interpolating shader outputs and preserving clockwise winding order.
+    5. Projects vertices (`posn[Z] = 1.0f / posn[Z]`, `posn[X,Y] *= -posn[Z]`) and maps the projection's frustum extents to screen coordinates (`QProjection.toScreen`).
     6. Sorts vertices by Y, splits into flat-top and flat-bottom triangles, rasterizes scanlines, computes perspective-correct barycentric weights, tests inverted-Z depth (`invDepth < currentDepth`, skipped when `setDepthTest(false)`), invokes `fragmentShader`, discards fully transparent fragments (`A == 0`), alpha-blends with existing framebuffer color, and updates color, plus depth unless `setDepthWrite(false)`.
 - **[`QPresenter.java`](lib/src/main/java/ca/bael/QDraw/QPresenter.java)**: Core interface, `present(QImage frame)`. Synchronous: the caller may modify the image after it returns.
 - **`ca.bael.QDraw.awt`** (AWT/Swing bridge, keeps the core package AWT-free apart from `QTexture` image loading):
@@ -126,11 +127,11 @@ Defined in [`settings.gradle`](settings.gradle):
    - `setRenderTarget(rb)` swaps the viewer's target (e.g. on resize or between passes). It `flush()`es first, so draws queued earlier, and a pending `clearFrame()`, apply to the old target; call `clearFrame()` after the swap to clear the new one. G-buffer requirements are checked against the target current at `draw()` time.
    - `flush()` runs on a shared daemon thread pool, one worker per core: geometry workers each take whole draws, then (after that phase completes) raster workers each own horizontal strips of rows. `beginDraw`, `vertexShader` and `fragmentShader` are all called concurrently from several threads on the same shader instance, so they must not write to shader fields or other shared state; read per-draw values from `context.drawData(...)`.
 2. **Coordinate System & Camera Space**:
-   - The camera looks down the **negative Z-axis** (`nearClip` defaults to `-0.005f` and is clamped via `Math.min(MIN_NEAR_CLIP, val)`). Geometry in front of the camera has `Z < nearClip`.
+   - The camera looks down the **negative Z-axis** (the near plane is `QProjection.near()` in front of the camera, default 0.005; it must be > 0). Geometry in front of the camera has `Z < -near`.
    - Screen space and texture space have `(0, 0)` at the **bottom-left**.
 3. **Uniform Type Checking**:
    - `QViewer.internalEnsureShaderRequirements` checks uniform types using exact class equality (`slotUniforms[slot].getClass() != require.uniformClass`). Pass the exact class expected by the shader (e.g., `QMatrix4x4.class`, `QLights.class`, `QMaterial.class`, `QScalar.class`).
 4. **Unit Tests (`Expects.java`)**:
-   - Unit tests in [`lib/src/test/java/ca/bael/QDraw/Expects.java`](lib/src/test/java/ca/bael/QDraw/Expects.java) (`ColorTest`, `RenderBufferTest`, `ImageTest`, `MipTest`, `VectorTest`, `MatrixTest`, `QuaternionTest`, and `MathTest`) use JUnit Jupiter (`@Test`). When adding new tests, annotate them with `@Test` (non-static) and run `./gradlew :lib:test` to verify execution.
+   - Unit tests in [`lib/src/test/java/ca/bael/QDraw/Expects.java`](lib/src/test/java/ca/bael/QDraw/Expects.java) (`ColorTest`, `RenderBufferTest`, `ImageTest`, `MipTest`, `ProjectionTest`, `VectorTest`, `MatrixTest`, `QuaternionTest`, and `MathTest`) use JUnit Jupiter (`@Test`). When adding new tests, annotate them with `@Test` (non-static) and run `./gradlew :lib:test` to verify execution.
 5. **Code Formatting Style**:
    - Maintain the existing file header comments, `/////////////////////////////////////////////////////////////////` section dividers, and the `package-info.java` abbreviation/notation conventions when editing files in `lib/src/main/java/ca/bael/QDraw/`.

@@ -4,6 +4,7 @@
 
 import ca.bael.QDraw.QMatrix4x4;
 import ca.bael.QDraw.QMesh;
+import ca.bael.QDraw.QProjection;
 import ca.bael.QDraw.QRenderBuffer;
 import ca.bael.QDraw.QTexture;
 import ca.bael.QDraw.QVector3;
@@ -124,7 +125,7 @@ public final class Profile {
         window      = new QWindow("Profiling Tests", WINDOW_WIDTH, WINDOW_HEIGHT);
         frameBuffer = new QRenderBuffer(FB_WIDTH, FB_HEIGHT);
         viewer      = new QViewer(frameBuffer);
-        viewer.setViewBounds(-FB_ASPECT, FB_ASPECT, -1.0f, 1.0f);
+        viewer.setProjection(QProjection.perspective(90.0f, frameBuffer, 0.005f));
         viewer.setRenderMode(RenderMode.Textured);
 
         String meshPath = Profile.class.getResource("/Mascot.obj").getPath();

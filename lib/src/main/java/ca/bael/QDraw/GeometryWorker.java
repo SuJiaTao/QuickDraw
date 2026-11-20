@@ -117,7 +117,7 @@ final class GeometryWorker {
             QVector3.scale(tri.normal, 1.0f / QVector3.magnitude(tri.normal));
 
             // CLIP AND RENDER
-            float nearClip = draw.state.nearClip;
+            float nearClip = -draw.state.projection.near();
             if (tri.getPosnZ(0) <= nearClip &&
                 tri.getPosnZ(1) <= nearClip &&
                 tri.getPosnZ(2) <= nearClip) {
@@ -141,9 +141,9 @@ final class GeometryWorker {
     }
 
     private void internalEmitTri(Triangle tri, boolean shared, DrawState draw) {
-        ViewerState view = draw.state;
-        if (internalCheckOutside(tri, VCTR_INDEX_X, view.viewLeft, view.viewRight) ||
-            internalCheckOutside(tri, VCTR_INDEX_Y, view.viewBottom, view.viewTop)) {
+        QProjection proj = draw.state.projection;
+        if (internalCheckOutside(tri, VCTR_INDEX_X, proj.left(), proj.right()) ||
+            internalCheckOutside(tri, VCTR_INDEX_Y, proj.bottom(), proj.top())) {
             return;
         }
 
@@ -170,12 +170,7 @@ final class GeometryWorker {
         offset = triQueue.allocVerts(VCTR_NUM_CMPS + total);
 
         float[] out  = triQueue.verts;
-        float   invZ = 1.0f / vert.posn[VCTR_INDEX_Z];
-        out[offset + VCTR_INDEX_X] = (vert.posn[VCTR_INDEX_X] * -invZ - view.viewLeft) *
-                (renderTarget.getWidth() / (view.viewRight - view.viewLeft));
-        out[offset + VCTR_INDEX_Y] = (vert.posn[VCTR_INDEX_Y] * -invZ - view.viewBottom) *
-                (renderTarget.getHeight() / (view.viewTop - view.viewBottom));
-        out[offset + VCTR_INDEX_Z] = invZ;
+        view.projection.toScreen(vert.posn, renderTarget.getWidth(), renderTarget.getHeight(), out, offset);
         System.arraycopy(vert.shaderOutputs, 0, out, offset + VCTR_NUM_CMPS, total);
 
         vertexCache.setEmitted(idx, offset);

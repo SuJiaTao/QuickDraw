@@ -11,6 +11,7 @@ import ca.bael.QDraw.QLights;
 import ca.bael.QDraw.QMaterial;
 import ca.bael.QDraw.QMatrix4x4;
 import ca.bael.QDraw.QMesh;
+import ca.bael.QDraw.QProjection;
 import ca.bael.QDraw.QRenderBuffer;
 import ca.bael.QDraw.QRenderBuffer.GBufferFormat;
 import ca.bael.QDraw.QScalar;
@@ -106,7 +107,8 @@ public final class Deferred {
         gbuffer.attachGBuffer(GBufferShader.UV_GBUFFER, GBufferFormat.Float3);
         gbuffer.attachGBuffer(GBufferShader.ID_GBUFFER, GBufferFormat.Long);
 
-        QViewer geomPass = new QViewer(gbuffer, FB_ASPECT);
+        QViewer geomPass = new QViewer(gbuffer);
+        geomPass.setProjection(QProjection.perspective(90.0f, gbuffer, 0.005f));
         geomPass.setRenderMode(RenderMode.CustomShader);
         geomPass.setCustomShader(new GBufferShader());
 

@@ -25,8 +25,7 @@ public final class Sceneview {
         QWindow window = new QWindow("Scene View", WINDOW_WIDTH, WINDOW_HEIGHT);
 
         QViewer viewer = new QViewer(frameBuffer);
-        viewer.setNearClip(-0.05f);
-        viewer.setViewBounds(-ASPECT, ASPECT, -1.0f, 1.0f);
+        viewer.setProjection(QProjection.perspective(90.0f, frameBuffer, 0.05f));
 
         QMesh    mesh0 = new QMesh(Sceneview.class.getResource("/Mascot_Smooth.obj").getPath());
         QMesh    mesh1 = new QMesh(Sceneview.class.getResource("/Cube.obj").getPath());

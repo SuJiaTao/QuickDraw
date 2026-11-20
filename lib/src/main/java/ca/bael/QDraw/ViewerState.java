@@ -11,11 +11,7 @@ import ca.bael.QDraw.QViewer.CullMode;
 final class ViewerState {
     ////////////////////////////////////////////////////////////////
     // PUBLIC MEMBERS
-    public float      nearClip   = QViewer.DEFAULT_NEAR_CLIP;
-    public float      viewLeft   = QViewer.DEFAULT_VIEWBOUND_LEFT;
-    public float      viewRight  = QViewer.DEFAULT_VIEWBOUND_RIGHT;
-    public float      viewBottom = QViewer.DEFAULT_VIEWBOUND_BOTTOM;
-    public float      viewTop    = QViewer.DEFAULT_VIEWBOUND_TOP;
+    public QProjection projection = QViewer.DEFAULT_PROJECTION;
     public QColor     fillColor  = QViewer.DEFAULT_FILL_COLOR.snapshot();
     public SampleType sampleType = QViewer.DEFAULT_SAMPLE_TYPE;
     public boolean    depthTest  = QViewer.DEFAULT_DEPTH_TEST;
@@ -33,11 +29,7 @@ final class ViewerState {
     // PUBLIC METHODS
     public ViewerState snapshot() {
         ViewerState copy = new ViewerState();
-        copy.nearClip   = nearClip;
-        copy.viewLeft   = viewLeft;
-        copy.viewRight  = viewRight;
-        copy.viewBottom = viewBottom;
-        copy.viewTop    = viewTop;
+        copy.projection = projection;
         copy.fillColor  = fillColor.snapshot();
         copy.sampleType = sampleType;
         copy.depthTest  = depthTest;
