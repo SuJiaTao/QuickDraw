@@ -134,6 +134,16 @@ public final class QViewer {
         setViewBounds(-aspect * top, aspect * top, -top, top);
     }
 
+    public void setRenderTarget(QRenderBuffer target) {
+        if (target == null) {
+            throw new QException(
+                    PointOfError.NullParameter,
+                    "Render target is null");
+        }
+        flush();
+        renderTarget = target;
+    }
+
     public void setRenderMode(RenderMode mode) {
         renderMode = mode;
     }
@@ -289,10 +299,10 @@ public final class QViewer {
     }
 
     private void init(QRenderBuffer target) {
-        renderTarget = target;
+        setRenderTarget(target);
         for (int i = 0; i < WORKER_THREADS; i++) {
-            geometryWorkers.add(new GeometryWorker(target));
-            rasterWorkers.add(new RasterWorker(target));
+            geometryWorkers.add(new GeometryWorker());
+            rasterWorkers.add(new RasterWorker());
         }
     }
 
@@ -393,7 +403,7 @@ public final class QViewer {
         List<Callable<Void>> tasks = new ArrayList<>(taskCount);
         for (GeometryWorker worker : geometryWorkers.subList(0, taskCount)) {
             tasks.add(() -> {
-                worker.process(queuedDraws, nextDraw);
+                worker.process(queuedDraws, nextDraw, renderTarget);
                 return null;
             });
         }
@@ -405,7 +415,7 @@ public final class QViewer {
         List<Callable<Void>> tasks = new ArrayList<>(rasterWorkers.size());
         for (RasterWorker worker : rasterWorkers) {
             tasks.add(() -> {
-                worker.rasterize(queuedDraws, nextStrip, clearPending);
+                worker.rasterize(queuedDraws, nextStrip, clearPending, renderTarget);
                 return null;
             });
         }

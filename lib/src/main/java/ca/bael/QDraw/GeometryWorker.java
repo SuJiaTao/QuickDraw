@@ -21,7 +21,7 @@ final class GeometryWorker {
 
     ////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
-    private final QRenderBuffer renderTarget;
+    private QRenderBuffer renderTarget;
     private final TriangleQueue triQueue = new TriangleQueue();
     private final QShader.VertexShaderContext vctx = new QShader.VertexShaderContext();
     private final float[] edge01 = new float[VCTR_NUM_CMPS];
@@ -32,7 +32,8 @@ final class GeometryWorker {
 
     ////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
-    public void process(List<DrawState> queuedDraws, AtomicInteger nextDraw) {
+    public void process(List<DrawState> queuedDraws, AtomicInteger nextDraw, QRenderBuffer target) {
+        renderTarget = target;
         triQueue.reset();
         for (int i = nextDraw.getAndIncrement(); i < queuedDraws.size(); i = nextDraw.getAndIncrement()) {
             internalProcessDraw(queuedDraws.get(i));
@@ -229,11 +230,5 @@ final class GeometryWorker {
         float b = tri.getPosn(1)[axis] * -(1.0f / tri.getPosnZ(1));
         float c = tri.getPosn(2)[axis] * -(1.0f / tri.getPosnZ(2));
         return (a < lo && b < lo && c < lo) || (a > hi && b > hi && c > hi);
-    }
-
-    ////////////////////////////////////////////////////////////////
-    // CONSTRUCTORS
-    public GeometryWorker(QRenderBuffer renderTarget) {
-        this.renderTarget = renderTarget;
     }
 }

@@ -17,7 +17,7 @@ final class RasterWorker {
 
     ////////////////////////////////////////////////////////////////
     // PRIVATE MEMBERS
-    private final QRenderBuffer renderTarget;
+    private QRenderBuffer renderTarget;
     private final RasterSetup raster = new RasterSetup();
     private final QShader.FragmentShaderContext fctx = new QShader.FragmentShaderContext();
     private QShader shader;
@@ -31,7 +31,8 @@ final class RasterWorker {
 
     ////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
-    public void rasterize(List<DrawState> queuedDraws, AtomicInteger nextStrip, boolean clearPending) {
+    public void rasterize(List<DrawState> queuedDraws, AtomicInteger nextStrip, boolean clearPending, QRenderBuffer target) {
+        renderTarget = target;
         int height     = renderTarget.getHeight();
         int stripCount = (height + STRIP_HEIGHT - 1) / STRIP_HEIGHT;
         for (int strip = nextStrip.getAndIncrement(); strip < stripCount; strip = nextStrip.getAndIncrement()) {
@@ -269,11 +270,5 @@ final class RasterWorker {
                 renderTarget.getGBufferLongData(slot)[pixel] = fctx.gbufferLongs[slot];
             }
         }
-    }
-
-    ////////////////////////////////////////////////////////////////
-    // CONSTRUCTORS
-    public RasterWorker(QRenderBuffer renderTarget) {
-        this.renderTarget = renderTarget;
     }
 }
