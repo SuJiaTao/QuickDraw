@@ -187,6 +187,26 @@ public final class Expects {
         assertEquals(QQuaternion.fromAxisAngle(axisZ, 45.0f).toMatrix(), QQuaternion.slerp(QQuaternion.Identity(), q90, 0.5f).toMatrix());
         assertEquals(QQuaternion.fromAxisAngle(axisZ, 45.0f).toMatrix(), QQuaternion.nlerp(QQuaternion.Identity(), q90, 0.5f).toMatrix());
         assertEquals(q90.toMatrix(), QQuaternion.slerp(q90, neg, 0.5f).toMatrix());
+        QVector3 axisY = new QVector3(0.0f, 1.0f, 0.0f);
+        assertEquals(QMatrix4x4.rotationMatrix(10.0f, 20.0f, 30.0f), QQuaternion.fromEuler(10.0f, 20.0f, 30.0f).toMatrix());
+        for (QQuaternion q : new QQuaternion[] { QQuaternion.fromEuler(10.0f, 20.0f, 30.0f), QQuaternion.fromEuler(30.0f, 90.0f, 0.0f) }) {
+            QVector3 e = q.toEuler();
+            assertEquals(q.toMatrix(), QQuaternion.fromEuler(e.getX(), e.getY(), e.getZ()).toMatrix());
+        }
+        QQuaternion big = QQuaternion.fromAxisAngle(new QVector3(1.0f, 2.0f, 3.0f), 170.0f);
+        assertEquals(big.toMatrix(), QQuaternion.fromMatrix(big.toMatrix()).toMatrix());
+        assertEquals(QMatrix4x4.rotationMatrix(10.0f, 20.0f, 30.0f), QQuaternion.fromMatrix(QMatrix4x4.rotationMatrix(10.0f, 20.0f, 30.0f)).toMatrix());
+        QQuaternion look = QQuaternion.lookRotation(axisX, axisY);
+        assertEquals(axisX, look.forward());
+        assertEquals(axisY, look.up());
+        assertEquals(axisY, QQuaternion.fromToRotation(axisX, axisY).rotate(new QVector3(1.0f, 0.0f, 0.0f)));
+        assertEquals(new QVector3(-1.0f, 0.0f, 0.0f), QQuaternion.fromToRotation(axisX, new QVector3(-1.0f, 0.0f, 0.0f)).rotate(new QVector3(1.0f, 0.0f, 0.0f)));
+        assertEquals(90.0f, QQuaternion.angle(QQuaternion.Identity(), q90), 1e-3f);
+        assertEquals(30.0f, QQuaternion.angle(QQuaternion.Identity(), QQuaternion.rotateTowards(QQuaternion.Identity(), q90, 30.0f)), 1e-2f);
+        QQuaternion q60 = QQuaternion.fromAxisAngle(axisZ, 60.0f);
+        QVector3 axis = new QVector3();
+        float deg = q60.toAxisAngle(axis);
+        assertEquals(q60.toMatrix(), QQuaternion.fromAxisAngle(axis, deg).toMatrix());
     }
 
     @Test
