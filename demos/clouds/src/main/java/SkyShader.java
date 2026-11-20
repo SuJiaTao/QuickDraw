@@ -17,8 +17,10 @@ public final class SkyShader extends QShader {
     private static final float    GROUND_FADE = 8.0f;
     private static final QVector3 ZENITH      = new QVector3(0.18f, 0.36f, 0.75f);
     private static final QVector3 HORIZON     = new QVector3(0.70f, 0.82f, 0.95f);
-    private static final QVector3 GROUND      = new QVector3(0.30f, 0.30f, 0.32f);
+    private static final QVector3 GROUND      = QColor.unpack(0x313E50, new QVector3( ));
     private static final float UP_FUZZ = 0.02f;
+    private static final float GROUND_COLOR_FUZZ = 0.05f;
+    private static final float ZENITH_COLOR_FUZZ = 0.02f;
 
     /////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
@@ -44,9 +46,12 @@ public final class SkyShader extends QShader {
         sky.set(HORIZON);
         if (up < 0.0f) {
             sky.lerp(GROUND, Math.min(1.0f, -up * GROUND_FADE));
+            randomVector(context.scratchVec3(2)).multiply3(GROUND_COLOR_FUZZ);
         } else {
             sky.lerp(ZENITH, (float)Math.sqrt(up));
+            randomVector(context.scratchVec3(2)).multiply3(ZENITH_COLOR_FUZZ);
         }
+        sky.add(context.scratchVec3(2));
         return context.color( ).set(sky);
     }
 }

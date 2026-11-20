@@ -527,6 +527,8 @@ public abstract class QShader {
     }
 
     public static float seededRandom(int iSeed) {
+        iSeed *= 0x9E3779B9;
+
         // simple XORSHIFT
         iSeed ^= (iSeed <<  13);
         iSeed ^= (iSeed >>> 17);
